@@ -8,11 +8,12 @@ Legend: ✅ done · 🔜 next · ⬜ pending
 
 ## Milestone 1 — Approval Matrix submit → Workflow generated ✅
 - ✅ DocTypes: `Approval Matrix` (+ `Approval Matrix Detail` with Min/Max band + 4 tiers),
-  `Document Workflow Detail`, `Approval Amount Field Mapping`, `Approval Settings`.
+  `Document Workflow Log` (global audit log — replaced the old `Document Workflow Detail`
+  per-DocType child table 2026-09-01), `Approval Amount Field Mapping`, `Approval Settings`.
   (`Approval Level Snapshot` removed — unused in the literal model.)
 - ✅ 10 `Workflow State` masters.
 - ✅ `generator.py` — literal transition generation, roles, role reconciliation,
-  `custom_workflow_history` field, `ensure_amount_field`.
+  `remove_legacy_history_field`, `ensure_amount_field`.
 - ✅ `Approval Matrix` controller — validate (unique active, contiguous tiers, contiguous
   non-overlapping bands with one `Max = 0`), `on_submit` → generate, `on_cancel` → rebuild/deactivate.
 - ✅ Verified end-to-end for **Purchase Invoice** against the JFS scenario (states/allow_edit,
@@ -27,9 +28,10 @@ Legend: ✅ done · 🔜 next · ⬜ pending
 - ✅ **Block hook** (`runtime.py` → `_block_if_no_band`, wired via `hooks.py` doc_events
   `validate`): refuses to save if no Approval Matrix band matches
   `(company, department, amount)`.
-- ✅ **History hook** (`runtime.py` → `_record_history`): on each approval, appends
-  `{user, workflow_state}` to `custom_workflow_history` — this is what gives the no-repeat
-  condition data to check.
+- ✅ **History hook** (`runtime.py` → `_record_history`): on each approval, inserts
+  `{reference_doctype, reference_name, user, workflow_state}` into the global
+  `Document Workflow Log` doctype — audit trail only (no-repeat was later removed, see
+  DECISIONS #5; this hook no longer feeds any condition).
 - ✅ **Verified end-to-end on a real Purchase Order** (`setup/e2e.py`): created →
   `Pending` → tier 1 approve → `Approved 1` → tier 2 approve → `Approved 2` → tier 3
   approve → `Approved` (docstatus 1). No-repeat confirmed (the tier-1 approver had zero

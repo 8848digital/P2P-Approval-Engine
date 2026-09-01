@@ -200,16 +200,19 @@ def ensure_amount_field(document_type):
         settings.save(ignore_permissions=True)
 
 
-def ensure_history_field(document_type):
-    """Add the Document Workflow Detail history child table (for no-repeat + audit)."""
-    create_custom_fields({document_type: [
-        {"fieldname": "ae_section", "fieldtype": "Section Break",
-         "label": "Approval Workflow (System)", "insert_after": "amended_from",
-         "collapsible": 1},
-        {"fieldname": "custom_workflow_history", "fieldtype": "Table",
-         "label": "Workflow History", "options": "Document Workflow Detail",
-         "insert_after": "ae_section", "read_only": 1, "allow_on_submit": 1},
-    ]}, ignore_validate=True)
+LEGACY_HISTORY_FIELDS = ("ae_section", "custom_workflow_history")
+
+
+def remove_legacy_history_field(document_type):
+    """Drop the old per-DocType `custom_workflow_history` child-table field, if present.
+
+    History now lives centrally in `Document Workflow Log` (reference_doctype/reference_name)
+    instead of a Table field added to every target DocType — no per-DocType schema needed.
+    """
+    for fieldname in LEGACY_HISTORY_FIELDS:
+        name = f"{document_type}-{fieldname}"
+        if frappe.db.exists("Custom Field", name):
+            frappe.delete_doc("Custom Field", name, ignore_permissions=True)
 
 
 def ensure_department_field(document_type):
@@ -409,7 +412,7 @@ def setup_workflow(document_type):
     ensure_role_permissions(document_type)
     ensure_department_read(document_type)
     ensure_amount_field(document_type)
-    ensure_history_field(document_type)
+    remove_legacy_history_field(document_type)
     ensure_department_field(document_type)
     build_workflow(document_type)
     reconcile_roles(document_type)

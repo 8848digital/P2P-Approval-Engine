@@ -4,7 +4,7 @@ Registered on the `validate` event for all DocTypes; they no-op unless the
 DocType is managed by an active `<DocType> Approval` workflow.
 
 - block: refuse to save if no Approval Matrix band matches (company/department/amount)
-- history: record each approval into `custom_workflow_history` (powers no-repeat)
+- history: record each approval into `Document Workflow Log` (audit trail)
 """
 
 import frappe
@@ -52,11 +52,14 @@ def _record_history(doc):
     old_state = before.get("workflow_state") if before else None
     if new_state == old_state:
         return
-    # avoid duplicate rows if validate runs twice for the same transition
-    for r in (doc.get("custom_workflow_history") or []):
-        if r.user == frappe.session.user and r.workflow_state == new_state:
-            return
-    doc.append("custom_workflow_history", {
+    log_filters = {
+        "reference_doctype": doc.doctype,
+        "reference_name": doc.name,
         "user": frappe.session.user,
         "workflow_state": new_state,
-    })
+    }
+    if frappe.db.exists("Document Workflow Log", log_filters):
+        # avoid duplicate rows if validate runs twice for the same transition
+        return
+    frappe.get_doc({"doctype": "Document Workflow Log", **log_filters}).insert(
+        ignore_permissions=True)

@@ -75,10 +75,13 @@ row (Approver N has a User 1). Amount only selects the band. From tier N, `Appro
 - For **N = 1..4**: `approver_{N}_user_1..5` (Link User, OR pool), `approver_{N}_can_hold`,
   `approver_{N}_can_reject`. *(No per-approver amount.)*
 
-### 5.3 Document Workflow Detail (child) — history / audit + no-repeat source
-- `user` (Link User), `workflow_state` (Link Workflow State), `created_on` = standard `creation`.
-- Added to each target DocType as custom field `custom_workflow_history` (Table). One row
-  appended per approval; read by the no-repeat condition.
+### 5.3 Document Workflow Log (global, audit only)
+- `reference_doctype` (Link DocType), `reference_name` (Dynamic Link), `user` (Link User),
+  `workflow_state` (Link Workflow State), `created_on` = standard `creation`.
+- **Not a child table on the target DocType** — one central log doctype for every managed
+  DocType, keyed by `reference_doctype` + `reference_name` (same pattern as Frappe's own
+  `Version`/`Comment`). One row inserted per approval. No no-repeat condition reads it — it's
+  audit-only (see DECISIONS #5).
 
 ### 5.4 Approval Settings (Single) + Approval Amount Field Mapping (child)
 - Per-DocType `amount_field` (e.g. PO/PI → `grand_total`, Payment Entry → `paid_amount`;
@@ -86,8 +89,9 @@ row (Approver N has a User 1). Amount only selects the band. From tier N, `Appro
 
 ### 5.5 Target-DocType custom fields (added by the engine)
 - `workflow_state` (auto-created by Frappe on workflow save)
-- `custom_workflow_history` (Table → Document Workflow Detail)
-- *(That's all — the literal model needs no snapshot fields.)*
+- `department` (Link → Department, if not already present)
+- *(History no longer needs a field on the target — it lives in `Document Workflow Log`. The
+  literal model needs no snapshot fields either.)*
 
 ### 5.6 Workflow States (10) & allow_edit
 | State | docstatus | allow_edit |
