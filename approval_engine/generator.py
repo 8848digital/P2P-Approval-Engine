@@ -277,12 +277,12 @@ def build_transitions(document_type):
 
             for level in levels:
                 role = role_name(document_type, level)
-                # Per client requirement doc (Excel): condition = company + department +
-                # amount band only. "Who can approve" is gated by the transition's Role
-                # (`<DocType> - Approver N`). NOTE: the role is shared across departments,
-                # so a same-tier approver from another department can act on this
-                # department's document (accepted per client decision).
-                base = gate
+                # Condition = company + department + amount band + this row's tier pool.
+                # The Role is still the coarse gate, but the embedded pool clause pins
+                # eligibility to the specific approvers configured for THIS row/tier, so a
+                # same-tier approver from another row/department can no longer act here
+                # even though they hold the shared `<DocType> - Approver N` role.
+                base = f"{gate} and frappe.session.user in {pool(row, level)!r}"
                 src = STATE_FOR_TIER[level]
                 can_hold = row.get(f"approver_{level}_can_hold")
                 can_reject = row.get(f"approver_{level}_can_reject")
