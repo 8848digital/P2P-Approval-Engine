@@ -1,0 +1,292 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "creation": "2026-08-27 14:44:55.309164",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "department",
+  "min_amount",
+  "max_amount",
+  "approver_1_section",
+  "approver_1_user_1",
+  "approver_1_user_2",
+  "approver_1_user_3",
+  "approver_1_user_4",
+  "approver_1_user_5",
+  "approver_1_col",
+  "approver_1_can_hold",
+  "approver_1_can_reject",
+  "approver_2_section",
+  "approver_2_user_1",
+  "approver_2_user_2",
+  "approver_2_user_3",
+  "approver_2_user_4",
+  "approver_2_user_5",
+  "approver_2_col",
+  "approver_2_can_hold",
+  "approver_2_can_reject",
+  "approver_3_section",
+  "approver_3_user_1",
+  "approver_3_user_2",
+  "approver_3_user_3",
+  "approver_3_user_4",
+  "approver_3_user_5",
+  "approver_3_col",
+  "approver_3_can_hold",
+  "approver_3_can_reject",
+  "approver_4_section",
+  "approver_4_user_1",
+  "approver_4_user_2",
+  "approver_4_user_3",
+  "approver_4_user_4",
+  "approver_4_user_5",
+  "approver_4_col",
+  "approver_4_can_hold",
+  "approver_4_can_reject"
+ ],
+ "fields": [
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Department",
+   "options": "Department",
+   "reqd": 1
+  },
+  {
+   "fieldname": "approver_1_section",
+   "fieldtype": "Section Break",
+   "label": "Approver 1"
+  },
+  {
+   "fieldname": "approver_1_user_1",
+   "fieldtype": "Link",
+   "label": "Approver 1 User 1",
+   "options": "User"
+  },
+  {
+   "fieldname": "approver_1_user_2",
+   "fieldtype": "Link",
+   "label": "Approver 1 User 2",
+   "options": "User"
+  },
+  {
+   "fieldname": "approver_1_user_3",
+   "fieldtype": "Link",
+   "label": "Approver 1 User 3",
+   "options": "User"
+  },
+  {
+   "fieldname": "approver_1_user_4",
+   "fieldtype": "Link",
+   "label": "Approver 1 User 4",
+   "options": "User"
+  },
+  {
+   "fieldname": "approver_1_user_5",
+   "fieldtype": "Link",
+   "label": "Approver 1 User 5",
+   "options": "User"
+  },
+  {
+   "fieldname": "approver_1_col",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "approver_1_can_hold",
+   "fieldtype": "Check",
+   "label": "Approver 1 Can Hold"
+  },
+  {
+   "default": "0",
+   "fieldname": "approver_1_can_reject",
+   "fieldtype": "Check",
+   "label": "Approver 1 Can Reject"
+  },
+  {
+   "fieldname": "approver_2_section",
+   "fieldtype": "Section Break",
+   "label": "Approver 2"
+  },
+  {
+   "fieldname": "approver_2_user_1",
+   "fieldtype": "Link",
+   "label": "Approver 2 User 1",
+   "options": "User"
+  },
+  {
+   "fieldname": "approver_2_user_2",
+   "fieldtype": "Link",
+   "label": "Approver 2 User 2",
+   "options": "User"
+  },
+  {
+   "fieldname": "approver_2_user_3",
+   "fieldtype": "Link",
+   "label": "Approver 2 User 3",
+   "options": "User"
+  },
+  {
+   "fieldname": "approver_2_user_4",
+   "fieldtype": "Link",
+   "label": "Approver 2 User 4",
+   "options": "User"
+  },
+  {
+   "fieldname": "approver_2_user_5",
+   "fieldtype": "Link",
+   "label": "Approver 2 User 5",
+   "options": "User"
+  },
+  {
+   "fieldname": "approver_2_col",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "approver_2_can_hold",
+   "fieldtype": "Check",
+   "label": "Approver 2 Can Hold"
+  },
+  {
+   "default": "0",
+   "fieldname": "approver_2_can_reject",
+   "fieldtype": "Check",
+   "label": "Approver 2 Can Reject"
+  },
+  {
+   "fieldname": "approver_3_section",
+   "fieldtype": "Section Break",
+   "label": "Approver 3"
+  },
+  {
+   "fieldname": "approver_3_user_1",
+   "fieldtype": "Link",
+   "label": "Approver 3 User 1",
+   "options": "User"
+  },
+  {
+   "fieldname": "approver_3_user_2",
+   "fieldtype": "Link",
+   "label": "Approver 3 User 2",
+   "options": "User"
+  },
+  {
+   "fieldname": "approver_3_user_3",
+   "fieldtype": "Link",
+   "label": "Approver 3 User 3",
+   "options": "User"
+  },
+  {
+   "fieldname": "approver_3_user_4",
+   "fieldtype": "Link",
+   "label": "Approver 3 User 4",
+   "options": "User"
+  },
+  {
+   "fieldname": "approver_3_user_5",
+   "fieldtype": "Link",
+   "label": "Approver 3 User 5",
+   "options": "User"
+  },
+  {
+   "fieldname": "approver_3_col",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "approver_3_can_hold",
+   "fieldtype": "Check",
+   "label": "Approver 3 Can Hold"
+  },
+  {
+   "default": "0",
+   "fieldname": "approver_3_can_reject",
+   "fieldtype": "Check",
+   "label": "Approver 3 Can Reject"
+  },
+  {
+   "fieldname": "approver_4_section",
+   "fieldtype": "Section Break",
+   "label": "Approver 4"
+  },
+  {
+   "fieldname": "approver_4_user_1",
+   "fieldtype": "Link",
+   "label": "Approver 4 User 1",
+   "options": "User"
+  },
+  {
+   "fieldname": "approver_4_user_2",
+   "fieldtype": "Link",
+   "label": "Approver 4 User 2",
+   "options": "User"
+  },
+  {
+   "fieldname": "approver_4_user_3",
+   "fieldtype": "Link",
+   "label": "Approver 4 User 3",
+   "options": "User"
+  },
+  {
+   "fieldname": "approver_4_user_4",
+   "fieldtype": "Link",
+   "label": "Approver 4 User 4",
+   "options": "User"
+  },
+  {
+   "fieldname": "approver_4_user_5",
+   "fieldtype": "Link",
+   "label": "Approver 4 User 5",
+   "options": "User"
+  },
+  {
+   "fieldname": "approver_4_col",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "approver_4_can_hold",
+   "fieldtype": "Check",
+   "label": "Approver 4 Can Hold"
+  },
+  {
+   "default": "0",
+   "fieldname": "approver_4_can_reject",
+   "fieldtype": "Check",
+   "label": "Approver 4 Can Reject"
+  },
+  {
+   "fieldname": "min_amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Min Amount"
+  },
+  {
+   "description": "Upper bound (inclusive). 0 = no upper limit.",
+   "fieldname": "max_amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Max Amount"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-27 19:16:39.595931",
+ "modified_by": "Administrator",
+ "module": "Approval Engine",
+ "name": "Approval Matrix Detail",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
