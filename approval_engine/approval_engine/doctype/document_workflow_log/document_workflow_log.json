@@ -35,17 +35,15 @@
   },
   {
    "fieldname": "from_state",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "From State",
-   "options": "Workflow State"
+   "label": "From State"
   },
   {
    "fieldname": "workflow_state",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "label": "To State",
-   "options": "Workflow State",
    "reqd": 1
   },
   {
