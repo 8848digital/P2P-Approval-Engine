@@ -10,6 +10,7 @@ from frappe.model.document import Document
 
 from approval_engine.generator import (
     MAX_LEVELS, configured_levels, setup_workflow, on_matrix_cancel,
+    resolve_amount_field,
 )
 
 
@@ -20,6 +21,10 @@ class ApprovalMatrix(Document):
         self._validate_bands()
 
     def on_submit(self):
+        # Guard here (not in validate) so a WIP draft can still be saved while the amount-field
+        # mapping is being sorted out; the client shows a live hint meanwhile. Hard-block at
+        # submit, since submit bakes the amount field into the generated conditions.
+        self._validate_amount_field()
         setup_workflow(self.document_type)
 
     def on_cancel(self):
@@ -28,6 +33,18 @@ class ApprovalMatrix(Document):
     # ------------------------------------------------------------------
     # validations
     # ------------------------------------------------------------------
+
+    def _validate_amount_field(self):
+        """The amount field the bands compare against is resolved from Approval Settings (or a
+        default) and baked into every generated condition. Catch a missing/misconfigured field
+        here, before submit, instead of silently generating a broken workflow condition."""
+        info = resolve_amount_field(self.document_type)
+        if not info.get("exists"):
+            frappe.throw(_(
+                "Amount field <b>{0}</b> is not a valid amount field on {1}. Set the correct "
+                "field for {1} in <b>Approval Settings</b> before submitting this matrix — the "
+                "bands compare document amounts against it."
+            ).format(info.get("amount_field"), self.document_type))
 
     def _validate_unique_active(self):
         dupe = frappe.db.exists("Approval Matrix", {
