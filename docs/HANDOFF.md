@@ -14,8 +14,9 @@ DocTypes. Client: 8848 Digital / JFS Settlement.
 
 ## 2. Status at a glance
 - **Milestone 1 (generate workflow from matrix): ✅ done**
-- **Milestone 2 (a real document flows through it): ✅ done & verified** — full comprehensive
-  test passes 15/15 on **Purchase Order** (`setup/test_po.py`).
+- **Milestone 2 (a real document flows through it): ✅ done & verified** on **Purchase Order**
+  (multi-user approve/hold/reject/block, pool gating, history). Runtime E2E is verified manually
+  on a configured site; band/tier validation is covered by unit tests (see §3).
 - **Milestone 3 (deployable + generalized): 🔜 not started** — see §7.
 
 ## 3. Environment & how to run
@@ -26,8 +27,11 @@ DocTypes. Client: 8848 Digital / JFS Settlement.
 - Site: **`v16.dev`** (default) — **local dev only**. (Dev credentials for Administrator / MariaDB
   root are kept in the maintainer's local notes, intentionally NOT committed to this repo.)
 - Run the site:  `cd /Users/dg/frappe-bench-v16 && nvm use 24 && bench start` → http://v16.dev:8000
-- Run the full PO test:  `bench --site v16.dev execute approval_engine.setup.test_po.run`
-- Simulate transitions (no real docs):  `bench --site v16.dev execute approval_engine.setup.simulate.run`
+- Run the tests:  `bench --site v16.dev run-tests --module approval_engine.approval_engine.doctype.approval_matrix.test_approval_matrix`
+  (band/tier validation unit tests). The old `setup/test_po.py` / `setup/simulate.py` dev harnesses
+  were removed — runtime E2E (real PO through the workflow) is now a manual QA step; a portable
+  runtime integration test is blocked on ERPNext's global test fixtures (fiscal-year) conflicting
+  with a configured site — see §7.
 - **Important:** `System Manager` is NOT a superuser in Frappe — only the **Administrator user**
   bypasses permissions AND holds every role, so Administrator is the wrong user to test gating with.
   Test with real approver users (`a@example.com … f@example.com`).
@@ -78,28 +82,33 @@ approval_engine/
   generator.py     # workflow generation, conditions, roles, perms, dept field, band matcher
   runtime.py       # doc_events(validate): block-if-no-band + record approval history
   hooks.py         # doc_events "*": validate -> runtime.target_validate
+  install.py       # after_install: pre-seed Workflow States + Actions
+  dashboard.py     # whitelisted pending/on-hold/approved summary queries (Finance Overview page)
   approval_engine/doctype/approval_matrix/approval_matrix.py   # validate (bands/tiers) / on_submit / on_cancel
+  approval_engine/doctype/approval_matrix/test_approval_matrix.py  # band/tier validation unit tests
   approval_engine/doctype/<approval_matrix_detail | document_workflow_log |
                             approval_amount_field_mapping | approval_settings>/
-  setup/scaffold.py  # idempotent DocType + Workflow State creation (dev)
-  setup/simulate.py  # transition simulator, no real docs (dev/test)
-  setup/e2e.py       # real PO walkthrough (dev/test)
-  setup/test_po.py   # comprehensive PO scenarios, 15 checks (dev/test)
-  setup/demo.py      # demo matrix bootstrap (dev)   setup/diag.py (dev)   setup/revise.py (one-off)
+  approval_engine/page/finance_dashboard/     # Finance Overview desk page (js/css/json)
 docs/  README SPEC DECISIONS WORKFLOW_DESIGN IMPLEMENTATION_PLAN VERIFICATION HANDOFF
 ```
+(The `setup/` dev-harness package — scaffold/simulate/e2e/test_po/demo/diag/revise — has been
+removed; those were dev-only scripts, superseded by `install.py` + the doctype unit tests.)
 
 ## 7. What's pending (Milestone 3 / deployment) — see [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)
-- **Commit to git** — the whole engine is currently uncommitted (only "Initialize App" exists). ← do first
-- **Package for clean install** — add an `after_install` hook (pre-create Workflow States) and/or
-  fixtures; **quarantine dev/test scripts** so `demo/e2e/test_po/diag/revise` never run on prod;
-  delete the one-off `revise.py`.
-- **BRN** — the client's real custom DocType doesn't exist yet (needs company/department/amount fields).
-- **Generalize & verify** on Purchase Invoice (`net_total`), Payment Entry (`paid_amount`), BRN.
+- ✅ **Committed & pushed** — on GitHub (`8848digital/P2P-Approval-Engine`, default branch `develop`).
+- ✅ **`after_install` hook** pre-seeds Workflow States + Actions (`install.py`).
+- ✅ **Dev/test scripts removed** — the `setup/` harness is gone; validation covered by unit tests.
+- **BRN/BRD** — the client's real custom DocType doesn't exist yet (needs company/department/amount).
+  The Finance dashboard's BRD column maps to it (`COLUMNS` in `finance_dashboard.js`) and shows zero
+  until it exists + has a matrix.
+- **Generalize & verify** on Purchase Invoice (`net_total`), Payment Entry (`paid_amount`), BRN —
+  only Purchase Order has been exercised so far.
 - **Approval Settings** amount-field mapping must be set per DocType *before* submitting its matrix
   (it's baked into conditions at generation). Add a clean UI for it.
 - **Regenerate-all-workflows** command/patch (so app upgrades re-emit workflows without manual resubmit).
-- **Automated tests** — convert `test_po.py` / `simulate.py` into real Frappe unit tests.
+- **Runtime integration test** — blocked: `IntegrationTestCase` triggers ERPNext's global test
+  fixtures (creates a fiscal year) which conflicts with a configured site's existing FY. Needs a
+  clean/dedicated test site or a fixture workaround before the PO walkthrough can be a CI test.
 - **Deployment prereqs doc**: Python 3.14, Node 24, version-16; approvers need a business role
   (e.g. Purchase Manager) for master-data reads during save.
 
@@ -111,9 +120,8 @@ docs/  README SPEC DECISIONS WORKFLOW_DESIGN IMPLEMENTATION_PLAN VERIFICATION HA
 - **PO/PI have no native `department`** field — the engine adds it; each document must set it.
 - Approvers need a **business role** for the save-time re-validation (reads Supplier/Item/etc.).
 - A prior **Redis outage during the original `bench new-site`** left ERPNext's Address/Contact
-  custom fields uncreated; fixed by re-running ERPNext's own installer (see `setup/diag.py` history).
-  A clean install won't have this.
+  custom fields uncreated; fixed by re-running ERPNext's own installer. A clean install won't have this.
 
 ## 9. To resume
-Read this file → skim WORKFLOW_DESIGN + DECISIONS → run `test_po.run` to confirm the site is
+Read this file → skim WORKFLOW_DESIGN + DECISIONS → run the unit tests to confirm the site is
 healthy → pick a Milestone-3 item from §7.

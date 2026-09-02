@@ -39,20 +39,27 @@ class UnitTestApprovalMatrix(UnitTestCase):
     def test_band_condition_uses_configured_amount_field(self):
         self.assertEqual(band_condition("net_total", 0, 50000), "doc.net_total <= 50000")
 
-    # ---------------- band validation (Min = prev.Max + 1, inclusive) ----------------
+    # ---------------- band validation (Min = prev.Max + smallest currency unit) ----------------
+    # Amount fields are Currency (2 decimals), so the next band starts at prev.Max + 0.01,
+    # NOT prev.Max + 1 -- a whole-number step would leave fractional amounts unmatched.
 
-    def test_bands_max_plus_one_accepted(self):
-        _matrix([_row("IT", 0, 100000), _row("IT", 100001, 0)])._validate_bands()
+    def test_bands_decimal_step_accepted(self):
+        _matrix([_row("IT", 0, 100000), _row("IT", 100000.01, 0)])._validate_bands()
 
-    def test_bands_three_contiguous_accepted(self):
-        _matrix([_row("IT", 0, 100000), _row("IT", 100001, 200000),
-                 _row("IT", 200001, 0)])._validate_bands()
+    def test_bands_three_contiguous_decimal_accepted(self):
+        _matrix([_row("IT", 0, 100000), _row("IT", 100000.01, 200000),
+                 _row("IT", 200000.01, 0)])._validate_bands()
+
+    def test_bands_whole_number_step_rejected(self):
+        # old scheme (next.min == prev.max + 1) now leaves a gap (100000.01 .. 100000.99)
+        with self.assertRaises(frappe.ValidationError):
+            _matrix([_row("IT", 0, 100000), _row("IT", 100001, 0)])._validate_bands()
 
     def test_single_catch_all_band_accepted(self):
         _matrix([_row("IT", 0, 0)])._validate_bands()
 
     def test_touching_bands_rejected(self):
-        # old scheme (next.min == prev.max) is now invalid
+        # next.min == prev.max (shared boundary value) is an overlap -> invalid
         with self.assertRaises(frappe.ValidationError):
             _matrix([_row("IT", 0, 100000), _row("IT", 100000, 0)])._validate_bands()
 

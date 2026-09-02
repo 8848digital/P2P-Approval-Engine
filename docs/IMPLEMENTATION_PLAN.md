@@ -44,12 +44,13 @@ Legend: ✅ done · 🔜 next · ⬜ pending
   `Contact.is_billing_contact`) never actually landed — this broke the stock
   Purchase Order supplier/party-details lookup for *any* PO, independent of our engine.
   Fixed by re-running ERPNext's own installer function (not a version mismatch — both
-  frappe and erpnext were already at the tip of `version-16`). See `setup/diag.py`.
+  frappe and erpnext were already at the tip of `version-16`).
 
-## Deployment gates (added 2026-09-01) 🔴
-- ⬜ **Commit to git** — the engine is currently uncommitted (only "Initialize App" exists).
-- ⬜ **Package for clean install** — `after_install` hook (pre-create Workflow States) / fixtures;
-  quarantine dev/test scripts (`demo`, `e2e`, `test_po`, `diag`); delete one-off `revise.py`.
+## Deployment gates (added 2026-09-01) 🟡
+- ✅ **Committed & pushed** — GitHub `8848digital/P2P-Approval-Engine`, default branch `develop`.
+- ✅ **`after_install` hook** pre-seeds Workflow States + Actions (`install.py`).
+- ✅ **Dev/test scripts removed** — the whole `setup/` harness is gone; band/tier validation is
+  covered by unit tests in `test_approval_matrix.py`.
 - ⬜ **Regenerate-all-workflows** command/patch for app upgrades.
 - ⬜ Deployment prereqs doc (Python 3.14, Node 24, version-16; approver business roles).
 - Design decisions to keep an eye on: cross-department role-only gating (accepted, may revisit);
@@ -62,7 +63,10 @@ Legend: ✅ done · 🔜 next · ⬜ pending
 - ⬜ Purchase Invoice, Payment Entry; BRN once its DocType (with company/department/amount) exists.
 - ⬜ Seed Approval Settings defaults; UI to edit amount-field mapping.
 - ⬜ Fixtures/packaging for Workflow States and standard config.
-- ⬜ Automated tests (see VERIFICATION.md).
+- 🟡 Automated tests — band/tier validation unit tests done (`test_approval_matrix.py`); runtime
+  PO-walkthrough integration test blocked on ERPNext global test fixtures (fiscal-year) conflicting
+  with a configured site (needs a clean/dedicated test site).
+- ✅ **Finance Overview dashboard** — desk page + pending/on-hold/approved queries, user-specific.
 
 ## Key files (app `approval_engine`)
 ```
@@ -70,15 +74,13 @@ approval_engine/
   generator.py                 # ✅ literal workflow generation, role reconcile,
                                 #    ensure_department_field, ensure_role_permissions,
                                 #    find_band_row
-  runtime.py                   # ✅ block-on-create + history-on-approve (validate hook)
+  runtime.py                   # ✅ block-on-create + log every transition (validate hook)
   hooks.py                     # ✅ doc_events: "*" -> validate -> runtime.target_validate
-  setup/scaffold.py            # ✅ DocType + Workflow State creation (idempotent)
-  setup/revise.py              # one-off migration to the band model
-  setup/demo.py                # PI demo bootstrap + verify
-  setup/simulate.py            # transition simulator (no real documents needed)
-  setup/e2e.py                 # real Purchase Order walkthrough (creates PO, applies workflow)
-  setup/diag.py                # check ERPNext Address/Contact custom fields exist
+  install.py                   # ✅ after_install: pre-seed Workflow States + Actions
+  dashboard.py                 # ✅ whitelisted pending/on-hold/approved summary queries
+  approval_engine/page/finance_dashboard/  # ✅ Finance Overview desk page
   approval_engine/doctype/approval_matrix/approval_matrix.py   # ✅ validate / on_submit / on_cancel
+  approval_engine/doctype/approval_matrix/test_approval_matrix.py  # ✅ band/tier validation unit tests
 ```
 
 ## Open items
