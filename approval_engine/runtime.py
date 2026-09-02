@@ -50,6 +50,12 @@ def _record_history(doc):
     new_state = doc.get("workflow_state")
     if not new_state:
         return
+    # Skip on creation: the desk form sets workflow_state='Pending' on the new doc, but the
+    # document isn't in the DB yet, so logging here would fail the log's reference_name
+    # (Dynamic Link) validation. The create -> Pending event is intentionally not logged
+    # anyway (DECISIONS #14a) — real transitions only ever happen on already-saved docs.
+    if doc.is_new():
+        return
     before = doc.get_doc_before_save()
     old_state = before.get("workflow_state") if before else None
     if new_state == old_state:
