@@ -94,6 +94,11 @@ row (Approver N has a User 1). Amount only selects the band. From tier N, `Appro
 ### 5.4 Approval Settings (Single) + Approval Amount Field Mapping (child)
 - Per-DocType `amount_field` (e.g. PO/PI → `grand_total`, Payment Entry → `paid_amount`;
   set PI → `net_total` if desired). Baked into band conditions at generation.
+- **Visible before submit:** the Approval Matrix form shows a live hint of which amount field its
+  bands will use (`generator.get_amount_field_info`), flagging whether it's an explicit mapping or
+  a fallback default. On submit, `_validate_amount_field` hard-blocks if the resolved field is not
+  a real amount field (Currency/Float/Int) on the target DocType — so a misconfigured mapping can
+  no longer silently generate a broken condition.
 
 ### 5.5 Target-DocType custom fields (added by the engine)
 - `workflow_state` (auto-created by Frappe on workflow save)

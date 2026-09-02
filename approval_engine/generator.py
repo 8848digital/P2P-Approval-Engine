@@ -102,6 +102,43 @@ def amount_field_for(document_type):
     return DEFAULT_AMOUNT_FIELDS.get(document_type, "grand_total")
 
 
+# Field types that can hold an amount to compare bands against.
+AMOUNT_FIELDTYPES = ("Currency", "Float", "Int")
+
+
+def resolve_amount_field(document_type):
+    """Describe the amount field the bands WILL compare against for `document_type`, so it can be
+    shown/validated before a matrix is submitted (the field gets baked into conditions at
+    generation, and today is silently defaulted). Returns:
+        amount_field : the resolved fieldname
+        is_explicit  : True if it comes from an Approval Settings mapping, False if a fallback default
+        exists       : True if that field actually exists as an amount field on the target DocType
+        label        : the field's label (or the fieldname if unresolved)
+    """
+    settings = frappe.get_single("Approval Settings")
+    explicit = next((r.amount_field for r in settings.amount_fields
+                     if r.document_type == document_type), None)
+    amount_field = explicit or DEFAULT_AMOUNT_FIELDS.get(document_type, "grand_total")
+
+    df = frappe.get_meta(document_type).get_field(amount_field) if document_type else None
+    exists = bool(df and df.fieldtype in AMOUNT_FIELDTYPES)
+    return {
+        "amount_field": amount_field,
+        "is_explicit": bool(explicit),
+        "exists": exists,
+        "label": (df.label if df else None) or amount_field,
+    }
+
+
+@frappe.whitelist()
+def get_amount_field_info(document_type):
+    """API for the Approval Matrix form: which amount field its bands will use, and whether it's
+    an explicit Approval Settings mapping or a fallback default."""
+    if not document_type:
+        return {}
+    return resolve_amount_field(document_type)
+
+
 def band_condition(amt_field, min_amount, max_amount):
     """Bake the amount band into a condition. Bounds are INCLUSIVE on both ends
     (Min <= amount <= Max); bands start at the previous band's Max + the smallest
