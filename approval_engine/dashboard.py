@@ -247,3 +247,15 @@ def get_dashboard_summary(company, user=None):
 
     The single call the dashboard needs — both rows per DocType column in one round trip."""
     return dashboard_summary(company, _resolve_user(user))
+
+
+@frappe.whitelist()
+def get_companies():
+    """API: companies for the dashboard's company selector.
+
+    Uses frappe.get_all (permission-bypassing), not a client-side Company list call — Company is
+    ERPNext-restricted to business roles (Accounts User, Employee, etc.) by default, but any
+    approver needs to be able to open this dashboard regardless of their business-role footprint,
+    the same reasoning that made the engine grant broad Department read (see
+    generator.ensure_department_read). Company name/abbr/tax_id aren't sensitive."""
+    return frappe.get_all("Company", fields=["name", "abbr", "tax_id"], order_by="name asc")
