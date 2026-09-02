@@ -16,6 +16,7 @@ in the Document Workflow Log work — approvals-only history could not attribute
 """
 
 import frappe
+from frappe.utils import add_days, getdate
 
 # Current in-flight state -> the approver-pool column prefix that must contain the user.
 STATE_TIER_POOL = {
@@ -27,6 +28,10 @@ STATE_TIER_POOL = {
 
 # All hold states share this prefix (On Hold by Approver 1..4).
 HOLD_STATE_LIKE = "On Hold by Approver%"
+
+# States an Approve action moves a document INTO — an escalation (Approved 1/2/3) is still an
+# approval by the acting tier, as is the final Approved. "Approved by me" counts any of these.
+APPROVED_STATES = ("Approved 1", "Approved 2", "Approved 3", "Approved")
 
 
 def target_doctypes():
@@ -136,6 +141,47 @@ def on_hold_for_doctype(document_type, company, user):
     return {"records": int(row.records or 0), "amount": float(row.amount or 0)}
 
 
+def approved_for_doctype(document_type, company, user, from_date=None, to_date=None):
+    """Return {records, amount} of docs of `document_type` `user` approved in `company` within
+    the date range. "Approved" = the user has any Document Workflow Log row moving the doc into
+    an approval state (Approved 1/2/3 or final Approved); each doc is counted once even if the
+    user approved it at more than one tier. `from_date`/`to_date` are inclusive dates (on the
+    log row's creation); either may be omitted for an open bound."""
+    amount_field = amount_field_for(document_type)
+    if not amount_field:
+        return {"records": 0, "amount": 0.0}
+
+    conditions = [
+        "l.reference_doctype = %(doctype)s",
+        "l.reference_name    = p.name",
+        "l.user             = %(user)s",
+        "l.workflow_state    IN %(states)s",
+    ]
+    params = {"doctype": document_type, "company": company, "user": user,
+              "states": APPROVED_STATES}
+    if from_date:
+        conditions.append("l.creation >= %(from_dt)s")
+        params["from_dt"] = getdate(from_date)               # start of that day
+    if to_date:
+        conditions.append("l.creation < %(to_dt)s")
+        params["to_dt"] = add_days(getdate(to_date), 1)      # exclusive: whole to_date included
+
+    query = """
+        SELECT
+            COUNT(*)                          AS records,
+            COALESCE(SUM(p.`{amt}`), 0)       AS amount
+        FROM `tab{dt}` p
+        WHERE p.company = %(company)s
+          AND EXISTS (
+                SELECT 1 FROM `tabDocument Workflow Log` l
+                WHERE {exists_where}
+              )
+    """.format(amt=amount_field, dt=document_type, exists_where=" AND ".join(conditions))
+
+    row = frappe.db.sql(query, params, as_dict=True)[0]
+    return {"records": int(row.records or 0), "amount": float(row.amount or 0)}
+
+
 def pending_summary(company, user=None):
     """Per-DocType pending summary for `user` (defaults to session user) in `company`."""
     user = user or frappe.session.user
@@ -146,6 +192,15 @@ def on_hold_summary(company, user=None):
     """Per-DocType on-hold summary for `user` (defaults to session user) in `company`."""
     user = user or frappe.session.user
     return {dt: on_hold_for_doctype(dt, company, user) for dt in target_doctypes()}
+
+
+def approved_summary(company, user=None, from_date=None, to_date=None):
+    """Per-DocType approved-by-`user` summary in `company`, over the given date range."""
+    user = user or frappe.session.user
+    return {
+        dt: approved_for_doctype(dt, company, user, from_date, to_date)
+        for dt in target_doctypes()
+    }
 
 
 def dashboard_summary(company, user=None):
@@ -177,6 +232,13 @@ def get_pending_summary(company, user=None):
 def get_on_hold_summary(company, user=None):
     """API: per-DocType {records, amount} on hold by `user` (default: session user) in `company`."""
     return on_hold_summary(company, _resolve_user(user))
+
+
+@frappe.whitelist()
+def get_approved_summary(company, from_date=None, to_date=None, user=None):
+    """API: per-DocType {records, amount} approved by `user` (default: session user) in `company`
+    within [from_date, to_date] (inclusive dates on when the approval happened)."""
+    return approved_summary(company, _resolve_user(user), from_date, to_date)
 
 
 @frappe.whitelist()
