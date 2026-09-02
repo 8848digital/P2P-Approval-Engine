@@ -41,26 +41,34 @@ DocTypes. Client: 8848 Digital / JFS Settlement.
   runtime escalate check reading the matrix live:
   `frappe.db.get_value('Approval Matrix Detail', {parent, department, min_amount, max_amount}, 'approver_{N+1}_user_1')`
   (truthy → escalate to `Approved N`; blank → finalize to `Approved`).
-- **Who can approve = the transition Role only** (`<DocType> - Approver N`). **No embedded user
-  pool and no no-repeat** — both removed at client request. ⚠️ Consequence: the role is shared
-  across departments, so a same-tier approver from another department CAN act on this
-  department's document (accepted per client; restore via department-specific roles if needed).
+- **Who can approve = the transition Role, AND this row's tier pool** (`<DocType> - Approver N`
+  role as a coarse gate, plus `frappe.session.user in [...]` pinned to the specific row that
+  generated the transition). **Revised 2026-09-01** — role-only gating (no pool clause) was
+  shipped per an earlier client request, but that let a same-tier approver from a *different*
+  row/department act on documents they weren't assigned to, since the role is a union across
+  every row for that tier. Confirmed live via `get_transitions()`, then fixed by restoring the
+  pool clause. No-repeat is still not restored (removed at client request, unrelated).
 - **Amount bands:** inclusive both ends (`Min <= amount <= Max`), `Max = 0` = unbounded, each band
   starts at **prev.Max + 1** (whole-number amounts, e.g. `0–100000` then `100001–200000`).
   Contiguous, non-overlapping, exactly one `Max=0` top band — all validated.
 - **On Hold:** no "Release" — from a hold, the tier's approver **Approves** (moves forward) or
   **Rejects**. Hold/Reject only exist where the tier's Can Hold/Can Reject is set.
-- **History:** `Document Workflow Detail` child records each approval (audit only now; no longer
-  gates anything since no-repeat was removed).
+- **History:** `Document Workflow Log` — a global doctype (`reference_doctype` + `reference_name`
+  + `from_state`/`workflow_state`/`user`, not a child table on the target) — records **every**
+  workflow state change (approve, hold, resume, reject; not the initial create→Pending). Audit
+  only; feeds no condition since no-repeat was removed. Replaced the old per-DocType
+  `custom_workflow_history` Table field 2026-09-01, so integrating a new DocType no longer means
+  adding a schema field to it. The full trail lets the dashboard attribute a held doc to whoever
+  placed the hold.
 
 Full detail: [WORKFLOW_DESIGN.md](WORKFLOW_DESIGN.md) · rationale/reversals: [DECISIONS.md](DECISIONS.md)
 
 ## 5. What submitting an Approval Matrix does (`generator.setup_workflow`, idempotent)
 ensure Workflow States → ensure Actions → ensure Roles → **grant roles read/write/submit on the
 DocType** → **grant Department read** to approver + creator roles → seed Approval Settings amount
-field → add `custom_workflow_history` table → **add `department` field if missing** → build the
-Workflow (states + literal transitions) → reconcile role↔user assignments. On cancel: rebuild
-without this matrix, or deactivate if none remain.
+field → remove the legacy `custom_workflow_history` field if a prior version added it → **add
+`department` field if missing** → build the Workflow (states + literal transitions) → reconcile
+role↔user assignments. On cancel: rebuild without this matrix, or deactivate if none remain.
 
 ## 6. Key files
 ```
@@ -69,7 +77,7 @@ approval_engine/
   runtime.py       # doc_events(validate): block-if-no-band + record approval history
   hooks.py         # doc_events "*": validate -> runtime.target_validate
   approval_engine/doctype/approval_matrix/approval_matrix.py   # validate (bands/tiers) / on_submit / on_cancel
-  approval_engine/doctype/<approval_matrix_detail | document_workflow_detail |
+  approval_engine/doctype/<approval_matrix_detail | document_workflow_log |
                             approval_amount_field_mapping | approval_settings>/
   setup/scaffold.py  # idempotent DocType + Workflow State creation (dev)
   setup/simulate.py  # transition simulator, no real docs (dev/test)
@@ -94,7 +102,9 @@ docs/  README SPEC DECISIONS WORKFLOW_DESIGN IMPLEMENTATION_PLAN VERIFICATION HA
   (e.g. Purchase Manager) for master-data reads during save.
 
 ## 8. Known gotchas (learned the hard way)
-- **Cross-department gating** is intentionally open (role-only) — a client decision, may be revisited.
+- **Cross-department/cross-row gating was open under role-only conditions** (a user could act on
+  a document via a role granted by an unrelated row) — fixed 2026-09-01 by restoring the
+  per-row pool clause (§4). No longer an open item.
 - **Administrator** sees every action (superuser + all roles) — never test gating as Administrator.
 - **PO/PI have no native `department`** field — the engine adds it; each document must set it.
 - Approvers need a **business role** for the save-time re-validation (reads Supplier/Item/etc.).

@@ -153,19 +153,21 @@ def scenario_second_department():
 def scenario_band_routing():
     print("\n# F. Band routing by amount (Purchase - 8)")
     lo = _new_po(50000, "Purchase - 8")     # band (0,100000]  -> tier1 b/c, hold+reject allowed
-    hi = _new_po(150000, "Purchase - 8")    # band (100000,inf) -> single tier1, no hold/reject
+    hi = _new_po(150000, "Purchase - 8")    # band (100000,inf) -> single tier1 = Administrator only
     b_lo = _actions(lo, "b@example.com")
     b_hi = _actions(hi, "b@example.com")
-    # amount picks a different band -> different available actions (band-2 tier1 has no hold/reject)
+    admin_hi = _actions(hi, "Administrator")
+    # amount picks a different band -> different pool (band-2 tier1 = Administrator only, not b)
     _check("50000 -> band 1 (Approve/Hold/Reject offered)", b_lo == ["Approve", "Hold", "Reject"], f"actions={b_lo}")
-    _check("150000 -> band 2 (only Approve offered; band-2 tier1 has no hold/reject)",
-           b_hi == ["Approve"], f"actions={b_hi}")
-    # single-tier band-2 finalizes straight to Approved
-    _act(hi, "b@example.com", "Approve")
+    _check("150000 -> band 2: b is NOT in band-2's pool -> no actions offered",
+           b_hi == [], f"actions={b_hi}")
+    _check("150000 -> band 2: Administrator IS band-2's configured approver -> Approve offered",
+           admin_hi == ["Approve"], f"actions={admin_hi}")
+    # single-tier band-2 finalizes straight to Approved, only for the row's configured approver
+    _act(hi, "Administrator", "Approve")
     s = _state(hi)
-    _check("150000 Approve -> Approved directly (single-tier band)",
+    _check("150000 Approve (band-2's configured approver) -> Approved directly (single-tier band)",
            s.workflow_state == "Approved" and s.docstatus == 1, f"state={s.workflow_state}")
-    print("    note: b (not a band-2 configured user) could act here = accepted role-only gating (pool removed per client)")
 
 
 def scenario_block():

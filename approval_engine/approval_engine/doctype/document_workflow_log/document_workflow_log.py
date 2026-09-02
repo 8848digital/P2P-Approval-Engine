@@ -5,5 +5,5 @@
 from frappe.model.document import Document
 
 
-class DocumentWorkflowDetail(Document):
+class DocumentWorkflowLog(Document):
 	pass

@@ -6,22 +6,25 @@ On `Approval Matrix` submit, `generator.setup_workflow(document_type)` runs (ide
 1. `ensure_actions()` — Workflow Action Masters: Approve, Hold, Reject.
 2. `ensure_roles()` — `<DocType> - Approver 1..4`.
 3. `ensure_amount_field()` — seed Approval Settings default (grand_total / paid_amount).
-4. `ensure_history_field()` — add `custom_workflow_history` (Document Workflow Detail) to the target.
+4. `remove_legacy_history_field()` — drop the old per-DocType `custom_workflow_history` Table
+   field if a prior version of the engine added it (history now lives centrally in
+   `Document Workflow Log`, no per-DocType schema needed — see §5).
 5. `build_workflow()` — one Workflow for the DocType: 10 states + literal transitions from **all
    submitted matrices** for that DocType (all companies).
 6. `reconcile_roles()` — grant/remove `<DocType> - Approver N` per the union of tier users.
 
 `on_cancel` → rebuild the workflow without the cancelled matrix, or deactivate it if none remain.
 
-## 2. Condition building blocks (Excel-literal — per client requirements doc)
+## 2. Condition building blocks
 
-Conditions are written **exactly as the client's Excel**: `company + department + amount band`
-only. "Who can approve" is gated purely by the transition **Role** (`<DocType> - Approver N`).
-There is **no** embedded user-pool clause and **no** no-repeat clause (both removed at client
-request — see DECISIONS #5, #13).
+Conditions are `company + department + amount band + this row's tier pool`. "Who can approve"
+is gated by BOTH the transition **Role** (`<DocType> - Approver N`, a coarse gate) AND an
+embedded `frappe.session.user in [...]` clause naming exactly the users configured for **this
+row's** tier — **(revised, see below)**.
 
 ```
 gate   = doc.company == '<C>' and doc.department == '<D>' [and <band>]
+       and frappe.session.user in ['<pool users for this row+tier>']
 band   = ""                        # Min 0, Max 0  -> matches everything
        | doc.<amt> <= M            # Min 0, Max M
        | doc.<amt> >= N            # Min N, Max 0  (N and above; inclusive)
@@ -42,9 +45,16 @@ Approve finalize  (-> Approved)    = gate and not next      # next tier user 1 b
 (matrix + department + band) pins the exact matched Approval Matrix Detail row — the Excel
 writes this loosely as "get_value(doctype, company, department...)".
 
-**Consequence of role-only gating:** the `<DocType> - Approver N` role is shared across
-departments, so a same-tier approver from another department can act on this department's
-document. Accepted per client. (Restore isolation later via department-specific roles if needed.)
+**Revision (2026-09-01):** the client originally asked for role-only gating (no embedded pool
+clause — see DECISIONS #13), but this let a same-tier approver from a *different* row/department
+act on a document they weren't actually assigned to (their Role is a union across every row for
+that tier — see `generator.reconcile_roles`). Confirmed live via `get_transitions()`: a user
+whose only listing was in a different department's band could still Approve a document in
+another department, because the condition never checked *which* row granted them the role. The
+pool clause has been **restored** to close this — the Role remains a coarse gate, but the
+condition now also pins eligibility to the specific row that generated the transition. No-repeat
+is still **not** restored (see DECISIONS #5) — a person listed in multiple tiers can still
+approve at multiple tiers.
 
 ## 3. Transitions generated per row × configured tier
 
@@ -69,21 +79,27 @@ For each configured tier L (acting from `Pending`, `Approved 1`, `Approved 2`, `
 Purchase Invoice @ 8848Digital. Dept "IT" bands: `[0,50000]`, `(50000,75000]`, `(75000,∞)` —
 all with Approver 1 = {a,b} (hold+reject), Approver 2 = {c,d} (reject), Approver 3 = {e}.
 
-IT band `<= 50000` produces (conditions Excel-literal — role gates who, condition gates when):
+IT band `<= 50000` produces (role gates coarsely, condition pins to this row's pool):
 ```
-Pending    --Approve--> Approved 1  [PI-Approver 1]  company + dept + net_total<=50000 + get_value(...approver_2_user_1)
-Pending    --Approve--> Approved    [PI-Approver 1]  company + dept + net_total<=50000 + not get_value(...approver_2_user_1)
-Approved 1 --Approve--> Approved 2  [PI-Approver 2]  ... + get_value(...approver_3_user_1)
-Approved 2 --Approve--> Approved    [PI-Approver 3]  ... + not get_value(...approver_4_user_1)   (finalize: tier 4 blank)
-Pending    --Hold-->    On Hold by Approver 1 [PI-Approver 1]  company + dept + net_total<=50000
+Pending    --Approve--> Approved 1  [PI-Approver 1]  company + dept + net_total<=50000 + user in {a,b} + get_value(...approver_2_user_1)
+Pending    --Approve--> Approved    [PI-Approver 1]  company + dept + net_total<=50000 + user in {a,b} + not get_value(...approver_2_user_1)
+Approved 1 --Approve--> Approved 2  [PI-Approver 2]  ... + user in {c,d} + get_value(...approver_3_user_1)
+Approved 2 --Approve--> Approved    [PI-Approver 3]  ... + user in {e} + not get_value(...approver_4_user_1)   (finalize: tier 4 blank)
+Pending    --Hold-->    On Hold by Approver 1 [PI-Approver 1]  company + dept + net_total<=50000 + user in {a,b}
 ```
-- **Who** can act = anyone holding the tier's role (`PI-Approver N`). Because that role is shared
-  across departments, an Accounts Approver-1 could act on an IT invoice — accepted per client.
+- **Who** can act = the pool named in this row's tier (`{a,b}` / `{c,d}` / `{e}`), gated
+  additionally by the shared role (`PI-Approver N`). An Accounts Approver-1 whose only pool
+  membership is in a different department can no longer act on this IT invoice — the row-level
+  pool clause (§2 revision) closes that gap.
 - `Approved 2 → Approved` because IT has no Approver 4 → the runtime `not get_value(approver_4_user_1)` is true.
 
 ## 5. Runtime lifecycle (Milestone 2 — hooks, done)
 - **Block on create** — if no matrix band matches `(company, department, amount)`, throw
   (`runtime._block_if_no_band`).
-- **History on approve** — append `{user, workflow_state}` to `custom_workflow_history`
-  (`runtime._record_history`). Now an **audit log only** (no longer feeds any condition, since
-  no-repeat was removed). Kept per the original spec's Document Workflow Detail requirement.
+- **History on every transition** — insert
+  `{reference_doctype, reference_name, from_state, workflow_state, user}` into
+  `Document Workflow Log` (`runtime._record_history`) on **each** state change (approve, hold,
+  resume, reject — not just approvals). A central, global audit log (not a per-DocType child
+  table — see SPEC §5.3) — audit only, feeds no condition, since no-repeat was removed. The
+  initial `create → Pending` is intentionally not logged (see DECISIONS #14). This full trail is
+  what lets the dashboard attribute an on-hold document to whoever placed the hold.
