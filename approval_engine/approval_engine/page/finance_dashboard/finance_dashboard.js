@@ -195,6 +195,9 @@ class FinanceDashboard {
 
 	// ---- data -------------------------------------------------------------
 	load_companies() {
+		// Approver roles are granted real Company:Read by generator.ensure_company_read
+		// (a normal Custom DocPerm, admin-visible/editable in Role Permission Manager) --
+		// so a plain client-side list call works for any approver, not just business roles.
 		frappe.db
 			.get_list("Company", { fields: ["name", "abbr", "tax_id"], limit: 0, order_by: "name asc" })
 			.then((companies) => {
