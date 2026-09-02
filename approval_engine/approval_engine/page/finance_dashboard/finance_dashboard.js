@@ -195,16 +195,19 @@ class FinanceDashboard {
 
 	// ---- data -------------------------------------------------------------
 	load_companies() {
-		// Server call (not frappe.db.get_list) -- Company is ERPNext-restricted to business
-		// roles by default, but any approver should be able to open this dashboard.
-		frappe.call({ method: "approval_engine.dashboard.get_companies" }).then((r) => {
-			this.companies = r.message || [];
-			this.render_company_dropdown();
-			const preferred =
-				frappe.defaults.get_user_default("Company") ||
-				(this.companies[0] && this.companies[0].name);
-			if (preferred) this.select_company(preferred);
-		});
+		// Approver roles are granted real Company:Read by generator.ensure_company_read
+		// (a normal Custom DocPerm, admin-visible/editable in Role Permission Manager) --
+		// so a plain client-side list call works for any approver, not just business roles.
+		frappe.db
+			.get_list("Company", { fields: ["name", "abbr", "tax_id"], limit: 0, order_by: "name asc" })
+			.then((companies) => {
+				this.companies = companies || [];
+				this.render_company_dropdown();
+				const preferred =
+					frappe.defaults.get_user_default("Company") ||
+					(this.companies[0] && this.companies[0].name);
+				if (preferred) this.select_company(preferred);
+			});
 	}
 
 	render_company_dropdown() {

@@ -182,15 +182,12 @@ def ensure_role_permissions(document_type):
             update_permission_property(document_type, role, 0, ptype, 1)
 
 
-def ensure_department_read(document_type):
-    """Grant read on `Department` to everyone who touches the flow.
-
-    `Department` is HR-restricted by default. Since the engine adds a `department`
-    field to the target DocType and requires it for routing, the document's
-    creators (roles that can create the target) and the approver roles must be able
-    to read Department, or saving/opening the document raises
-    'Insufficient Permission for Department'. (Department names aren't sensitive;
-    this grants READ only.)
+def _grant_read_to_flow_roles(target_doctype, document_type):
+    """Grant read on `target_doctype` to every role that touches `document_type`'s flow: its
+    approver roles, and any role that can already create the target document. A real,
+    admin-visible/editable Custom DocPerm (shows up in Role Permission Manager like any other
+    permission) -- deliberately NOT a permission bypass at the query/API layer, so the admin
+    stays in control of it exactly like any other grant in the system.
     """
     from frappe.permissions import add_permission, update_permission_property
 
@@ -202,12 +199,37 @@ def ensure_department_read(document_type):
 
     for role in roles:
         already = frappe.db.exists("Custom DocPerm",
-                                   {"parent": "Department", "role": role, "permlevel": 0}) \
+                                   {"parent": target_doctype, "role": role, "permlevel": 0}) \
             or frappe.db.exists("DocPerm",
-                                {"parent": "Department", "role": role, "permlevel": 0})
+                                {"parent": target_doctype, "role": role, "permlevel": 0})
         if not already:
-            add_permission("Department", role, 0)
-        update_permission_property("Department", role, 0, "read", 1)
+            add_permission(target_doctype, role, 0)
+        update_permission_property(target_doctype, role, 0, "read", 1)
+
+
+def ensure_department_read(document_type):
+    """Grant read on `Department` to everyone who touches the flow.
+
+    `Department` is HR-restricted by default. Since the engine adds a `department`
+    field to the target DocType and requires it for routing, the document's
+    creators (roles that can create the target) and the approver roles must be able
+    to read Department, or saving/opening the document raises
+    'Insufficient Permission for Department'. (Department names aren't sensitive;
+    this grants READ only.)
+    """
+    _grant_read_to_flow_roles("Department", document_type)
+
+
+def ensure_company_read(document_type):
+    """Grant read on `Company` to everyone who touches the flow.
+
+    `Company` is ERPNext-restricted to specific business roles (Accounts User, Employee,
+    etc.) by default, but an approver needs to see company names regardless of their
+    business-role footprint -- e.g. the Finance dashboard's company selector, which any
+    approver should be able to use. Same reasoning as ensure_department_read. (Company
+    name/abbr/tax_id aren't sensitive; this grants READ only.)
+    """
+    _grant_read_to_flow_roles("Company", document_type)
 
 
 def ensure_actions():
@@ -450,6 +472,7 @@ def setup_workflow(document_type):
     ensure_roles(document_type)
     ensure_role_permissions(document_type)
     ensure_department_read(document_type)
+    ensure_company_read(document_type)
     ensure_amount_field(document_type)
     remove_legacy_history_field(document_type)
     ensure_department_field(document_type)
