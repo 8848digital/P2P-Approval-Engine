@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 from collections import defaultdict
+from decimal import Decimal
 
 import frappe
 from frappe import _
@@ -58,21 +59,27 @@ class ApprovalMatrix(Document):
         for row in self.detail:
             by_dept[row.department].append(row)
 
+        # Smallest representable step for this currency field (e.g. 2 decimals -> 0.01).
+        # Decimal (not float) so band boundaries never drift from rounding error.
+        precision = frappe.get_precision("Approval Matrix Detail", "min_amount") or 2
+        step = Decimal(1).scaleb(-precision)
+
         for dept, rows in by_dept.items():
             bands = sorted(
-                [((r.min_amount or 0), (r.max_amount or 0), r) for r in rows],
-                key=lambda x: (x[0], x[1] if x[1] else float("inf")),
+                [(Decimal(str(r.min_amount or 0)), Decimal(str(r.max_amount or 0)), r) for r in rows],
+                key=lambda x: (x[0], x[1] if x[1] else Decimal("Infinity")),
             )
             # Bands are inclusive [Min, Max]; each band starts at the previous band's
-            # Max + 1 (whole-number amounts) so no boundary value is shared between rows.
-            expected_min = 0
+            # Max + the smallest currency unit (e.g. Max=100000 -> next Min=100000.01) so no
+            # boundary value is shared between rows.
+            expected_min = Decimal(0)
             for i, (mn, mx, r) in enumerate(bands):
                 is_last = i == len(bands) - 1
                 if mn != expected_min:
                     frappe.throw(_("Department {0}: amount bands must be contiguous with no "
                                    "gaps/overlaps. Expected the next band to start at {1} "
-                                   "(previous Max + 1), found {2}.")
-                                 .format(dept, expected_min, mn))
+                                   "(previous Max + {2}), found {3}.")
+                                 .format(dept, expected_min, step, mn))
                 if is_last:
                     if mx != 0:
                         frappe.throw(_("Department {0}: the highest band must have Max Amount = 0 "
@@ -84,4 +91,4 @@ class ApprovalMatrix(Document):
                     if mx < mn:
                         frappe.throw(_("Department {0}: Max Amount ({1}) must be greater than or "
                                        "equal to Min Amount ({2}).").format(dept, mx, mn))
-                    expected_min = mx + 1
+                    expected_min = mx + step

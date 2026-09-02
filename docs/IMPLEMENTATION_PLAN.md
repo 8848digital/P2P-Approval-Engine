@@ -53,7 +53,8 @@ Legend: ✅ done · 🔜 next · ⬜ pending
 - ⬜ **Regenerate-all-workflows** command/patch for app upgrades.
 - ⬜ Deployment prereqs doc (Python 3.14, Node 24, version-16; approver business roles).
 - Design decisions to keep an eye on: cross-department role-only gating (accepted, may revisit);
-  band scheme is now inclusive + `min = prev.max + 1` (whole-number amounts).
+  band scheme is now inclusive + `min = prev.max + <smallest currency unit>` (precision-aware,
+  e.g. 0.01 at 2 decimals — not a hardcoded whole-number `+1`).
 
 ## Milestone 3 — Generalize & harden 🔜
 - ✅ **UI walkthrough** — user manually logged in as 3 different approvers (A/B/C/D) and
