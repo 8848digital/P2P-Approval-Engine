@@ -104,7 +104,9 @@ def amount_field_for(document_type):
 
 def band_condition(amt_field, min_amount, max_amount):
     """Bake the amount band into a condition. Bounds are INCLUSIVE on both ends
-    (Min <= amount <= Max); bands start at prev.Max + 1 (whole-number amounts).
+    (Min <= amount <= Max); bands start at the previous band's Max + the smallest
+    currency unit (e.g. 100000 -> next Min 100000.01) — enforced in
+    approval_matrix.py's _validate_bands, not here (this just embeds the row's own values).
     Max=0 => unbounded above, Min=0 => no lower bound (from 0), both 0 => matches all."""
     minv = min_amount or 0
     maxv = max_amount or 0

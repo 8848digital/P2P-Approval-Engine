@@ -49,7 +49,9 @@ DocTypes. Client: 8848 Digital / JFS Settlement.
   every row for that tier. Confirmed live via `get_transitions()`, then fixed by restoring the
   pool clause. No-repeat is still not restored (removed at client request, unrelated).
 - **Amount bands:** inclusive both ends (`Min <= amount <= Max`), `Max = 0` = unbounded, each band
-  starts at **prev.Max + 1** (whole-number amounts, e.g. `0–100000` then `100001–200000`).
+  starts at **prev.Max + the field's smallest currency unit** (precision-aware, e.g. at 2 decimals:
+  `0–100000` then `100000.01–200000` — not a hardcoded `+1`; whole-number-only bands like
+  `100001` after `100000` are now rejected since they'd leave fractional amounts unmatched).
   Contiguous, non-overlapping, exactly one `Max=0` top band — all validated.
 - **On Hold:** no "Release" — from a hold, the tier's approver **Approves** (moves forward) or
   **Rejects**. Hold/Reject only exist where the tier's Can Hold/Can Reject is set.

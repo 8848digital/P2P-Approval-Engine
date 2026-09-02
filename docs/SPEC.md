@@ -48,8 +48,11 @@ Each Approval Matrix Detail row carries **one band**: `Min Amount` + `Max Amount
 
 **Both bounds inclusive** (`Min <= amount <= Max`); `Max = 0` = unbounded above. A department
 may have **multiple rows = bands**. Bands must be **contiguous, non-overlapping, start at 0,
-with exactly one `Max = 0` top band**, and **each band starts at the previous band's Max + 1**
-(assumes whole-number amounts — e.g. `0–100000`, then `100001–200000`). Validated.
+with exactly one `Max = 0` top band**, and **each band starts at the previous band's Max plus the
+field's smallest currency unit** (e.g. at 2-decimal precision: `0–100000`, then `100000.01–200000`).
+The step is read from the field's actual precision (`frappe.get_precision`), not hardcoded — so a
+whole-number-only convention (`100001` after `100000`) is now rejected, since it leaves any
+fractional amount in between (e.g. `100000.50`) matching no band. Validated.
 
 ## 4. Escalation (config-driven)
 
