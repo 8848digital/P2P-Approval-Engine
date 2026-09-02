@@ -4,7 +4,7 @@ Registered on the `validate` event for all DocTypes; they no-op unless the
 DocType is managed by an active `<DocType> Approval` workflow.
 
 - block: refuse to save if no Approval Matrix band matches (company/department/amount)
-- history: record each approval into `Document Workflow Log` (audit trail)
+- history: record every workflow state change into `Document Workflow Log` (full audit trail)
 """
 
 import frappe
@@ -14,8 +14,6 @@ from frappe.utils import flt
 from approval_engine.generator import (
     workflow_name, amount_field_for, find_band_row,
 )
-
-APPROVAL_STATES = {"Approved 1", "Approved 2", "Approved 3", "Approved"}
 
 
 def _managed(doctype):
@@ -45,21 +43,31 @@ def _block_if_no_band(doc):
 
 
 def _record_history(doc):
+    """Log every workflow state change (create/approve/hold/resume/reject) so the
+    Document Workflow Log is a full audit trail — who moved the document from which
+    state to which, and when (standard `creation`). This is what lets the dashboard
+    attribute an on-hold document to the user who actually placed the hold."""
     new_state = doc.get("workflow_state")
-    if new_state not in APPROVAL_STATES:
+    if not new_state:
         return
     before = doc.get_doc_before_save()
     old_state = before.get("workflow_state") if before else None
     if new_state == old_state:
         return
-    log_filters = {
+    # Skip if the latest logged state for this doc already matches — guards against
+    # `validate` firing more than once within a single save/transition.
+    last = frappe.get_all(
+        "Document Workflow Log",
+        filters={"reference_doctype": doc.doctype, "reference_name": doc.name},
+        fields=["workflow_state"], order_by="creation desc", limit=1,
+    )
+    if last and last[0].workflow_state == new_state:
+        return
+    frappe.get_doc({
+        "doctype": "Document Workflow Log",
         "reference_doctype": doc.doctype,
         "reference_name": doc.name,
-        "user": frappe.session.user,
+        "from_state": old_state,
         "workflow_state": new_state,
-    }
-    if frappe.db.exists("Document Workflow Log", log_filters):
-        # avoid duplicate rows if validate runs twice for the same transition
-        return
-    frappe.get_doc({"doctype": "Document Workflow Log", **log_filters}).insert(
-        ignore_permissions=True)
+        "user": frappe.session.user,
+    }).insert(ignore_permissions=True)

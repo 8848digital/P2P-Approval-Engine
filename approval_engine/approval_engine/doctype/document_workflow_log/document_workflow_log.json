@@ -8,8 +8,9 @@
  "field_order": [
   "reference_doctype",
   "reference_name",
-  "user",
-  "workflow_state"
+  "from_state",
+  "workflow_state",
+  "user"
  ],
  "fields": [
   {
@@ -33,20 +34,27 @@
    "search_index": 1
   },
   {
+   "fieldname": "from_state",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "From State",
+   "options": "Workflow State"
+  },
+  {
+   "fieldname": "workflow_state",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "To State",
+   "options": "Workflow State",
+   "reqd": 1
+  },
+  {
    "fieldname": "user",
    "fieldtype": "Link",
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "User",
    "options": "User",
-   "reqd": 1
-  },
-  {
-   "fieldname": "workflow_state",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Workflow State",
-   "options": "Workflow State",
    "reqd": 1
   }
  ],

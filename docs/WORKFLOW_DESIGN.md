@@ -96,7 +96,10 @@ Pending    --Hold-->    On Hold by Approver 1 [PI-Approver 1]  company + dept + 
 ## 5. Runtime lifecycle (Milestone 2 — hooks, done)
 - **Block on create** — if no matrix band matches `(company, department, amount)`, throw
   (`runtime._block_if_no_band`).
-- **History on approve** — insert `{reference_doctype, reference_name, user, workflow_state}`
-  into `Document Workflow Log` (`runtime._record_history`). A central, global audit log (not a
-  per-DocType child table — see SPEC §5.3) — audit only, feeds no condition, since no-repeat
-  was removed.
+- **History on every transition** — insert
+  `{reference_doctype, reference_name, from_state, workflow_state, user}` into
+  `Document Workflow Log` (`runtime._record_history`) on **each** state change (approve, hold,
+  resume, reject — not just approvals). A central, global audit log (not a per-DocType child
+  table — see SPEC §5.3) — audit only, feeds no condition, since no-repeat was removed. The
+  initial `create → Pending` is intentionally not logged (see DECISIONS #14). This full trail is
+  what lets the dashboard attribute an on-hold document to whoever placed the hold.

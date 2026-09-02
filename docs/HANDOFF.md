@@ -53,10 +53,13 @@ DocTypes. Client: 8848 Digital / JFS Settlement.
   Contiguous, non-overlapping, exactly one `Max=0` top band — all validated.
 - **On Hold:** no "Release" — from a hold, the tier's approver **Approves** (moves forward) or
   **Rejects**. Hold/Reject only exist where the tier's Can Hold/Can Reject is set.
-- **History:** `Document Workflow Log` — a global doctype (`reference_doctype` + `reference_name`,
-  not a child table on the target) — records each approval (audit only; feeds no condition since
-  no-repeat was removed). Replaced the old per-DocType `custom_workflow_history` Table field
-  2026-09-01, so integrating a new DocType no longer means adding a schema field to it.
+- **History:** `Document Workflow Log` — a global doctype (`reference_doctype` + `reference_name`
+  + `from_state`/`workflow_state`/`user`, not a child table on the target) — records **every**
+  workflow state change (approve, hold, resume, reject; not the initial create→Pending). Audit
+  only; feeds no condition since no-repeat was removed. Replaced the old per-DocType
+  `custom_workflow_history` Table field 2026-09-01, so integrating a new DocType no longer means
+  adding a schema field to it. The full trail lets the dashboard attribute a held doc to whoever
+  placed the hold.
 
 Full detail: [WORKFLOW_DESIGN.md](WORKFLOW_DESIGN.md) · rationale/reversals: [DECISIONS.md](DECISIONS.md)
 

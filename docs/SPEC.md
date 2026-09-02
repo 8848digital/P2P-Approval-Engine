@@ -76,12 +76,17 @@ row (Approver N has a User 1). Amount only selects the band. From tier N, `Appro
   `approver_{N}_can_reject`. *(No per-approver amount.)*
 
 ### 5.3 Document Workflow Log (global, audit only)
-- `reference_doctype` (Link DocType), `reference_name` (Dynamic Link), `user` (Link User),
-  `workflow_state` (Link Workflow State), `created_on` = standard `creation`.
+- `reference_doctype` (Link DocType), `reference_name` (Dynamic Link), `from_state` (Link
+  Workflow State, blank on the first logged transition), `workflow_state` (Link Workflow State
+  — the "to" state), `user` (Link User), `created_on` = standard `creation`.
 - **Not a child table on the target DocType** — one central log doctype for every managed
   DocType, keyed by `reference_doctype` + `reference_name` (same pattern as Frappe's own
-  `Version`/`Comment`). One row inserted per approval. No no-repeat condition reads it — it's
-  audit-only (see DECISIONS #5).
+  `Version`/`Comment`). One row inserted per **workflow state change** — approve, hold, resume,
+  reject — so it's a full audit trail (who moved the doc from which state to which, and when).
+  The one event not logged is the initial `create → Pending` (redundant with the doc's own
+  `owner`/`creation`; see DECISIONS #14). No condition reads this log — it's audit-only
+  (no-repeat was removed, see DECISIONS #5) — but the on-hold dashboard query attributes a held
+  document to the user of its most recent `On Hold by Approver N` row.
 
 ### 5.4 Approval Settings (Single) + Approval Amount Field Mapping (child)
 - Per-DocType `amount_field` (e.g. PO/PI → `grand_total`, Payment Entry → `paid_amount`;

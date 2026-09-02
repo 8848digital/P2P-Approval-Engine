@@ -28,10 +28,11 @@ Legend: ✅ done · 🔜 next · ⬜ pending
 - ✅ **Block hook** (`runtime.py` → `_block_if_no_band`, wired via `hooks.py` doc_events
   `validate`): refuses to save if no Approval Matrix band matches
   `(company, department, amount)`.
-- ✅ **History hook** (`runtime.py` → `_record_history`): on each approval, inserts
-  `{reference_doctype, reference_name, user, workflow_state}` into the global
-  `Document Workflow Log` doctype — audit trail only (no-repeat was later removed, see
-  DECISIONS #5; this hook no longer feeds any condition).
+- ✅ **History hook** (`runtime.py` → `_record_history`): on **every** state change
+  (approve/hold/resume/reject), inserts
+  `{reference_doctype, reference_name, from_state, workflow_state, user}` into the global
+  `Document Workflow Log` doctype — full audit trail (no-repeat was later removed, see
+  DECISIONS #5; this hook no longer feeds any condition, but powers on-hold attribution).
 - ✅ **Verified end-to-end on a real Purchase Order** (`setup/e2e.py`): created →
   `Pending` → tier 1 approve → `Approved 1` → tier 2 approve → `Approved 2` → tier 3
   approve → `Approved` (docstatus 1). No-repeat confirmed (the tier-1 approver had zero
