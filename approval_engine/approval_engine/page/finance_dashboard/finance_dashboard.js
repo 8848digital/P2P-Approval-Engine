@@ -29,16 +29,22 @@ class FinanceDashboard {
 	}
 
 	// ---- helpers ----------------------------------------------------------
+	// Indian digit grouping, always to the paisa. Do NOT round to whole rupees: amount bands are
+	// boundary-sensitive (a band ends at Max, the next starts at Max + 0.01), so a rounded total
+	// misrepresents which band a document falls in — 500000.01 would read as 5,00,000 (lower band)
+	// and 99999.50 as 1,00,000 (upper band).
 	fmt_inr(n) {
-		n = Math.round(Number(n) || 0);
-		const neg = n < 0;
-		let s = String(Math.abs(n));
+		const v = Number(n) || 0;
+		const fixed = Math.abs(v).toFixed(2);
+		const neg = v < 0 && Number(fixed) !== 0; // never render "-0.00"
+		const [whole, paise] = fixed.split(".");
+		let s = whole;
 		if (s.length > 3) {
 			const last3 = s.slice(-3);
 			const rest = s.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ",");
 			s = rest + "," + last3;
 		}
-		return (neg ? "-" : "") + s;
+		return (neg ? "-" : "") + s + "." + paise;
 	}
 
 	initials(name) {
