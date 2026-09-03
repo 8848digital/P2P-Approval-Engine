@@ -17,6 +17,7 @@ from approval_engine.generator import (
 class ApprovalMatrix(Document):
     def validate(self):
         self._validate_unique_active()
+        self._validate_departments_company()
         self._validate_rows()
         self._validate_bands()
 
@@ -56,6 +57,20 @@ class ApprovalMatrix(Document):
         if dupe:
             frappe.throw(_("An active Approval Matrix ({0}) already exists for {1} / {2}.")
                          .format(dupe, self.document_type, self.company))
+
+    def _validate_departments_company(self):
+        """Every row's Department must belong to this matrix's Company. The generated workflow
+        conditions pair `doc.company == <company>` with `doc.department == <department>`, so a
+        cross-company department yields a condition no real document can satisfy — and the
+        runtime band check (runtime.py) would reject the document at save. Block it here."""
+        for row in self.detail:
+            if not row.department:
+                continue
+            dept_company = frappe.db.get_value("Department", row.department, "company")
+            if dept_company and dept_company != self.company:
+                frappe.throw(_("Row #{0}: Department {1} belongs to {2}, not {3}. "
+                               "Pick a department that belongs to {3}.")
+                             .format(row.idx, row.department, dept_company, self.company))
 
     def _validate_rows(self):
         for row in self.detail:

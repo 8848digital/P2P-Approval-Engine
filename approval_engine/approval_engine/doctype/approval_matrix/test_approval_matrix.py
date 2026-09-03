@@ -1,6 +1,8 @@
 # Copyright (c) 2026, 8848 Digital and Contributors
 # See license.txt
 
+from unittest.mock import patch
+
 import frappe
 from frappe.tests import UnitTestCase
 
@@ -93,3 +95,21 @@ class UnitTestApprovalMatrix(UnitTestCase):
     def test_two_tiers_contiguous_accepted(self):
         row = _row("IT", 0, 0, approver_2_user_1="b@example.com")
         _matrix([row])._validate_rows()
+
+    # ---------------- department / company validation ----------------
+
+    def test_department_of_other_company_rejected(self):
+        m = _matrix([_row("Sales - OTHER", 0, 0)])  # matrix company is "_Test Company"
+        with patch.object(frappe.db, "get_value", return_value="Other Company"):
+            with self.assertRaises(frappe.ValidationError):
+                m._validate_departments_company()
+
+    def test_department_of_matrix_company_accepted(self):
+        m = _matrix([_row("Sales - TC", 0, 0)])
+        with patch.object(frappe.db, "get_value", return_value="_Test Company"):
+            m._validate_departments_company()
+
+    def test_department_without_company_skipped(self):
+        m = _matrix([_row("IT", 0, 0)])
+        with patch.object(frappe.db, "get_value", return_value=None):
+            m._validate_departments_company()

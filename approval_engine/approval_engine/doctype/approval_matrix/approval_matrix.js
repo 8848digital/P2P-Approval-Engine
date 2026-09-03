@@ -2,11 +2,57 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Approval Matrix", {
+	setup(frm) {
+		// Company is chosen at the top of the matrix; a row's Department must belong to it.
+		// Restrict the picker so a wrong-company department can't be selected in the first place
+		// (the server re-checks on save — see approval_matrix.py).
+		frm.set_query("department", "detail", () => {
+			// No company yet -> match nothing (the query fn runs on every keystroke, so no
+			// msgprint here); the mandatory Company field already nudges the user.
+			if (!frm.doc.company) {
+				return { filters: { name: ["in", []] } };
+			}
+			return { filters: { company: frm.doc.company, is_group: 0 } };
+		});
+	},
 	refresh(frm) {
 		show_amount_field_hint(frm);
 	},
 	document_type(frm) {
 		show_amount_field_hint(frm);
+	},
+	company(frm) {
+		// Changing Company invalidates any row department picked for the old one. Drop the
+		// stale values so they can't be carried into a submit.
+		const rows = (frm.doc.detail || []).filter((row) => row.department);
+		if (!rows.length) {
+			return;
+		}
+		frappe.db
+			.get_list("Department", {
+				filters: { company: frm.doc.company },
+				pluck: "name",
+				limit: 0,
+			})
+			.then((valid) => {
+				let cleared = 0;
+				rows.forEach((row) => {
+					if (!valid.includes(row.department)) {
+						row.department = null;
+						cleared += 1;
+					}
+				});
+				if (cleared) {
+					frm.refresh_field("detail");
+					frappe.show_alert({
+						message: __("Cleared {0} row department(s) that don't belong to {1}.", [
+							cleared,
+							frm.doc.company,
+						]),
+						indicator: "orange",
+					});
+				}
+			});
 	},
 });
 
