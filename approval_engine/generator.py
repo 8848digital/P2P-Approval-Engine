@@ -10,6 +10,8 @@ Roles (`<DocType> - Approver N`) are a coarse gate; the exact per-row approver p
 is embedded in each condition so only that department/band's approvers can act.
 """
 
+import json
+
 import frappe
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
@@ -276,14 +278,39 @@ def remove_legacy_history_field(document_type):
             frappe.delete_doc("Custom Field", name, ignore_permissions=True)
 
 
+# A routing department must belong to the document's own company: the generated conditions pair
+# `doc.company == X` with `doc.department == Y`, and Approval Matrix rows are restricted the same
+# way. `eval:` is resolved client-side against the open document (see link.js parse_filters).
+DEPARTMENT_LINK_FILTERS = json.dumps([
+    ["Department", "company", "=", "eval:doc.company"],
+    ["Department", "is_group", "=", 0],
+])
+
+
 def ensure_department_field(document_type):
-    """Ensure the target DocType has a `department` field (routing needs it)."""
+    """Ensure the target DocType has a `department` field (routing needs it), with the picker
+    scoped to the document's company."""
     if frappe.get_meta(document_type).get_field("department"):
+        _backfill_department_link_filters(document_type)
         return
     create_custom_fields({document_type: [
         {"fieldname": "department", "fieldtype": "Link", "label": "Department",
-         "options": "Department", "insert_after": "company"},
+         "options": "Department", "insert_after": "company",
+         "link_filters": DEPARTMENT_LINK_FILTERS},
     ]}, ignore_validate=True)
+
+
+def _backfill_department_link_filters(document_type):
+    """Add the company filter to a `department` Custom Field created before the filter existed.
+
+    Only OUR Custom Field is touched (a standard `department` field on the target DocType is left
+    alone), and only when no filter is configured — so a filter someone tuned by hand survives.
+    """
+    name = frappe.db.exists("Custom Field", {"dt": document_type, "fieldname": "department"})
+    if not name or frappe.db.get_value("Custom Field", name, "link_filters"):
+        return
+    frappe.db.set_value("Custom Field", name, "link_filters", DEPARTMENT_LINK_FILTERS)
+    frappe.clear_cache(doctype=document_type)
 
 
 def find_band_row(document_type, company, department, amount):
