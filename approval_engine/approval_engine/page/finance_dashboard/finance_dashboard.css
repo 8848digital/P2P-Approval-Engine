@@ -139,7 +139,7 @@
 .fin-dash .cell-metric.is-onhold .count-pill .num{ color:var(--onhold); }
 
 /* ---------- FILTER BAR ---------- */
-.fin-dash .filter-bar{ display:flex; align-items:center; flex-wrap:wrap; gap:14px; margin-bottom:18px; }
+.fin-dash .filter-bar{ display:flex; align-items:center; flex-wrap:wrap; gap:14px; margin-bottom:12px; }
 .fin-dash .filter-pills{ display:flex; flex:0 0 auto; background:#EDEFF2; border-radius:10px; padding:3px; gap:2px; }
 .fin-dash .filter-pill{
   border:none; background:transparent; font-family:inherit; font-size:12.5px; font-weight:600;
@@ -149,27 +149,55 @@
 .fin-dash .filter-pill:hover{ color:var(--ink); }
 .fin-dash .filter-pill.active{ background:var(--surface); color:var(--ink); box-shadow:0 1px 3px rgba(20,24,28,0.12); }
 
-.fin-dash .custom-range{
-  display:none; align-items:stretch; flex:0 0 auto; width:auto; gap:8px; background:var(--surface);
-  border:1px solid var(--line-strong) !important; border-radius:10px !important; padding:4px 4px 4px 12px;
-  overflow:hidden; /* clip any child to this container's rounded corners, whatever radius wins */
+/* Second row, under the preset pills: the date fields + Apply on the left, the readout on the
+   right. The pills plus two date fields, Apply and the readout were too cramped on one line. */
+/* Only present while Custom range is active. Presets keep the readout up beside the pills, so
+   there is no empty second row. Small top margin drops the date row clear of the pills. */
+.fin-dash .custom-row{
+  display:none; align-items:center; flex-wrap:nowrap; gap:10px; margin:6px 0 18px; min-height:34px;
 }
-.fin-dash .custom-range.show{ display:inline-flex; }
-.fin-dash .custom-range input[type="date"]{
-  font-family:inherit; font-size:12.5px; border:none !important; outline:none;
-  color:var(--ink); background:transparent; border-radius:0 !important;
-  width:118px !important; flex:0 0 118px; min-width:0; padding:2px 0; align-self:center;
+.fin-dash .custom-row.show{ display:flex; }
+/* Transparent grouping only — each date field and the Apply button carry their own border, so
+   they read as separate controls rather than one fused pill. */
+/* NB: named .cr-group, not .custom-range — Frappe/Bootstrap ships an unscoped .custom-range
+   (the range-slider input class) with `width:100%`, which our scoped rule does not override
+   and which made this group swallow the whole row. */
+.fin-dash .cr-group{ display:inline-flex; align-items:center; gap:10px; flex:0 0 auto; width:auto; }
+
+/* Frappe's Date control: strip the desk form-control chrome (border, shadow, height, background)
+   and let .cr-date supply the box instead. The datepicker popup is appended to
+   #datepickers-container on <body>, so nothing here can clip it. */
+.fin-dash .cr-date{
+  flex:0 0 136px; min-width:0; background:var(--surface);
+  border:1px solid var(--line-strong); border-radius:10px; padding:6px 12px;
 }
-.fin-dash .custom-range .to{ color:var(--ink-faint); font-size:12px; flex:0 0 auto; align-self:center; }
+.fin-dash .cr-date .frappe-control,
+.fin-dash .cr-date .control-input-wrapper,
+.fin-dash .cr-date .control-input{ margin:0 !important; }
+.fin-dash .cr-date input{
+  font-family:inherit !important; font-size:12.5px !important; line-height:1.4 !important;
+  height:auto !important; min-height:0 !important;
+  border:none !important; outline:none !important; box-shadow:none !important;
+  background:transparent !important; color:var(--ink) !important;
+  border-radius:0 !important; padding:0 !important; width:100% !important;
+}
+.fin-dash .cr-date .help-box{ display:none !important; }
+.fin-dash .cr-group .to{ color:var(--ink-faint); font-size:12px; flex:0 0 auto; }
+/* Standalone button, its own rounded box — no longer fused to the date-field container edge. */
 .fin-dash .apply-btn{
-  background:var(--brand); color:#fff; border:none; font-family:inherit; font-size:12px;
-  font-weight:600; padding:0 16px; border-radius:0 !important; cursor:pointer; flex:0 0 auto;
-  white-space:nowrap; margin:-4px -4px -4px 0; /* extend to fill the container's clipped edge */
+  background:var(--brand); color:#fff; border:1px solid var(--brand); font-family:inherit;
+  font-size:12px; font-weight:600; padding:7px 18px; border-radius:10px; cursor:pointer;
+  flex:0 0 auto; white-space:nowrap;
 }
 .fin-dash .apply-btn:hover{ background:var(--brand-dark); }
 .fin-dash .apply-btn:disabled{ opacity:.5; cursor:not-allowed; }
 
-.fin-dash .range-readout{ font-size:12px; color:var(--ink-faint); margin-left:auto; flex:0 0 auto; white-space:nowrap; }
+/* Shares the row with the date fields + Apply, pushed right. `flex:0 1 auto` + min-width:0 lets
+   it compress (ellipsis) rather than wrapping the whole row onto a third line on narrow desks. */
+.fin-dash .range-readout{
+  font-size:12px; color:var(--ink-faint); margin-left:auto; flex:0 1 auto; min-width:0;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:right;
+}
 .fin-dash .range-readout span{ color:var(--ink); font-weight:600; }
 
 /* ---------- FOOTNOTE ---------- */

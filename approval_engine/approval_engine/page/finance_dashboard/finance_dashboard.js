@@ -122,7 +122,7 @@ class FinanceDashboard {
 						<span class="sub">Approved value by date range</span>
 					</div>
 				</div>
-				<div class="filter-bar">
+				<div class="filter-bar" data-el="filterBar">
 					<div class="filter-pills" data-el="filterPills">
 						<button class="filter-pill active" data-range="today">Today</button>
 						<button class="filter-pill" data-range="week">This week</button>
@@ -130,13 +130,17 @@ class FinanceDashboard {
 						<button class="filter-pill" data-range="lastmonth">Last month</button>
 						<button class="filter-pill" data-range="custom">Custom range</button>
 					</div>
-					<div class="custom-range" data-el="customRange">
-						<input type="date" data-el="dateFrom">
+					<!-- Presets: readout sits beside the pills. Custom range: bind_events moves it
+					     into .custom-row so it sits level with the date fields. -->
+					<div class="range-readout" data-el="rangeReadout">Showing <span>Today</span></div>
+				</div>
+				<div class="custom-row" data-el="customRow">
+					<div class="cr-group">
+						<div class="cr-date" data-el="dateFromWrap"></div>
 						<span class="to">→</span>
-						<input type="date" data-el="dateTo">
+						<div class="cr-date" data-el="dateToWrap"></div>
 						<button class="apply-btn" data-el="applyRange">Apply</button>
 					</div>
-					<div class="range-readout" data-el="rangeReadout">Showing <span>Today</span></div>
 				</div>
 				<div class="matrix-card">
 					<table class="matrix">
@@ -152,7 +156,24 @@ class FinanceDashboard {
 		`);
 
 		this.$ = (name) => this.page.main.find(`[data-el="${name}"]`);
+		this.make_date_controls();
 		this.bind_events();
+	}
+
+	// Frappe's own Date control rather than <input type="date">: it uses the datepicker the rest
+	// of the desk uses and renders/parses in the user's configured date format, instead of the
+	// browser's locale-dependent native picker. `only_input` drops the label/help wrapper so the
+	// control sits flush inside the pill.
+	make_date_controls() {
+		const mk = (parent, placeholder) =>
+			frappe.ui.form.make_control({
+				df: { fieldtype: "Date", fieldname: "range_date", placeholder },
+				parent: parent,
+				render_input: true,
+				only_input: true,
+			});
+		this.date_from = mk(this.$("dateFromWrap"), __("From"));
+		this.date_to = mk(this.$("dateToWrap"), __("To"));
 	}
 
 	bind_events() {
@@ -169,24 +190,26 @@ class FinanceDashboard {
 			$pill.addClass("active");
 			this.range = $pill.data("range");
 			if (this.range === "custom") {
-				this.$("customRange").addClass("show");
+				// Move the readout down beside the date fields so the two sit on one level.
+				this.$("customRow").addClass("show");
+				this.$("rangeReadout").appendTo(this.$("customRow"));
 				// Prefill with today so Apply works immediately without forcing a pick first,
 				// and so the two inputs never sit empty next to each other.
-				const $from = this.$("dateFrom");
-				const $to = this.$("dateTo");
 				const today = moment().format("YYYY-MM-DD");
-				if (!$from.val()) $from.val(today);
-				if (!$to.val()) $to.val(today);
-				this.$("rangeReadout").html(`Showing <span>Custom range — pick dates and Apply</span>`);
+				if (!this.date_from.get_value()) this.date_from.set_value(today);
+				if (!this.date_to.get_value()) this.date_to.set_value(today);
+				this.$("rangeReadout").html(`<span>Pick dates, then Apply</span>`);
 			} else {
-				this.$("customRange").removeClass("show");
+				// Presets need no date row — put the readout back beside the pills.
+				this.$("customRow").removeClass("show");
+				this.$("rangeReadout").appendTo(this.$("filterBar"));
 				this.load_detail();
 			}
 		});
 
 		this.$("applyRange").on("click", () => {
-			const from = this.$("dateFrom").val();
-			const to = this.$("dateTo").val();
+			const from = this.date_from.get_value();
+			const to = this.date_to.get_value();
 			if (!from || !to) {
 				frappe.show_alert({ message: __("Pick both a from and to date"), indicator: "orange" });
 				return;
