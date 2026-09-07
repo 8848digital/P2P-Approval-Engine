@@ -25,8 +25,8 @@ app_license = "mit"
 # ------------------
 
 # include js, css files in header of desk.html
-# app_include_css = "/assets/approval_engine/css/approval_engine.css"
-# app_include_js = "/assets/approval_engine/js/approval_engine.js"
+app_include_css = "workflow_activity.bundle.css"
+app_include_js = "workflow_activity.bundle.js"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/approval_engine/css/approval_engine.css"
