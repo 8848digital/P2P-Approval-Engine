@@ -214,7 +214,12 @@ doc_events = {
 # Request Events
 # ----------------
 # before_request = ["approval_engine.utils.before_request"]
-# after_request = ["approval_engine.utils.after_request"]
+
+# Rewrites every /api/method/approval_engine* response into the standard
+# 8848 response envelope {status, status_code, message, data, errors}.
+after_request = [
+	"approval_engine.utils.api_handlers.response_formatter.format_frappe_response_to_custom"
+]
 
 # Job Events
 # ----------

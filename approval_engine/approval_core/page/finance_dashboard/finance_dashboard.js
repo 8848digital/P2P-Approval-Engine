@@ -346,7 +346,7 @@ class FinanceDashboard {
 			method: "approval_engine.approval_core.api.v1.dashboard.get_dashboard_summary",
 			args: { company: this.company },
 			callback: (r) => {
-				const data = (r.message && r.message.data) || {};
+				const data = (r && r.data) || {};
 				this.overview_data = data;
 				const pending = this.cells((dt) => (data[dt] || {}).pending, "is-pending", "pending");
 				const onhold = this.cells((dt) => (data[dt] || {}).on_hold, "is-onhold", "on_hold");
@@ -377,7 +377,7 @@ class FinanceDashboard {
 			method: "approval_engine.approval_core.api.v1.dashboard.get_approved_summary",
 			args: { company: this.company, from_date: from, to_date: to },
 			callback: (r) => {
-				const data = (r.message && r.message.data) || {};
+				const data = (r && r.data) || {};
 				this.detail_data = data;
 				const approved = this.cells((dt) => data[dt], "is-approved", "approved");
 				$body.removeClass("is-loading").html(

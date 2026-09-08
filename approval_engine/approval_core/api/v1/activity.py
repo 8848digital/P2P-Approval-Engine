@@ -29,7 +29,10 @@ def get_managed_doctypes():
     Returns:
         dict: Envelope whose ``data`` is a list of DocType names.
     """
-    return api_response(activity.managed_doctypes())
+    return api_response(
+        data=activity.managed_doctypes(),
+        message="Managed DocTypes fetched successfully",
+    )
 
 
 @frappe.whitelist()
@@ -47,4 +50,7 @@ def get_workflow_activity(doctype, name):
         dict: Envelope whose ``data`` is
         ``{"managed": bool, "current_state": str, "steps": list}``.
     """
-    return api_response(activity.workflow_activity(doctype, name))
+    return api_response(
+        data=activity.workflow_activity(doctype, name),
+        message="Workflow activity fetched successfully",
+    )

@@ -34,5 +34,8 @@ def get_amount_field_info(document_type):
         ``document_type`` is empty).
     """
     if not document_type:
-        return api_response({})
-    return api_response(generator.resolve_amount_field(document_type))
+        return api_response(data={}, message="No document type provided")
+    return api_response(
+        data=generator.resolve_amount_field(document_type),
+        message="Amount field info fetched successfully",
+    )

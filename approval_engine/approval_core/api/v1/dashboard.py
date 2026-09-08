@@ -49,7 +49,10 @@ def get_pending_summary(company, user=None):
         dict: Envelope whose ``data`` maps each target DocType to
         ``{records, amount, names}``.
     """
-    return api_response(fd.pending_summary(company, _resolve_user(user)))
+    return api_response(
+        data=fd.pending_summary(company, _resolve_user(user)),
+        message="Pending summary fetched successfully",
+    )
 
 
 @frappe.whitelist()
@@ -68,7 +71,10 @@ def get_on_hold_summary(company, user=None):
         dict: Envelope whose ``data`` maps each target DocType to
         ``{records, amount, names}``.
     """
-    return api_response(fd.on_hold_summary(company, _resolve_user(user)))
+    return api_response(
+        data=fd.on_hold_summary(company, _resolve_user(user)),
+        message="On-hold summary fetched successfully",
+    )
 
 
 @frappe.whitelist()
@@ -90,7 +96,8 @@ def get_approved_summary(company, from_date=None, to_date=None, user=None):
         ``{records, amount, names}``.
     """
     return api_response(
-        fd.approved_summary(company, _resolve_user(user), from_date, to_date)
+        data=fd.approved_summary(company, _resolve_user(user), from_date, to_date),
+        message="Approved summary fetched successfully",
     )
 
 
@@ -113,4 +120,7 @@ def get_dashboard_summary(company, user=None):
         dict: Envelope whose ``data`` maps each target DocType to
         ``{pending, on_hold}``.
     """
-    return api_response(fd.dashboard_summary(company, _resolve_user(user)))
+    return api_response(
+        data=fd.dashboard_summary(company, _resolve_user(user)),
+        message="Dashboard summary fetched successfully",
+    )
