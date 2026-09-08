@@ -1,6 +1,12 @@
+// Copyright (c) 2026 8848 Digital LLP. All rights reserved.
+// Proprietary and confidential. Unauthorized copying, distribution, or use
+// of this file, via any medium, is strictly prohibited without prior
+// written permission from 8848 Digital LLP.
+
 // Renders a "Workflow Activity" section in the form sidebar of any document
 // governed by an engine-generated approval workflow. The approver chain and its
-// live status come from approval_engine.activity.get_workflow_activity.
+// live status come from
+// approval_engine.approval_core.api.v1.activity.get_workflow_activity.
 
 frappe.provide("approval_engine");
 
@@ -22,12 +28,13 @@ approval_engine.render_workflow_activity = function (frm) {
 	}
 
 	frappe
-		.xcall("approval_engine.activity.get_workflow_activity", {
+		.xcall("approval_engine.approval_core.api.v1.activity.get_workflow_activity", {
 			doctype: frm.doctype,
 			name: frm.docname,
 		})
-		.then((data) => {
+		.then((res) => {
 			remove();
+			const data = res && res.data;
 			if (!data || !data.managed || !(data.steps || []).length) {
 				return;
 			}
@@ -82,9 +89,10 @@ approval_engine.build_activity_html = function (steps) {
 // Register the sidebar renderer on every target DocType that has an active workflow.
 $(document).on("app_ready", function () {
 	frappe
-		.xcall("approval_engine.activity.get_managed_doctypes")
-		.then((doctypes) => {
-			(doctypes || []).forEach((dt) => {
+		.xcall("approval_engine.approval_core.api.v1.activity.get_managed_doctypes")
+		.then((res) => {
+			const doctypes = (res && res.data) || [];
+			doctypes.forEach((dt) => {
 				frappe.ui.form.on(dt, {
 					refresh(frm) {
 						approval_engine.render_workflow_activity(frm);

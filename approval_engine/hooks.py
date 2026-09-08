@@ -1,9 +1,13 @@
+# Copyright (c) 2026 8848 Digital LLP. All rights reserved.
+# Proprietary and confidential. Unauthorized copying, distribution, or use
+# of this file, via any medium, is strictly prohibited without prior
+# written permission from 8848 Digital LLP.
 app_name = "approval_engine"
 app_title = "Approval Engine"
 app_publisher = "8848 Digital"
 app_description = "Config-driven P2P approval workflow engine (Approval Matrix -> auto Workflow)"
 app_email = "dhaval@8848digital.com"
-app_license = "mit"
+app_license = "Proprietary"
 
 # Apps
 # ------------------
@@ -146,7 +150,7 @@ after_install = "approval_engine.install.after_install"
 
 doc_events = {
 	"*": {
-		"validate": "approval_engine.runtime.target_validate",
+		"validate": "approval_engine.approval_core.runtime.target_validate",
 	}
 }
 
