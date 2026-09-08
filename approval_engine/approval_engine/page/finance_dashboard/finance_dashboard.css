@@ -123,6 +123,10 @@
 .fin-dash .row-tag.onhold{ color:var(--onhold); }
 
 .fin-dash .cell-metric{ display:flex; flex-direction:column; align-items:flex-end; gap:5px; }
+.fin-dash .cell-metric.is-link{ cursor:pointer; border-radius:8px; margin:-6px -8px; padding:6px 8px; transition:background .12s ease; }
+.fin-dash .cell-metric.is-link:hover{ background:var(--bg); }
+.fin-dash .cell-metric.is-link:hover .amt{ text-decoration:underline; text-underline-offset:2px; }
+.fin-dash .cell-metric.is-link:focus-visible{ outline:2px solid var(--brand-dark); outline-offset:2px; }
 .fin-dash .cell-metric .amt{ font-size:16px; font-weight:700; color:var(--ink); letter-spacing:-0.01em; }
 .fin-dash .cell-metric .amt .cur{ font-size:12px; font-weight:600; color:var(--ink-faint); margin-right:2px; }
 .fin-dash .cell-metric .count-pill{

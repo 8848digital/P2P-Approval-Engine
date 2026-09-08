@@ -220,6 +220,32 @@ class FinanceDashboard {
 			}
 			this.load_detail(from, to);
 		});
+
+		// A metric cell drills into the target DocType list, filtered to exactly the documents
+		// behind it. Delegated so it survives the tbody re-renders each load does.
+		this.page.main.on("click", ".cell-metric.is-link", (e) => this.open_cell(e.currentTarget));
+		this.page.main.on("keydown", ".cell-metric.is-link", (e) => {
+			if (e.key === "Enter" || e.key === " ") {
+				e.preventDefault();
+				this.open_cell(e.currentTarget);
+			}
+		});
+	}
+
+	// Resolve the clicked cell's document names from the stored summary and open the DocType
+	// list filtered to them, so what opens always matches the count/amount that was clicked.
+	open_cell(el) {
+		const doctype = el.getAttribute("data-doctype");
+		const bucket = el.getAttribute("data-bucket");
+		const source = bucket === "approved" ? this.detail_data : this.overview_data;
+		const metric =
+			bucket === "approved"
+				? (source || {})[doctype]
+				: ((source || {})[doctype] || {})[bucket];
+		const names = (metric && metric.names) || [];
+		if (!names.length) return;
+		frappe.route_options = { name: ["in", names] };
+		frappe.set_route("List", doctype);
 	}
 
 	// ---- data -------------------------------------------------------------
@@ -284,16 +310,24 @@ class FinanceDashboard {
 		this.load_detail();
 	}
 
-	cells(get_metric, cls) {
+	cells(get_metric, cls, bucket) {
 		return COLUMNS.map((col) => {
-			const m = get_metric(col.doctype) || { records: 0, amount: 0 };
+			const m = get_metric(col.doctype) || { records: 0, amount: 0, names: [] };
 			// Hide the count pill for a zero amount — an empty band adds no information.
 			const pill =
 				Number(m.amount) === 0
 					? ""
 					: `<span class="count-pill">Count <span class="num">${m.records || 0}</span></span>`;
+			// Clickable only when the cell has documents behind it: clicking opens the target
+			// DocType list filtered to exactly those documents (data-bucket/-doctype resolve the
+			// stored name list at click time). A zero-doc cell stays inert.
+			const has_docs = (m.records || 0) > 0;
+			const link_attrs = has_docs
+				? ` class="cell-metric ${cls} is-link" role="link" tabindex="0"` +
+				  ` data-doctype="${frappe.utils.escape_html(col.doctype)}" data-bucket="${bucket}"`
+				: ` class="cell-metric ${cls}"`;
 			return `<td>
-				<div class="cell-metric ${cls}">
+				<div${link_attrs}>
 					<span class="amt"><span class="cur">₹</span>${this.fmt_inr(m.amount)}</span>
 					${pill}
 				</div>
@@ -309,8 +343,9 @@ class FinanceDashboard {
 			args: { company: this.company },
 			callback: (r) => {
 				const data = r.message || {};
-				const pending = this.cells((dt) => (data[dt] || {}).pending, "is-pending");
-				const onhold = this.cells((dt) => (data[dt] || {}).on_hold, "is-onhold");
+				this.overview_data = data;
+				const pending = this.cells((dt) => (data[dt] || {}).pending, "is-pending", "pending");
+				const onhold = this.cells((dt) => (data[dt] || {}).on_hold, "is-onhold", "on_hold");
 				$body.removeClass("is-loading").html(`
 					<tr><td><span class="row-tag pending"><span class="dot"></span>Pending</span></td>${pending}</tr>
 					<tr><td><span class="row-tag onhold"><span class="dot"></span>On hold</span></td>${onhold}</tr>`);
@@ -339,7 +374,8 @@ class FinanceDashboard {
 			args: { company: this.company, from_date: from, to_date: to },
 			callback: (r) => {
 				const data = r.message || {};
-				const approved = this.cells((dt) => data[dt], "is-approved");
+				this.detail_data = data;
+				const approved = this.cells((dt) => data[dt], "is-approved", "approved");
 				$body.removeClass("is-loading").html(
 					`<tr><td><span class="row-tag approved"><span class="dot"></span>Approved</span></td>${approved}</tr>`
 				);
