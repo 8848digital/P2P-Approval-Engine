@@ -2,4 +2,10 @@
 # Proprietary and confidential. Unauthorized copying, distribution, or use
 # of this file, via any medium, is strictly prohibited without prior
 # written permission from 8848 Digital LLP.
-__version__ = "0.0.2"
+
+# import frappe
+from frappe.model.document import Document
+
+
+class ApprovalSettings(Document):
+	pass

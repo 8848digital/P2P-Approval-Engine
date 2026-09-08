@@ -1,3 +1,7 @@
+# Copyright (c) 2026 8848 Digital LLP. All rights reserved.
+# Proprietary and confidential. Unauthorized copying, distribution, or use
+# of this file, via any medium, is strictly prohibited without prior
+# written permission from 8848 Digital LLP.
 """Install hooks.
 
 Seed the master data the generated Workflows depend on, so a freshly installed
@@ -8,7 +12,7 @@ this again (e.g. on reinstall) is safe.
 
 import frappe
 
-from approval_engine import generator
+from approval_engine.approval_core import generator
 
 
 def after_install():

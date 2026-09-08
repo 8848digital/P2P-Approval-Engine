@@ -1,3 +1,10 @@
+<!--
+Copyright (c) 2026 8848 Digital LLP. All rights reserved.
+Proprietary and confidential. Unauthorized copying, distribution, or use
+of this file, via any medium, is strictly prohibited without prior
+written permission from 8848 Digital LLP.
+-->
+
 ### Approval Engine
 
 Config-driven P2P approval workflow engine (Approval Matrix -> auto Workflow)
@@ -30,4 +37,5 @@ Pre-commit is configured to use the following tools for checking and formatting 
 
 ### License
 
-mit
+Proprietary — Copyright (c) 2026 8848 Digital LLP. All rights reserved.
+See [license.txt](license.txt) for details.
