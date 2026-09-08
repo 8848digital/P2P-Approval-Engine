@@ -13,10 +13,10 @@ frappe.pages["finance-dashboard"].on_page_load = function (wrapper) {
 // custom BRN DocType (rename here if your build uses a different name). A column whose DocType
 // has no submitted Approval Matrix simply shows zero.
 const COLUMNS = [
-	{ label: "BRD", doctype: "BRN" },
-	{ label: "PO", doctype: "Purchase Order" },
-	{ label: "PI", doctype: "Purchase Invoice" },
-	{ label: "PE", doctype: "Payment Entry" },
+	{ label: "BRN", doctype: "BRN" },
+	{ label: "Purchase Order", doctype: "Purchase Order" },
+	{ label: "Purchase Invoice", doctype: "Purchase Invoice" },
+	{ label: "Payment Entry", doctype: "Payment Entry" },
 ];
 
 class FinanceDashboard {
@@ -287,10 +287,15 @@ class FinanceDashboard {
 	cells(get_metric, cls) {
 		return COLUMNS.map((col) => {
 			const m = get_metric(col.doctype) || { records: 0, amount: 0 };
+			// Hide the count pill for a zero amount — an empty band adds no information.
+			const pill =
+				Number(m.amount) === 0
+					? ""
+					: `<span class="count-pill">Count <span class="num">${m.records || 0}</span></span>`;
 			return `<td>
 				<div class="cell-metric ${cls}">
 					<span class="amt"><span class="cur">₹</span>${this.fmt_inr(m.amount)}</span>
-					<span class="count-pill">Docs <span class="num">${m.records || 0}</span></span>
+					${pill}
 				</div>
 			</td>`;
 		}).join("");

@@ -103,7 +103,7 @@
   text-align:left; font-size:11.5px; font-weight:600; color:var(--ink-faint);
   padding:13px 20px; border-bottom:1px solid var(--line); background:#FBFBFC;
 }
-.fin-dash table.matrix thead th.doc-col{ color:var(--ink); font-size:12.5px; font-weight:700; }
+.fin-dash table.matrix thead th.doc-col{ color:var(--ink); font-size:12.5px; font-weight:700; text-align:right; }
 .fin-dash table.matrix thead th:first-child{ width:130px; }
 .fin-dash table.matrix tbody td{
   padding:16px 20px; border-bottom:1px solid var(--line); vertical-align:top;
@@ -122,7 +122,7 @@
 .fin-dash .row-tag.onhold .dot{ background:var(--onhold); }
 .fin-dash .row-tag.onhold{ color:var(--onhold); }
 
-.fin-dash .cell-metric{ display:flex; flex-direction:column; gap:5px; }
+.fin-dash .cell-metric{ display:flex; flex-direction:column; align-items:flex-end; gap:5px; }
 .fin-dash .cell-metric .amt{ font-size:16px; font-weight:700; color:var(--ink); letter-spacing:-0.01em; }
 .fin-dash .cell-metric .amt .cur{ font-size:12px; font-weight:600; color:var(--ink-faint); margin-right:2px; }
 .fin-dash .cell-metric .count-pill{
