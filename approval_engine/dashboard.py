@@ -62,17 +62,28 @@ def _pending_condition():
     return "\n     OR ".join(clauses)
 
 
+def _aggregate(rows):
+    """Collapse per-document rows [{name, amount}] into a cell payload. Returning `names`
+    lets the dashboard link each cell straight to a list view filtered to exactly these
+    documents, so the list always matches the count/amount shown."""
+    names = [r.name for r in rows]
+    amount = sum(float(r.amount or 0) for r in rows)
+    return {"records": len(names), "amount": amount, "names": names}
+
+
 def pending_for_doctype(document_type, company, user):
-    """Return {records, amount} of docs of `document_type` pending on `user` in `company`."""
+    """Return {records, amount, names} of docs of `document_type` pending on `user` in `company`."""
     amount_field = amount_field_for(document_type)
     if not amount_field:
         # No amount field configured -> DocType isn't set up for the engine; report zero.
-        return {"records": 0, "amount": 0.0}
+        return {"records": 0, "amount": 0.0, "names": []}
 
+    # GROUP BY p.name collapses the row to one per document: a doc could otherwise join more
+    # than one matrix band if bands overlap, which would double-count it in COUNT/SUM.
     query = """
         SELECT
-            COUNT(*)                          AS records,
-            COALESCE(SUM(p.`{amt}`), 0)       AS amount
+            p.name         AS name,
+            p.`{amt}`      AS amount
         FROM `tab{dt}` p
         INNER JOIN `tabApproval Matrix` m
                 ON m.document_type = %(doctype)s
@@ -88,18 +99,19 @@ def pending_for_doctype(document_type, company, user):
           AND (
                 {pending_condition}
               )
+        GROUP BY p.name, p.`{amt}`
     """.format(
         amt=amount_field,
         dt=document_type,
         pending_condition=_pending_condition(),
     )
 
-    row = frappe.db.sql(
+    rows = frappe.db.sql(
         query,
         {"doctype": document_type, "company": company, "user": user},
         as_dict=True,
-    )[0]
-    return {"records": int(row.records or 0), "amount": float(row.amount or 0)}
+    )
+    return _aggregate(rows)
 
 
 def on_hold_for_doctype(document_type, company, user):
@@ -109,12 +121,12 @@ def on_hold_for_doctype(document_type, company, user):
     row for it was written by `user` (i.e. `user` placed the current hold)."""
     amount_field = amount_field_for(document_type)
     if not amount_field:
-        return {"records": 0, "amount": 0.0}
+        return {"records": 0, "amount": 0.0, "names": []}
 
     query = """
         SELECT
-            COUNT(*)                          AS records,
-            COALESCE(SUM(p.`{amt}`), 0)       AS amount
+            p.name         AS name,
+            p.`{amt}`      AS amount
         FROM `tab{dt}` p
         INNER JOIN `tabDocument Workflow Log` l
                 ON l.reference_doctype = %(doctype)s
@@ -130,15 +142,16 @@ def on_hold_for_doctype(document_type, company, user):
         WHERE p.docstatus     = 0
           AND p.company       = %(company)s
           AND p.workflow_state LIKE %(hold_like)s
+        GROUP BY p.name, p.`{amt}`
     """.format(amt=amount_field, dt=document_type)
 
-    row = frappe.db.sql(
+    rows = frappe.db.sql(
         query,
         {"doctype": document_type, "company": company, "user": user,
          "hold_like": HOLD_STATE_LIKE},
         as_dict=True,
-    )[0]
-    return {"records": int(row.records or 0), "amount": float(row.amount or 0)}
+    )
+    return _aggregate(rows)
 
 
 def approved_for_doctype(document_type, company, user, from_date=None, to_date=None):
@@ -149,7 +162,7 @@ def approved_for_doctype(document_type, company, user, from_date=None, to_date=N
     log row's creation); either may be omitted for an open bound."""
     amount_field = amount_field_for(document_type)
     if not amount_field:
-        return {"records": 0, "amount": 0.0}
+        return {"records": 0, "amount": 0.0, "names": []}
 
     conditions = [
         "l.reference_doctype = %(doctype)s",
@@ -168,8 +181,8 @@ def approved_for_doctype(document_type, company, user, from_date=None, to_date=N
 
     query = """
         SELECT
-            COUNT(*)                          AS records,
-            COALESCE(SUM(p.`{amt}`), 0)       AS amount
+            p.name         AS name,
+            p.`{amt}`      AS amount
         FROM `tab{dt}` p
         WHERE p.company = %(company)s
           AND EXISTS (
@@ -178,8 +191,8 @@ def approved_for_doctype(document_type, company, user, from_date=None, to_date=N
               )
     """.format(amt=amount_field, dt=document_type, exists_where=" AND ".join(conditions))
 
-    row = frappe.db.sql(query, params, as_dict=True)[0]
-    return {"records": int(row.records or 0), "amount": float(row.amount or 0)}
+    rows = frappe.db.sql(query, params, as_dict=True)
+    return _aggregate(rows)
 
 
 def pending_summary(company, user=None):
