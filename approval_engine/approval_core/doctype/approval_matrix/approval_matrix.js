@@ -70,7 +70,7 @@ function show_amount_field_hint(frm) {
 		method: "approval_engine.approval_core.api.v1.workflow.get_amount_field_info",
 		args: { document_type: frm.doc.document_type },
 		callback: (r) => {
-			const info = r.message && r.message.data;
+			const info = r && r.data;
 			if (!info || !info.amount_field) {
 				return;
 			}

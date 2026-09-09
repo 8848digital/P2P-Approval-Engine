@@ -27,20 +27,22 @@ approval_engine.render_workflow_activity = function (frm) {
 		return;
 	}
 
-	frappe
-		.xcall("approval_engine.approval_core.api.v1.activity.get_workflow_activity", {
-			doctype: frm.doctype,
-			name: frm.docname,
-		})
-		.then((res) => {
+	// The endpoint responds in the 8848 envelope (via the after_request hook),
+	// so the payload is under r.data — use frappe.call (not xcall, which would
+	// resolve to the envelope's `message` string).
+	frappe.call({
+		method: "approval_engine.approval_core.api.v1.activity.get_workflow_activity",
+		args: { doctype: frm.doctype, name: frm.docname },
+		callback: (r) => {
 			remove();
-			const data = res && res.data;
+			const data = r && r.data;
 			if (!data || !data.managed || !(data.steps || []).length) {
 				return;
 			}
 			sidebar.append(approval_engine.build_activity_html(data.steps));
-		})
-		.catch(() => remove());
+		},
+		error: () => remove(),
+	});
 };
 
 approval_engine.build_activity_html = function (steps) {
@@ -88,10 +90,10 @@ approval_engine.build_activity_html = function (steps) {
 
 // Register the sidebar renderer on every target DocType that has an active workflow.
 $(document).on("app_ready", function () {
-	frappe
-		.xcall("approval_engine.approval_core.api.v1.activity.get_managed_doctypes")
-		.then((res) => {
-			const doctypes = (res && res.data) || [];
+	frappe.call({
+		method: "approval_engine.approval_core.api.v1.activity.get_managed_doctypes",
+		callback: (r) => {
+			const doctypes = (r && r.data) || [];
 			doctypes.forEach((dt) => {
 				frappe.ui.form.on(dt, {
 					refresh(frm) {
@@ -99,5 +101,6 @@ $(document).on("app_ready", function () {
 					},
 				});
 			});
-		});
+		},
+	});
 });
