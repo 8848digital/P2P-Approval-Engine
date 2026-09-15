@@ -1,0 +1,174 @@
+{
+    "Supplier": [
+        {
+            "dt": "Supplier",
+            "fieldname": "custom_company",
+            "fieldtype": "Link",
+            "options": "Company",
+            "insert_after": "supplier_name",
+            "label": "Company",
+            "hidden": 1,
+            "no_copy": 1,
+            "description": "Set automatically from the Vendor Email record created when the onboarding invite was sent, and mirrored into the Accounts child table -- not meant to be edited directly in Desk.",
+            "module": "settlement"
+        },
+        {
+            "dt": "Supplier",
+            "fieldname": "is_created_from_webform",
+            "fieldtype": "Check",
+            "insert_after": "disabled",
+            "label": "Is Created From Webform",
+            "default": 0,
+            "read_only": 1,
+            "hidden": 1,
+            "module": "settlement"
+        },
+        {
+            "dt": "Supplier",
+            "fieldname": "custom_msa_agreement",
+            "fieldtype": "Select",
+            "insert_after": "is_aadhar_pan_linked",
+            "label": "MSA Agreement",
+            "options": "\nYes\nNo",
+            "read_only": 0,
+            "hidden": 0,
+            "reqd": 0,
+            "module": "settlement"
+        },
+        {
+            "dt": "Supplier",
+            "fieldname": "custom_msa_agreement_attachment",
+            "insert_after": "custom_msa_agreement",
+            "fieldtype": "Attach",
+            "label": "MSA Agreement Attachment",
+            "depends_on": "eval:(doc.custom_msa_agreement == 'Yes')",
+            "mandatory_depends_on": "eval:(doc.custom_msa_agreement == 'Yes')",
+            "allow_on_submit": 1,
+            "default": "",
+            "read_only": 0,
+            "hidden": 0,
+            "module": "settlement"
+        },
+        {
+            "fieldname": "address_line1",
+            "insert_after": "primary_address",
+            "fieldtype": "Data",
+            "label": "Address Line 1",
+            "hidden": 1,
+            "module": "settlement"
+        },
+        {
+            "fieldname": "city",
+            "insert_after": "address_line1",
+            "fieldtype": "Data",
+            "label": "City",
+            "hidden": 1,
+            "module": "settlement"
+        },
+        {
+            "fieldname": "state",
+            "insert_after": "city",
+            "fieldtype": "Data",
+            "label": "State",
+            "hidden": 1,
+            "module": "settlement"
+        },
+        {
+            "fieldname": "pincode",
+            "insert_after": "state",
+            "fieldtype": "Data",
+            "label": "Postal Code",
+            "hidden": 1,
+            "module": "settlement"
+        },
+        {
+            "fieldname": "custom_last_kyc_status",
+            "label": "Last KYC Status",
+            "fieldtype": "Select",
+            "options": "\nSuccess\nPartial\nFailed",
+            "read_only": 1,
+            "insert_after": "on_hold",
+            "in_list_view": 1,
+            "in_standard_filter": 1,
+            "no_copy": 1,
+            "module": "settlement"
+        },
+        {
+            "fieldname": "custom_last_kyc_run",
+            "label": "Last KYC Run",
+            "fieldtype": "Link",
+            "options": "KYC Validation Run",
+            "read_only": 1,
+            "insert_after": "custom_last_kyc_status",
+            "no_copy": 1,
+            "module": "settlement"
+        },
+        {
+            "fieldname": "custom_kyc_blocked_types",
+            "label": "KYC Types Pending Verification",
+            "fieldtype": "Small Text",
+            "read_only": 1,
+            "insert_after": "custom_last_kyc_run",
+            "no_copy": 1,
+            "description": "Populated automatically when KYC Settings > Auto Hold is enabled and one or more required KYC Types have not been Successfully verified.",
+            "module": "settlement"
+        },
+        {
+            "fieldname": "custom_kyc_hold_active",
+            "label": "On Hold Set By KYC Automation",
+            "fieldtype": "Check",
+            "hidden": 1,
+            "read_only": 1,
+            "no_copy": 1,
+            "insert_after": "custom_kyc_blocked_types",
+            "description": "Internal flag. Lets the KYC automation know it is safe to auto-clear On Hold once all required checks pass, without touching a hold a human placed manually for an unrelated reason.",
+            "module": "settlement"
+        },
+        {
+            "fieldname": "services_rendered",
+            "label": "Services Rendered",
+            "fieldtype": "Data",
+            "no_copy": 1,
+            "insert_after": "msme_certificate_attachment",
+            "module": "settlement"
+        },
+        {
+            "fieldname": "nature_of_service",
+            "label": "Nature of Service",
+            "fieldtype": "Table MultiSelect",
+            "options": "Nature of Service Reference",
+            "no_copy": 1,
+            "insert_after": "services_rendered",
+            "module": "settlement"
+        },
+        {
+            "fieldname": "set_allowance_limit_for_tds",
+            "label": "Set Allowance Limit For TDS Calculation",
+            "fieldtype": "Check",
+            "default": "0",
+            "insert_after": "nature_of_service",
+            "module": "settlement"
+        },
+        {
+            "fieldname": "allowance_limit",
+            "label": "Allowance Limit",
+            "fieldtype": "Currency",
+            "depends_on": "eval:(doc.set_allowance_limit_for_tds)",
+            "mandatory_depends_on": "eval:(doc.set_allowance_limit_for_tds)",
+            "insert_after": "set_allowance_limit_for_tds",
+            "module": "settlement"
+        },
+        {
+            "fieldname": "consumed_amount",
+            "label": "Consumed Amount",
+            "fieldtype": "Currency",
+            "depends_on": "eval:(doc.set_allowance_limit_for_tds)",
+            "read_only": 1,
+            "no_copy": 1,
+            "default": "0",
+            "description": "Cumulative Purchase Invoice amount consumed against the Allowance Limit. Updated automatically on submit/cancel of a Purchase Invoice.",
+            "insert_after": "allowance_limit",
+            "module": "settlement"
+        }
+    ]
+}

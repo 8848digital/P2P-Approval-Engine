@@ -1,0 +1,118 @@
+{% extends "templates/web.html" %}
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+{% block title %}{{ section_label }}{% endblock %}
+
+{% block page_content %}
+{% include "templates/includes/vendor_portal/style.html" %}
+<div class="vp-app">
+	{% include "templates/includes/vendor_portal/nav.html" %}
+	<div class="vp-main">
+		<div class="vp-shell">
+			<div class="vp-page-header">
+				<div>
+					<div class="vp-page-title">{{ tab_group_label or section_label }}</div>
+				</div>
+			</div>
+
+			{% if tab_siblings %}
+			<div class="vp-tabs">
+				{% for tab in tab_siblings %}
+				<a class="vp-tab {{ 'active' if tab.route == row_config.route else '' }}" href="/vendor-portal/{{ tab.route }}">
+					{{ tab.label or tab.document_type }}
+				</a>
+				{% endfor %}
+			</div>
+			{% endif %}
+
+			<div class="vp-list-toolbar">
+				<form class="vp-search-form" method="get">
+					<button type="submit" class="vp-search-icon-btn" aria-label="{{ _('Search') }}">
+						<svg class="vp-search-icon"><use href="#icon-search"></use></svg>
+					</button>
+					<input type="text" id="vp-search-input" name="q" value="{{ search_query }}" placeholder="{{ _('Search') }}" class="vp-search-input" autocomplete="off">
+					<input type="hidden" name="sort" value="{{ sort_dir }}">
+					{% if search_query %}
+					<a class="vp-search-clear" href="?sort={{ sort_dir }}" title="{{ _('Clear search') }}">
+						<svg><use href="#icon-x"></use></svg>
+					</a>
+					{% endif %}
+				</form>
+				<a class="vp-sort-toggle" href="?{{ sort_toggle_query }}">
+					<svg><use href="#icon-{{ 'arrow-down' if sort_dir == 'desc' else 'arrow-up' }}"></use></svg>
+					{{ _("Oldest First") if sort_dir == "desc" else _("Newest First") }}
+				</a>
+			</div>
+
+			{% if rows %}
+			<div class="vp-list" id="vp-list">
+				{% for row in rows %}
+				<a class="vp-list-row" data-search="{{ (row.title or '') | lower }} {{ row.name | lower }}" href="/vendor-portal/{{ row_config.route }}/{{ row.name }}">
+					<span class="vp-list-icon"><svg><use href="#icon-{{ row_config.icon or 'file-text' }}"></use></svg></span>
+					<div class="vp-list-main">
+						<div class="vp-list-title">{{ row.title }}</div>
+						{% if row.status %}
+						<div class="vp-list-sub">
+							<span class="vp-pill vp-pill-{{ row.pill_color }}">{{ _(row.status) }}</span>
+						</div>
+						{% endif %}
+					</div>
+					{% if row.amount is not none %}
+					<div class="vp-list-amount">{{ frappe.utils.fmt_money(row.amount, currency=row.currency) }}</div>
+					{% endif %}
+					{% if row.date %}
+					<div class="vp-list-date">{{ frappe.utils.formatdate(row.date) }}</div>
+					{% endif %}
+					<span class="vp-list-chevron"><svg><use href="#icon-chevron-right"></use></svg></span>
+				</a>
+				{% endfor %}
+			</div>
+			<div class="vp-empty" id="vp-search-empty" hidden>
+				<svg><use href="#icon-{{ row_config.icon or 'file-text' }}"></use></svg>
+				<div id="vp-search-empty-text"></div>
+			</div>
+
+			<script>
+			(function () {
+				var input = document.getElementById("vp-search-input");
+				var list = document.getElementById("vp-list");
+				var emptyState = document.getElementById("vp-search-empty");
+				var emptyText = document.getElementById("vp-search-empty-text");
+				if (!input || !list) return;
+
+				// The list already loads every matching record for this
+				// vendor at once (no pagination), so filtering it live in
+				// the browser as the user types is instant -- no server
+				// round-trip needed. The ?q= form submit (Enter / the
+				// search icon button) still works underneath this as a
+				// plain fallback, but typing itself no longer needs it.
+				var rows = list.querySelectorAll(".vp-list-row");
+
+				input.addEventListener("input", function () {
+					var term = input.value.trim().toLowerCase();
+					var visibleCount = 0;
+
+					rows.forEach(function (row) {
+						var match = !term || row.dataset.search.indexOf(term) !== -1;
+						row.hidden = !match;
+						if (match) visibleCount += 1;
+					});
+
+					list.hidden = visibleCount === 0;
+					emptyState.hidden = visibleCount !== 0;
+					if (visibleCount === 0) {
+						emptyText.textContent = "{{ _('No results for') }} \"" + input.value.trim() + "\"";
+					}
+				});
+			})();
+			</script>
+			{% else %}
+			<div class="vp-empty">
+				<svg><use href="#icon-{{ row_config.icon or 'file-text' }}"></use></svg>
+				<div>{{ _("No results for \"{0}\"").format(search_query) if search_query else _("Nothing here yet") }}</div>
+			</div>
+			{% endif %}
+		</div>
+	</div>
+</div>
+{% endblock %}

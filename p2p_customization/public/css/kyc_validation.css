@@ -1,0 +1,79 @@
+/* KYC Validation dialog styling */
+
+.kyc-card-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+	gap: 12px;
+}
+
+.kyc-card {
+	background: var(--card-bg, #fff);
+	border: 1px solid var(--border-color, #e0e0e0);
+	border-radius: 8px;
+	padding: 12px 14px;
+	transition: opacity 0.15s ease, box-shadow 0.15s ease;
+}
+
+.kyc-card:hover {
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.kyc-card-head {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+}
+
+.kyc-card-icon {
+	font-size: 18px;
+	font-weight: 700;
+	line-height: 1.4;
+}
+
+.kyc-card-title-wrap {
+	flex: 1;
+}
+
+.kyc-card-title {
+	font-weight: 600;
+	font-size: 13px;
+}
+
+.kyc-card-sub {
+	font-size: 11px;
+}
+
+.kyc-card-status {
+	align-self: center;
+}
+
+.kyc-card-message {
+	margin-top: 6px;
+	font-size: 12px;
+	line-height: 1.4;
+}
+
+.kyc-card-actions {
+	margin-top: 10px;
+	display: flex;
+	gap: 6px;
+}
+
+.kyc-fix-form {
+	margin-top: 10px;
+	padding-top: 10px;
+	border-top: 1px dashed var(--border-color, #e0e0e0);
+}
+
+.kyc-fix-inner .form-group {
+	margin-bottom: 6px;
+}
+
+.kyc-loading {
+	padding: 30px;
+	text-align: center;
+}
+
+.kyc-summary {
+	font-size: 13px;
+}

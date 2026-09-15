@@ -1,0 +1,170 @@
+<div class="vp-sidebar">
+	<a class="vp-sidebar-brand" href="/vendor-portal">
+		<span class="vp-sidebar-brand-icon">{{ (vendor_supplier_name or "V")[0] | upper }}</span>
+		<span class="vp-sidebar-brand-text">
+			<div class="vp-sidebar-brand-name">{{ vendor_supplier_name or _("Vendor Portal") }}</div>
+			<div class="vp-sidebar-brand-tag">{{ portal_title or _("Vendor Portal") }}</div>
+		</span>
+	</a>
+	<div class="vp-sidebar-nav">
+		<a href="/vendor-portal" class="{{ 'active' if vp_active == 'home' else '' }}">
+			<svg><use href="#icon-house"></use></svg>
+			<span>{{ _("Home") }}</span>
+		</a>
+		{% for item in portal_nav_items %}
+		<a href="/vendor-portal/{{ item.route }}" class="{{ 'active' if vp_active in item.member_routes else '' }}">
+			<svg><use href="#icon-{{ item.icon or 'file-text' }}"></use></svg>
+			<span>{{ item.label }}</span>
+		</a>
+		{% endfor %}
+		<a href="/vendor-profile" class="{{ 'active' if vp_active == 'profile' else '' }}">
+			<svg><use href="#icon-building-2"></use></svg>
+			<span>{{ _("Onboarding Details") }}</span>
+		</a>
+		<a href="/vendor-account" class="{{ 'active' if vp_active == 'account' else '' }}">
+			<svg><use href="#icon-file-user"></use></svg>
+			<span>{{ _("My Profile") }}</span>
+		</a>
+	</div>
+	<div class="vp-sidebar-footer">
+		<div id="vp-translate-widget" class="vp-translate-widget">
+			<div class="vp-translate-widget-label">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+					<circle cx="12" cy="12" r="9"></circle>
+					<path d="M3 12h18M12 3c2.5 2.7 4 6 4 9s-1.5 6.3-4 9c-2.5-2.7-4-6-4-9s1.5-6.3 4-9z"></path>
+				</svg>
+				<span>{{ _("Translate") }}:</span>
+			</div>
+			<div id="vp_google_translate_element"></div>
+		</div>
+		<a href="/api/method/p2p_customization.settlement.api.vendor_web_logout">
+			<svg><use href="#icon-logout"></use></svg>
+			<span>{{ _("Logout") }}</span>
+		</a>
+	</div>
+</div>
+
+<style>
+	/* Lives in-flow inside the sidebar's own column (not fixed over the
+	   viewport corner) so it never overlaps a page's own top-right
+	   content -- e.g. vendor-profile.html's "View Details" button sits in
+	   that exact corner, and a fixed-position widget collided with it. */
+	.vp-translate-widget {
+		display: flex;
+		flex-direction: column;
+		align-items: stretch;
+		gap: 0.4rem;
+		width: 100%;
+		box-sizing: border-box;
+		background: var(--bg-light-gray);
+		border: 1px solid var(--border-color);
+		border-radius: 10px;
+		padding: 0.5rem 0.75rem;
+		margin-bottom: 0.6rem;
+		font-size: var(--text-sm);
+	}
+	.vp-translate-widget-label {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		min-width: 0;
+	}
+	.vp-translate-widget svg {
+		width: 15px;
+		height: 15px;
+		stroke: currentColor;
+		color: var(--text-light);
+		flex-shrink: 0;
+	}
+	.vp-translate-widget > .vp-translate-widget-label > span {
+		color: var(--text-light);
+		white-space: nowrap;
+	}
+	#vp_google_translate_element {
+		width: 100%;
+		box-sizing: border-box;
+	}
+	#vp_google_translate_element .goog-te-gadget {
+		font-family: inherit !important;
+		font-size: 0 !important;
+		width: 100%;
+		display: block !important;
+	}
+	#vp_google_translate_element .goog-te-gadget-simple {
+		background: transparent !important;
+		border: none !important;
+		padding: 0 !important;
+		width: 100% !important;
+		display: block !important;
+	}
+	.vp-translate-widget .goog-te-combo {
+		font-family: inherit !important;
+		font-size: 12px !important;
+		color: var(--text-color) !important;
+		background: var(--bg-color) !important;
+		border: 1px solid var(--border-color) !important;
+		border-radius: 6px !important;
+		padding: 3px 6px !important;
+		cursor: pointer;
+		outline: none;
+		width: 100% !important;
+		max-width: 100% !important;
+		box-sizing: border-box !important;
+	}
+	.vp-translate-widget .goog-te-gadget img,
+	.vp-translate-widget .goog-te-gadget > span > a,
+	.vp-translate-widget .goog-te-gadget .goog-te-gadget-icon {
+		display: none !important;
+	}
+	/* Google's own widget inserts a full-width banner frame + pushes
+	   body down when a translation is active -- undone here since it
+	   visually breaks this fixed sidebar/main layout. */
+	.goog-te-banner-frame {
+		display: none !important;
+	}
+	body {
+		top: 0 !important;
+	}
+</style>
+
+<script>
+(function () {
+	// Only wire up once, in case nav.html is ever rendered more than once
+	// client-side on the same page.
+	if (window.vpGoogleTranslateElementInit) return;
+
+	window.vpGoogleTranslateElementInit = function () {
+		new google.translate.TranslateElement(
+			{ pageLanguage: "en", autoDisplay: false },
+			"vp_google_translate_element"
+		);
+	};
+	if (!document.getElementById("vp-google-translate-script")) {
+		var script = document.createElement("script");
+		script.id = "vp-google-translate-script";
+		script.src = "https://translate.google.com/translate_a/element.js?cb=vpGoogleTranslateElementInit";
+		document.body.appendChild(script);
+	}
+
+	// The CSS rule above (.goog-te-banner-frame { display: none }) doesn't
+	// reliably win -- Google's script re-applies its own inline styles to
+	// that iframe after insertion, and re-pushes body down, whenever a
+	// language is picked. A MutationObserver catches and undoes that every
+	// time instead of relying on CSS to hold.
+	function vpHideTranslateBanner() {
+		document.querySelectorAll(".goog-te-banner-frame").forEach(function (el) {
+			el.style.display = "none";
+		});
+		if (document.body && document.body.style.top && document.body.style.top !== "0px") {
+			document.body.style.top = "0px";
+		}
+	}
+	vpHideTranslateBanner();
+	new MutationObserver(vpHideTranslateBanner).observe(document.documentElement, {
+		childList: true,
+		subtree: true,
+		attributes: true,
+		attributeFilter: ["style"],
+	});
+})();
+</script>

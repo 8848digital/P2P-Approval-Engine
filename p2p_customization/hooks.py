@@ -8,7 +8,7 @@ app_license = "mit"
 # Apps
 # ------------------
 
-# required_apps = []
+required_apps = ["jfs_report_customization"]
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
@@ -25,7 +25,9 @@ app_license = "mit"
 # ------------------
 
 # include js, css files in header of desk.html
-# app_include_css = "/assets/p2p_customization/css/p2p_customization.css"
+app_include_css = [
+	"/assets/p2p_customization/css/kyc_validation.css",
+]
 # app_include_js = "/assets/p2p_customization/js/p2p_customization.js"
 
 # include js, css files in header of web template
@@ -43,8 +45,24 @@ app_license = "mit"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
-# doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
+doctype_js = {
+	"Purchase Order": "settlement/customization/purchase_order/purchase_order.js",
+	"Purchase Invoice": "settlement/customization/purchase_invoice/purchase_invoice.js",
+	"Supplier": [
+		"settlement/customization/supplier/supplier.js",
+		"settlement/public/js/supplier_kyc.js",
+	],
+	"Supplier Quotation": "settlement/customization/supplier_quotation/supplier_quotation.js",
+	"BRN": "settlement/public/js/vendor_mail.js",
+}
+doctype_list_js = {
+	"Supplier": [
+		"settlement/customization/supplier/supplier_list.js",
+		"settlement/public/js/vendor_mail.js",
+	],
+	"Supplier Quotation": "settlement/customization/supplier_quotation/supplier_quotation_list.js",
+	"Purchase Invoice": "settlement/customization/purchase_invoice/purchase_invoice_list.js",
+}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
@@ -52,6 +70,16 @@ app_license = "mit"
 # ------------------
 # include app icons in desk
 # app_include_icons = "p2p_customization/public/icons.svg"
+
+after_migrate = [
+	"p2p_customization.settlement.setup.create_custom_fields",
+]
+
+extend_bootinfo = "p2p_customization.settlement.boot.boot_session"
+
+update_website_context = [
+	"p2p_customization.settlement.api.update_website_context",
+]
 
 # Home Pages
 # ----------
@@ -132,46 +160,90 @@ app_license = "mit"
 # -----------
 # Permissions evaluated in scripted ways
 
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
-#
-# has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
-# }
+permission_query_conditions = {
+	"FAQ Master": "p2p_customization.settlement.permissions.faq_master.get_permission_query_conditions",
+}
+
+has_permission = {
+	"FAQ Master": "p2p_customization.settlement.permissions.faq_master.has_permission",
+}
 
 # Document Events
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+	"Payment Request": {
+		"before_validate": "p2p_customization.settlement.doc_events.payment_request.msa_agreement_validation",
+	},
+	"Purchase Order": {
+		"validate": [
+			"p2p_customization.settlement.tax_withholding.update_tds_rate_for_po",
+			"p2p_customization.settlement.customization.purchase_order.purchase_order.validate",
+		],
+		"before_save": "p2p_customization.settlement.utils.backdated_po_validation",
+	},
+	"Purchase Invoice": {
+		"before_validate": [
+			"p2p_customization.settlement.tax_withholding.force_apply_tds_for_locked_allowance_rows",
+		],
+		"on_update": [
+			"p2p_customization.settlement.doc_events.purchase_invoice_itc_reversal.set_itc_status",
+		],
+		"validate": [
+			"p2p_customization.settlement.tax_withholding.apply_supplier_allowance_limit",
+			"p2p_customization.settlement.tax_withholding.apply_return_tds_reversal",
+			"p2p_customization.settlement.tax_withholding.update_tds_rate",
+			"p2p_customization.settlement.customization.purchase_invoice.doc_events.validate_rate_and_qty",
+			"p2p_customization.settlement.utils.validate_fiscal_year_and_brn_dates",
+		],
+		"after_insert": [
+			"p2p_customization.settlement.doc_events.purchase_invoice_itc_reversal.set_itc_status",
+		],
+		"on_submit": [
+			"p2p_customization.settlement.tax_withholding.update_tds_rate",
+			"p2p_customization.settlement.tax_withholding.update_supplier_allowance_consumed",
+			"p2p_customization.settlement.doc_events.validate_po_status.on_purchase_invoice_submit",
+			"p2p_customization.settlement.doc_events.purchase_invoice_itc_reversal.handle_itc_reversal_on_submit",
+		],
+		"on_cancel": [
+			"p2p_customization.settlement.tax_withholding.cancel_supplier_allowance_consumed",
+		],
+	},
+	"FAQ Master": {
+		"validate": "p2p_customization.settlement.doc_events.faq_master.validate",
+		"after_insert": "p2p_customization.settlement.doc_events.faq_master.sync_supplier_custom_field",
+		"on_update": "p2p_customization.settlement.doc_events.faq_master.sync_supplier_custom_field",
+		"on_trash": "p2p_customization.settlement.doc_events.faq_master.delete_supplier_custom_field",
+	},
+	"Supplier": {
+		"validate": [
+			"p2p_customization.settlement.doc_events.supplier.validate_vendor_onboarding",
+			"p2p_customization.settlement.doc_events.supplier.update_brn_msa_agreement",
+			"p2p_customization.settlement.doc_events.supplier.sync_company_to_supplier",
+		],
+		"on_update": "p2p_customization.settlement.customization.supplier.supplier.on_update",
+		"before_insert": "p2p_customization.settlement.customization.supplier.supplier.before_insert",
+		"after_insert": "p2p_customization.settlement.customization.supplier.supplier.after_insert",
+	},
+	"Supplier Quotation": {
+		"on_update_after_submit": "p2p_customization.settlement.doc_events.supplier_quotation.get_requisition_items",
+	},
+}
 
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"p2p_customization.tasks.all"
-# 	],
-# 	"daily": [
-# 		"p2p_customization.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"p2p_customization.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"p2p_customization.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"p2p_customization.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+	"cron": {
+		"0 9 * * * *": [
+			"p2p_customization.settlement.doctype.vendor_email.utils.send_reminder_for_non_registered_vendors",
+		],
+	},
+	"daily": [
+		"p2p_customization.settlement.doc_events.purchase_invoice_itc_reversal.run_daily_itc_reversal_sweep",
+	],
+}
 
 # Testing
 # -------
@@ -249,6 +321,33 @@ app_license = "mit"
 # auth_hooks = [
 # 	"p2p_customization.auth.validate"
 # ]
+
+on_login = "p2p_customization.settlement.api.block_vendor_from_standard_login"
+
+website_route_rules = [
+	{"from_route": "/brn", "to_route": "BRN"},
+	{
+		"from_route": "/brn/<path:name>",
+		"to_route": "brn",
+		"defaults": {
+			"doctype": "BRN",
+			"parents": [{"label": "Approved Proposals", "route": "brn"}],
+		},
+	},
+]
+
+standard_portal_menu_items = [
+	{"title": "Approved Proposals", "route": "/brn", "reference_doctype": "BRN", "role": "Supplier"},
+]
+
+website_path_resolver = "p2p_customization.website.resolve_website_path"
+
+website_context = {
+	"post_login": [
+		{"label": "My Account", "url": "/me"},
+		{"label": "Log out", "url": "/api/method/p2p_customization.settlement.api.vendor_web_logout"},
+	]
+}
 
 # Automatically update python controller files with type annotations for this app.
 # export_python_type_annotations = True

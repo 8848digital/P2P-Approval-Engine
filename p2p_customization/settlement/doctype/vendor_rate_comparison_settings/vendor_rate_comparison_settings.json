@@ -1,0 +1,54 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-25 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "allowed_role",
+  "popup_trigger_mode"
+ ],
+ "fields": [
+  {
+   "description": "Only users with this role can view/fetch the Vendor Rate Comparison popup on Purchase Order. Must be set explicitly — leave blank to disable the feature for everyone (fail-closed default).",
+   "fieldname": "allowed_role",
+   "fieldtype": "Link",
+   "label": "Allowed Role",
+   "options": "Role"
+  },
+  {
+   "default": "Both",
+   "description": "Controls how the Vendor Rate Comparison popup appears on Purchase Order.",
+   "fieldname": "popup_trigger_mode",
+   "fieldtype": "Select",
+   "label": "Popup Trigger Mode",
+   "options": "Button Click Only\nAuto Show on Load\nBoth"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-08-25 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "settlement",
+ "name": "Vendor Rate Comparison Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
