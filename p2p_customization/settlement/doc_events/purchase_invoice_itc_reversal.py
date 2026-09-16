@@ -1,10 +1,13 @@
-import frappe
-from frappe.utils import getdate, nowdate, cint, flt
 from datetime import date, timedelta
+
+import frappe
+from frappe.utils import cint, flt, getdate, nowdate
 
 
 def get_settings():
+	"""Return the cached JFS Settings document."""
 	return frappe.get_cached_doc("JFS Settings")
+
 
 @frappe.whitelist()
 def get_fiscal_year_doc(for_date, company=None):
@@ -16,33 +19,63 @@ def get_fiscal_year_doc(for_date, company=None):
 		"name",
 	)
 	if not fy_name:
-		frappe.throw(f"No Fiscal Year record found covering the date {for_date}. "
-					 f"Please create it under Accounts > Fiscal Year.")
+		frappe.throw(
+			f"No Fiscal Year record found covering the date {for_date}. "
+			f"Please create it under Accounts > Fiscal Year."
+		)
 	return frappe.get_doc("Fiscal Year", fy_name)
+
 
 def get_current_fiscal_year_doc():
 	"""The Fiscal Year that contains TODAY's system date."""
 	return get_fiscal_year_doc(getdate(nowdate()))
 
-def get_cutoff_date(current_fy_doc, settings):
 
+def get_cutoff_date(current_fy_doc, settings) -> date:
+	"""The date (JFS Settings' cutoff_month/cutoff_day) after which a
+	previous-FY invoice's ITC must be reversed -- falls in the current FY
+	if cutoff_month is on/after the FY start month, otherwise the
+	following calendar year."""
 	fy_start = getdate(current_fy_doc.year_start_date)
 	month = cint(settings.cutoff_month)
 	day = cint(settings.cutoff_day)
 	cutoff_year = fy_start.year if month >= fy_start.month else fy_start.year + 1
 	return date(cutoff_year, month, day)
 
-def is_prior_fiscal_year(invoice_fy_doc, current_fy_doc):
+
+def is_prior_fiscal_year(invoice_fy_doc, current_fy_doc) -> bool:
+	"""True if invoice_fy_doc ended before current_fy_doc started."""
 	return getdate(invoice_fy_doc.year_end_date) < getdate(current_fy_doc.year_start_date)
 
+
 def get_previous_fiscal_year_doc(current_fy_doc):
+	"""The Fiscal Year immediately before current_fy_doc."""
 	day_before_current_fy = getdate(current_fy_doc.year_start_date) - timedelta(days=1)
 	return get_fiscal_year_doc(day_before_current_fy)
 
+
 def classify_itc_requirement(invoice_fy, current_fy, previous_fy, today, cutoff_date):
+	"""
+	Decide whether a Purchase Invoice's ITC must be reversed, from its
+	fiscal year relative to the current one:
+	  - Current FY: never required.
+	  - Immediately-previous FY: required only once `today` is past
+	    `cutoff_date` (the grace period for late-booked prior-FY bills).
+	  - Anything older: always required, no cut-off grace period.
+
+	Parameters:
+		invoice_fy (Document, required): The Fiscal Year covering the invoice's bill_date.
+		current_fy (Document, required): The Fiscal Year covering today.
+		previous_fy (Document, required): The Fiscal Year immediately before current_fy.
+		today (date, required): The date to evaluate the cut-off against.
+		cutoff_date (date, required): The grace-period cut-off date (see get_cutoff_date).
+
+	Returns:
+		tuple[str, bool]: (itc_criteria_status label, reversal_required).
+	"""
 	if invoice_fy.name == current_fy.name:
 		return "All Other ITC", False
-	if invoice_fy.name == previous_fy.name: #getdate("2026-11-01")
+	if invoice_fy.name == previous_fy.name:  # getdate("2026-11-01")
 		if today <= cutoff_date:
 			return "All Other ITC", False
 		else:
@@ -50,7 +83,10 @@ def classify_itc_requirement(invoice_fy, current_fy, previous_fy, today, cutoff_
 
 	return "Reversed - Prior FY Invoice", True
 
+
 def get_or_create_log(pi_doc):
+	"""Return this Purchase Invoice's existing ITC Reversal Log, or a new
+	unsaved one seeded from the invoice's header fields."""
 	log_name = frappe.db.get_value("ITC Reversal Log", {"purchase_invoice": pi_doc.name})
 	if log_name:
 		return frappe.get_doc("ITC Reversal Log", log_name)
@@ -63,7 +99,23 @@ def get_or_create_log(pi_doc):
 	log.supplier_invoice_date = pi_doc.bill_date
 	return log
 
-def set_itc_status(doc, method=None):
+
+def set_itc_status(doc, method=None) -> None:
+	"""
+	Purchase Invoice on_update/after_insert hook: (re)classify this
+	invoice's ITC reversal requirement against the current fiscal
+	year/cut-off, and create/update its ITC Reversal Log accordingly.
+	Does not itself create the reversal Journal Entry -- that happens on
+	submit (see handle_itc_reversal_on_submit) or the daily sweep, once
+	reversal_status has actually become due.
+
+	Parameters:
+		doc (Document, required): The Purchase Invoice document being saved.
+		method (str, optional): The hook event name passed by Frappe.
+
+	Returns:
+		None
+	"""
 	settings = get_settings()
 	if not cint(settings.enable_itc_reversal):
 		return
@@ -97,8 +149,8 @@ def set_itc_status(doc, method=None):
 			log.remarks = (
 				(log.remarks + "\n" if log.remarks else "")
 				+ f"Invoice FY ({invoice_fy.name}) is older than the immediately-previous "
-				  f"FY ({previous_fy.name}) - no cut-off check applies; reversal is required "
-				  f"unconditionally."
+				f"FY ({previous_fy.name}) - no cut-off check applies; reversal is required "
+				f"unconditionally."
 			)
 
 	if log.reversal_status != "Reversed":
@@ -107,7 +159,22 @@ def set_itc_status(doc, method=None):
 	log.flags.ignore_permissions = True
 	log.save()
 
-def handle_itc_reversal_on_submit(doc, method=None):
+
+def handle_itc_reversal_on_submit(doc, method=None) -> None:
+	"""
+	Purchase Invoice on_submit hook: post the ITC reversal Journal Entry
+	immediately if this invoice's log already says reversal is Pending
+	(i.e. it was already past cut-off at save time). An invoice that's
+	still within its cut-off grace period at submit time is left for the
+	daily sweep to catch once that grace period actually expires.
+
+	Parameters:
+		doc (Document, required): The Purchase Invoice document being submitted.
+		method (str, optional): The hook event name passed by Frappe.
+
+	Returns:
+		None
+	"""
 	settings = get_settings()
 	if not cint(settings.enable_itc_reversal):
 		return
@@ -125,8 +192,26 @@ def handle_itc_reversal_on_submit(doc, method=None):
 
 	create_itc_reversal_jv(doc, log, settings, trigger="Real-Time (on submit)")
 
-def create_itc_reversal_jv(pi_doc, log, settings, trigger="Real-Time (on submit)"):
 
+def create_itc_reversal_jv(pi_doc, log, settings, trigger="Real-Time (on submit)"):
+	"""
+	Build and insert the ITC-reversal Journal Entry for pi_doc: mirrors
+	each non-TDS tax row (credit for Add, debit for Deduct), then balances
+	any shortfall between the two sides across the invoice's item-level
+	Expense Accounts (weighted by each item's share of net_total).
+	Updates log with the outcome; auto-submits the JV and emails
+	notify_email_recipients if configured to.
+
+	Parameters:
+		pi_doc (Document, required): The submitted Purchase Invoice.
+		log (Document, required): Its ITC Reversal Log (mutated and saved here).
+		settings (Document, required): JFS Settings.
+		trigger (str, optional): Recorded on the log for audit -- which
+			code path triggered this reversal.
+
+	Returns:
+		str | None: The new Journal Entry's name, or None if pi_doc has no tax rows.
+	"""
 	if not pi_doc.taxes:
 		frappe.log_error(f"PI {pi_doc.name}: no tax rows found, cannot build ITC reversal JV")
 		return None
@@ -164,22 +249,28 @@ def create_itc_reversal_jv(pi_doc, log, settings, trigger="Real-Time (on submit)
 			continue
 
 		if t.add_deduct_tax == "Add":
-			je.append("accounts", {
-				"account": t.account_head,
-				"credit_in_account_currency": amount,
-				"cost_center": cost_center or default_cc,
-				"state": pi_doc.state
-			})
+			je.append(
+				"accounts",
+				{
+					"account": t.account_head,
+					"credit_in_account_currency": amount,
+					"cost_center": cost_center or default_cc,
+					"state": pi_doc.state,
+				},
+			)
 			credit_summary.append(f"{t.account_head}: {amount}")
 			credit_total += amount
 
 		elif t.add_deduct_tax == "Deduct":
-			je.append("accounts", {
-				"account": t.account_head,
-				"debit_in_account_currency": amount,
-				"cost_center": cost_center or default_cc,
-				"state": pi_doc.state
-			})
+			je.append(
+				"accounts",
+				{
+					"account": t.account_head,
+					"debit_in_account_currency": amount,
+					"cost_center": cost_center or default_cc,
+					"state": pi_doc.state,
+				},
+			)
 			debit_summary.append(f"{t.account_head}: {amount}")
 			debit_total += amount
 
@@ -204,11 +295,7 @@ def create_itc_reversal_jv(pi_doc, log, settings, trigger="Real-Time (on submit)
 			amount = flt(abs(shortfall) * weight, 2)
 			if not amount:
 				continue
-			row = {
-				"account": acct,
-				"cost_center": cost_center or default_cc,
-				"state": pi_doc.state
-			}
+			row = {"account": acct, "cost_center": cost_center or default_cc, "state": pi_doc.state}
 			if shortfall > 0:
 				row["debit_in_account_currency"] = amount
 				debit_summary.append(f"{acct}: {amount}")
@@ -232,10 +319,8 @@ def create_itc_reversal_jv(pi_doc, log, settings, trigger="Real-Time (on submit)
 	log.debit_accounts_summary = "\n".join(debit_summary)
 	if abs(shortfall) < 0.01:
 		log.remarks = (
-			(log.remarks + "\n" if log.remarks else "")
-			+ "Credit and Debit tax rows netted off exactly (e.g. RCM) - "
-			  "no Expense Account line was needed."
-		)
+			log.remarks + "\n" if log.remarks else ""
+		) + "Credit and Debit tax rows netted off exactly (e.g. RCM) - no Expense Account line was needed."
 	log.flags.ignore_permissions = True
 	log.save()
 	frappe.db.set_value("Purchase Invoice", pi_doc.name, "is_itc_reversed", 1)
@@ -244,7 +329,9 @@ def create_itc_reversal_jv(pi_doc, log, settings, trigger="Real-Time (on submit)
 		notify_reversal(pi_doc, je, settings)
 	return je.name
 
-def notify_reversal(pi_doc, je_doc, settings):
+
+def notify_reversal(pi_doc, je_doc, settings) -> None:
+	"""Email JFS Settings' notify_email_recipients that an ITC reversal JV was posted."""
 	recipients = [r.strip() for r in settings.notify_email_recipients.split(",") if r.strip()]
 	if not recipients:
 		return
@@ -258,7 +345,24 @@ def notify_reversal(pi_doc, je_doc, settings):
 		),
 	)
 
-def run_daily_itc_reversal_sweep():
+
+def run_daily_itc_reversal_sweep() -> None:
+	"""
+	Scheduled (daily) sweep: catch every ITC Reversal Log not yet Reversed
+	and re-evaluate it against today's fiscal-year/cut-off state, posting
+	the reversal JV for any that have now crossed the cut-off. Exists
+	because handle_itc_reversal_on_submit only fires once, at submit time
+	-- an invoice submitted while still within its grace period needs
+	this sweep to catch it once that period actually expires. Each log is
+	processed in its own try/except + commit/rollback so one failure
+	doesn't abort the rest of the batch.
+
+	Parameters:
+		None.
+
+	Returns:
+		None
+	"""
 	settings = get_settings()
 	if not cint(settings.enable_itc_reversal):
 		return
