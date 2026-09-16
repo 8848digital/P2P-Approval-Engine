@@ -1,21 +1,18 @@
 import base64
-import urllib.parse
+
 import frappe
 from frappe import _
-from frappe.utils import today, add_days
 from frappe.model.mapper import get_mapped_doc
+from frappe.utils import add_days, today
 
-# Send reminder emails to new vendors who haven't completed registration.
-def send_reminder_for_non_registered_vendors():
-	# Get BRNs that are new vendors
+
+def send_reminder_for_non_registered_vendors() -> None:
+	"""Send a reminder email to each new-vendor BRN whose onboarding
+	webform was sent 2 days ago and still has no Supplier created."""
 	vendors = frappe.get_all(
 		"BRN",
-		filters={
-			"is_new_vendor": 1,
-			"docstatus": 1,
-			"sent_mail_on": add_days(today(), -2)
-		},
-		fields=["name", "new_vendor", "vendor_email"]
+		filters={"is_new_vendor": 1, "docstatus": 1, "sent_mail_on": add_days(today(), -2)},
+		fields=["name", "new_vendor", "vendor_email"],
 	)
 
 	for vendor in vendors:
@@ -43,87 +40,114 @@ def send_reminder_for_non_registered_vendors():
 			<a href="{webform_link}">Fill Vendor Details</a>
 			"""
 
-			frappe.sendmail(
-				recipients=[vendor.vendor_email],
-				subject=subject,
-				message=message
-			)
+			frappe.sendmail(recipients=[vendor.vendor_email], subject=subject, message=message)
 
 		except Exception as e:
 			frappe.log_error(str(e), "Vendor Reminder Error")
 
-# Encode email address in URL-safe Base64 format.
-def encode_email(email):
+
+def encode_email(email: str) -> str:
+	"""Encode an email address's local/domain parts separately as
+	URL-safe base64, so it can ride in a query string (see
+	send_reminder_for_non_registered_vendors's webform_link)."""
 	local, domain = email.split("@")
 	encoded_local = encode_string_part(local)
 	encoded_domain = encode_string_part(domain)
-	encoded_email = f"{encoded_local}@{encoded_domain}"
-	return encoded_email
+	return f"{encoded_local}@{encoded_domain}"
 
-# Encode a string part (local or domain) using Base64 without padding.
-def encode_string_part(part):
-	encoded_part = base64.urlsafe_b64encode(part.encode()).decode().rstrip("=")
-	return encoded_part
 
-# Decode a Base64-encoded email address back to normal.
+def encode_string_part(part: str) -> str:
+	"""Base64url-encode one string part (local or domain), padding stripped."""
+	return base64.urlsafe_b64encode(part.encode()).decode().rstrip("=")
+
+
 @frappe.whitelist()
-def decode_email(encoded_email):
+def decode_email(encoded_email: str) -> str:
+	"""
+	Decode an email address previously encoded by encode_email().
+
+	**Endpoint:** `/api/method/p2p_customization.settlement.doctype.brn.utils.decode_email`
+	**HTTP Method:** GET, POST
+	**Parameters:**
+		- encoded_email (str, required): The base64url-encoded "local@domain" string
+	**Response:** The decoded email address (str), serialized as JSON.
+	"""
 	encoded_local, encoded_domain = encoded_email.split("@")
 	decoded_local = decode_string_part(encoded_local)
 	decoded_domain = decode_string_part(encoded_domain)
-	decoded_email = f"{decoded_local}@{decoded_domain}"
-	return decoded_email
+	return f"{decoded_local}@{decoded_domain}"
 
-# Decode a Base64-encoded string part back to text.
-def decode_string_part(encoded_part):
+
+def decode_string_part(encoded_part: str) -> str:
+	"""Base64url-decode one string part encoded by encode_string_part()."""
 	padding = "=" * (4 - len(encoded_part) % 4)
 	encoded_part += padding
-	decoded_part = base64.urlsafe_b64decode(encoded_part.encode()).decode()
-	return decoded_part
+	return base64.urlsafe_b64decode(encoded_part.encode()).decode()
 
-# Create a Purchase Order document from a BRN using field mapping.
+
 def create_po_from_brn(source_name, vendor=None):
+	"""
+	Map a submitted BRN into an unsaved Purchase Order.
+
+	Parameters:
+		source_name (str, required): The BRN document name to map from.
+		vendor (str, optional): An existing_vendor from the BRN's
+			Comparision table to set as the PO's supplier.
+
+	Returns:
+		Document: The mapped (unsaved) Purchase Order.
+	"""
 	doc = get_mapped_doc(
 		"BRN",
 		source_name,
 		{
 			"BRN": {
 				"doctype": "Purchase Order",
-				"postprocess": lambda source, target, source_parent=None: set_supplier(source, target, vendor),
+				"postprocess": lambda source, target, source_parent=None: set_supplier(
+					source, target, vendor
+				),
 			},
 			"BRN Item": {
 				"doctype": "Purchase Order Item",
-				"field_map": {
-					"rate": "rate",
-					"expense_gl": "expense_account"
-				}
+				"field_map": {"rate": "rate", "expense_gl": "expense_account"},
 			},
 		},
 	)
 
 	return doc
 
-# Create a Purchase Invoice document from a BRN using field mapping.
+
 def _create_pi_from_brn(source_name, vendor=None):
+	"""
+	Map a submitted BRN into an unsaved Purchase Invoice.
+
+	Parameters:
+		source_name (str, required): The BRN document name to map from.
+		vendor (str, optional): An existing_vendor from the BRN's
+			Comparision table to set as the PI's supplier.
+
+	Returns:
+		Document: The mapped (unsaved) Purchase Invoice.
+	"""
 	doc = get_mapped_doc(
 		"BRN",
 		source_name,
 		{
 			"BRN": {
 				"doctype": "Purchase Invoice",
-				"postprocess": lambda source, target, source_parent=None: set_supplier(source, target, vendor),
+				"postprocess": lambda source, target, source_parent=None: set_supplier(
+					source, target, vendor
+				),
 			},
 			"BRN Item": {
 				"doctype": "Purchase Invoice Item",
-				"field_map": {
-					"rate": "rate",
-					"expense_gl": "expense_account"
-				}
+				"field_map": {"rate": "rate", "expense_gl": "expense_account"},
 			},
 		},
 	)
 
 	return doc
+
 
 def get_comparison_vendor_rows(brn_name):
 	"""Comparision rows on this BRN that have an existing_vendor set --
@@ -137,7 +161,21 @@ def get_comparison_vendor_rows(brn_name):
 		fields=["existing_vendor"],
 	)
 
-def set_supplier(source, target, vendor=None):
+
+def set_supplier(source, target, vendor=None) -> None:
+	"""
+	get_mapped_doc postprocess: set target.supplier from vendor, after
+	checking it's actually one of the BRN's Comparision-table vendors.
+
+	Parameters:
+		source (Document, required): The source BRN document.
+		target (Document, required): The mapped Purchase Order/Invoice.
+		vendor (str, optional): An existing_vendor to set as the supplier;
+			leaves target.supplier unset if not given.
+
+	Returns:
+		None
+	"""
 	if not vendor:
 		target.supplier = None
 		return
@@ -149,38 +187,3 @@ def set_supplier(source, target, vendor=None):
 		)
 
 	target.supplier = vendor
-
-def msa_aggrement_validation(self, method):
-    # Convert Supplier field (Yes/No) to checkbox value (1/0)
-    msa_value = 1 if self.msa_agreement == 1 else 0
-
-    # Get all BRNs where this supplier is selected as Existing Vendor or New Vendor
-    brns = frappe.get_all(
-        "Purchase Order",
-        filters=[
-            ["docstatus", "!=", 2]
-        ],
-        fields=["name", "is_existing_vendor", "is_new_vendor"]
-    )
-
-    for brn in brns:
-        filters = {"name": brn.name}
-
-        if brn.is_existing_vendor:
-            filters["existing_vendor"] = self.name
-
-        elif brn.is_new_vendor:
-            filters["new_vendor"] = self.name
-
-        else:
-            continue
-
-        if frappe.db.exists("BRN", filters):
-            frappe.db.set_value(
-                "BRN",
-                brn.name,
-                "msa_agreement",
-                msa_value,
-                update_modified=False
-            )
-		

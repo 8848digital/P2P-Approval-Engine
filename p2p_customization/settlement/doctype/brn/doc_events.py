@@ -1,13 +1,34 @@
 import frappe
 from frappe import _
 
-def set_total_amount(doc):
+
+def set_total_amount(doc) -> None:
+	"""
+	Recompute doc.total_amount as the sum of its BRN Item rows' amounts.
+
+	Parameters:
+		doc (Document, required): The BRN document being validated.
+
+	Returns:
+		None
+	"""
 	total_amount = 0
 	for row in doc.items:
 		total_amount += row.amount
 	doc.set("total_amount", total_amount)
 
-def validate_comparision_rows(doc):
+
+def validate_comparision_rows(doc) -> None:
+	"""
+	Enforce the Comparision child table's row-count limits (1 for Single,
+	up to 3 for Multi) and the single-Preferred-row constraint.
+
+	Parameters:
+		doc (Document, required): The BRN document being validated.
+
+	Returns:
+		None
+	"""
 	row_count = len(doc.comparision or [])
 
 	if doc.get("single") and row_count > 1:
@@ -18,6 +39,7 @@ def validate_comparision_rows(doc):
 
 	validate_single_preferred_row(doc)
 
+
 def validate_single_preferred_row(doc):
 	"""Preferred picks the one vendor (new or existing) this BRN moves
 	forward with -- for onboarding (see add_onboard_vendor_button) and for
@@ -27,11 +49,23 @@ def validate_single_preferred_row(doc):
 
 	if len(preferred_rows) > 1:
 		frappe.throw(
-			_("Only one row in the Comparision table can be marked Preferred, found {0}.")
-			.format(len(preferred_rows))
+			_("Only one row in the Comparision table can be marked Preferred, found {0}.").format(
+				len(preferred_rows)
+			)
 		)
 
-def block_requisition_id(doc):
+
+def block_requisition_id(doc) -> None:
+	"""
+	Mark the source Requisition ID as consumed once its BRN is submitted,
+	so it can't be reused by another BRN.
+
+	Parameters:
+		doc (Document, required): The BRN document being submitted.
+
+	Returns:
+		None
+	"""
 	if doc.quotation_requisition_id:
 		frappe.db.set_value(
 			"Requisition ID",

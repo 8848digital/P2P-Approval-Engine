@@ -6,4 +6,4 @@ from frappe.model.document import Document
 
 
 class BRNComparision(Document):
-	pass
+	"""BRN child table row: one candidate vendor (new or existing) being compared."""
