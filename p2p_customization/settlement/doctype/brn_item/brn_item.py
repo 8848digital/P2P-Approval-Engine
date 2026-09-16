@@ -4,5 +4,6 @@
 # import frappe
 from frappe.model.document import Document
 
+
 class BRNItem(Document):
-	pass
+	"""BRN child table row: one item/service line being requisitioned, with its sanctioned qty/rate/amount."""

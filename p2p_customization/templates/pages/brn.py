@@ -7,7 +7,18 @@ from frappe.utils import today
 from p2p_customization.settlement.customization.purchase_order.utils import create_portal_invoice_log
 
 
-def get_context(context):
+def get_context(context) -> None:
+	"""
+	Page controller for the /brn/<name> portal detail page: loads the BRN,
+	its public attachments, and whether the "Create Purchase Invoice"
+	button should show (submitted BRNs only).
+
+	Parameters:
+		context (frappe._dict, required): The website render context.
+
+	Returns:
+		None
+	"""
 	context.no_cache = 1
 	context.show_sidebar = True
 
@@ -29,6 +40,7 @@ def get_context(context):
 
 	context.show_make_pi_button = context.doc.docstatus == 1
 
+
 @frappe.whitelist()
 def make_purchase_invoice_from_brn(
 	brn_name,
@@ -36,6 +48,19 @@ def make_purchase_invoice_from_brn(
 	supplier_invoice_no=None,
 	supplier_invoice_date=None,
 ):
+	"""
+	Create and insert a Purchase Invoice mapped from a submitted BRN, from
+	the vendor portal's BRN detail page.
+
+	**Endpoint:** `/api/method/p2p_customization.templates.pages.brn.make_purchase_invoice_from_brn`
+	**HTTP Method:** POST
+	**Parameters:**
+		- brn_name (str, required): The BRN document name to map from
+		- items (str, required): JSON-encoded list of {item_code, qty, rate}
+		- supplier_invoice_no (str, optional): The supplier's own invoice number
+		- supplier_invoice_date (str, optional): The supplier's own invoice date
+	**Response:** The new Purchase Invoice's name (str), serialized as JSON.
+	"""
 	items = json.loads(items)
 
 	brn = frappe.get_doc("BRN", brn_name)
