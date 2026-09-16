@@ -1,7 +1,7 @@
 import frappe
 from frappe import _
 
-from p2p_customization.settlement.api import is_vendor as is_vendor_user
+from p2p_customization.settlement.vendor_auth_hooks import is_vendor as is_vendor_user
 from p2p_customization.vendor_portal.utils import get_vendor_landing_route
 
 no_cache = 1

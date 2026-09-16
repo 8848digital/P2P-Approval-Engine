@@ -3,7 +3,22 @@ import base64
 import frappe
 from frappe import _
 from frappe.model.mapper import get_mapped_doc
-from frappe.utils import add_days, today
+from frappe.utils import add_days, add_months, cint, getdate, today
+
+
+def calculate_brn_expiry_date(date, months):
+	"""
+	Compute a BRN's service expiry date from its start date + duration.
+
+	Parameters:
+		date (str, required): The service start date.
+		months (int, required): Duration of service, in months.
+
+	Returns:
+		date: date + months, anchored to the day before date (matches the
+			existing "expires the day before the anniversary" convention).
+	"""
+	return add_months(getdate(add_days(date, -1)), cint(months))
 
 
 def send_reminder_for_non_registered_vendors() -> None:

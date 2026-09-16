@@ -47,7 +47,7 @@ function add_row_revalidate_button(frm, cdt, cdn) {
 
 function run_revalidation(frm, vendor_names, label) {
 	frappe.call({
-		method: "p2p_customization.settlement.kyc_validation.api.revalidate_in_run",
+		method: "p2p_customization.settlement.api.v1.kyc_validation.revalidate_in_run",
 		args: {
 			run_name: frm.doc.name,
 			vendors: JSON.stringify(vendor_names),

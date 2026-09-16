@@ -78,7 +78,7 @@ after_migrate = [
 extend_bootinfo = "p2p_customization.settlement.boot.boot_session"
 
 update_website_context = [
-	"p2p_customization.settlement.api.update_website_context",
+	"p2p_customization.settlement.vendor_auth_hooks.update_website_context",
 ]
 
 # Home Pages
@@ -321,7 +321,7 @@ scheduler_events = {
 # 	"p2p_customization.auth.validate"
 # ]
 
-on_login = "p2p_customization.settlement.api.block_vendor_from_standard_login"
+on_login = "p2p_customization.settlement.vendor_auth_hooks.block_vendor_from_standard_login"
 
 website_route_rules = [
 	{"from_route": "/brn", "to_route": "BRN"},
@@ -344,7 +344,10 @@ website_path_resolver = "p2p_customization.website.resolve_website_path"
 website_context = {
 	"post_login": [
 		{"label": "My Account", "url": "/me"},
-		{"label": "Log out", "url": "/api/method/p2p_customization.settlement.api.vendor_web_logout"},
+		{
+			"label": "Log out",
+			"url": "/api/method/p2p_customization.settlement.api.v1.vendor_portal.vendor_web_logout",
+		},
 	]
 }
 

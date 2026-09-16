@@ -2,7 +2,7 @@ frappe.ui.form.on('Purchase Invoice',  {
 	setup: function(frm){
 		frm.set_query("nature_of_service", "items", function() {
 			return {
-				query: "p2p_customization.settlement.customization.purchase_invoice.api.get_nature_of_service_query",
+				query: "p2p_customization.settlement.api.v1.purchase_invoice.get_nature_of_service_query",
 				filters: {
 					supplier: frm.doc.supplier
 				}
@@ -24,7 +24,7 @@ frappe.ui.form.on('Purchase Invoice',  {
 	send_pi_to_vendor(frm) {
 		frm.add_custom_button(__('Send PI to Vendor'), function () {
 			frappe.call({
-				method: "p2p_customization.settlement.customization.purchase_invoice.api.send_po_to_vendor",
+				method: "p2p_customization.settlement.api.v1.purchase_invoice.send_po_to_vendor",
 				args: {
 					purchase_invoice: frm.doc.name,
 				},
@@ -148,7 +148,7 @@ frappe.ui.form.on('Purchase Invoice', {
 	"posting_date": function(frm){
 		if (frm.doc.posting_date){
 			frappe.call({
-				method: "p2p_customization.settlement.customization.purchase_order.api.get_fiscal_year_and_validity",
+				method: "p2p_customization.settlement.api.v1.purchase_order.get_fiscal_year_and_validity",
 				args: {
 					date: frm.doc.posting_date,
 					brn: frm.doc.brn

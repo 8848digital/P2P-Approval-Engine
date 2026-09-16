@@ -2,7 +2,7 @@ import frappe
 from frappe import _
 from frappe.model.meta import Meta
 
-from p2p_customization.settlement.api import is_vendor
+from p2p_customization.settlement.vendor_auth_hooks import is_vendor
 from p2p_customization.vendor_portal.doctype.portal_section_config.portal_section_config import (
 	PortalSectionConfig,
 )

@@ -231,7 +231,7 @@ function calculate_amount(frm, cdt, cdn) {
 // 🔹 Create Purchase Order from BRN
 function create_purchase_order(frm, vendor) {
 	frappe.model.open_mapped_doc({
-		method: "p2p_customization.settlement.doctype.brn.api.create_purchase_order_from_brn",
+		method: "p2p_customization.settlement.api.v1.brn.create_purchase_order_from_brn",
 		frm: frm,
 		args: { vendor: vendor },
 		run_link_triggers: true
@@ -241,7 +241,7 @@ function create_purchase_order(frm, vendor) {
 // 🔹 Create Purchase Invoice from BRN
 function create_purchase_invoice(frm, vendor) {
 	frappe.model.open_mapped_doc({
-		method: "p2p_customization.settlement.doctype.brn.api.create_purchase_invoice_from_brn",
+		method: "p2p_customization.settlement.api.v1.brn.create_purchase_invoice_from_brn",
 		frm: frm,
 		args: { vendor: vendor },
 		run_link_triggers: true
@@ -251,7 +251,7 @@ function create_purchase_invoice(frm, vendor) {
 function get_expiry_date(frm){
 	if(frm.doc.duration_of_service_months && frm.doc.service_start_date){
 		frappe.call({
-			method: "p2p_customization.settlement.doctype.brn.api.get_expiry_date",
+			method: "p2p_customization.settlement.api.v1.brn.get_expiry_date",
 			args:{
 				date: frm.doc.service_start_date,
 				months: frm.doc.duration_of_service_months

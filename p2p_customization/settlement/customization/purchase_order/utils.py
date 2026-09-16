@@ -60,6 +60,16 @@ def send_po_mail_to_vendor(purchase_order):
 	"""Send Purchase Order email with PDF attachment to vendor"""
 	doc = frappe.get_doc("Purchase Order", purchase_order)
 
+	# frappe.get_doc() does not check permissions on its own -- without this,
+	# any logged-in user could pass an arbitrary Purchase Order name and
+	# have its PDF emailed to that supplier, regardless of whether they can
+	# actually see/print this document.
+	if not doc.has_permission("email"):
+		frappe.throw(
+			_("You are not permitted to email this Purchase Order."),
+			frappe.PermissionError,
+		)
+
 	# 1. Try to get email from Purchase Order contact person
 	supplier_email = None
 	if doc.supplier_address:

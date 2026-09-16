@@ -2,7 +2,7 @@ frappe.ui.form.on('Purchase Order',  {
 	setup: function(frm){
 		frm.set_query("nature_of_service", "items", function() {
 			return {
-				query: "p2p_customization.settlement.customization.purchase_invoice.api.get_nature_of_service_query",
+				query: "p2p_customization.settlement.api.v1.purchase_invoice.get_nature_of_service_query",
 				filters: {
 					supplier: frm.doc.supplier
 				}
@@ -26,7 +26,7 @@ frappe.ui.form.on('Purchase Order',  {
 	send_po_to_vendor(frm) {
 		frm.add_custom_button(__('Send PO to Vendor'), function () {
 			frappe.call({
-				method: "p2p_customization.settlement.customization.purchase_order.api.send_po_to_vendor",
+				method: "p2p_customization.settlement.api.v1.purchase_order.send_po_to_vendor",
 				args: {
 					purchase_order: frm.doc.name,
 				},
@@ -143,7 +143,7 @@ function fetch_rate_comparison_config() {
 	if (!_rate_comparison_config_promise) {
 		_rate_comparison_config_promise = new Promise((resolve) => {
 			frappe.call({
-				method: "p2p_customization.settlement.customization.purchase_order.api.get_vendor_rate_comparison_config",
+				method: "p2p_customization.settlement.api.v1.purchase_order.get_vendor_rate_comparison_config",
 				callback: (r) => resolve(r.message || { permitted: false, trigger_mode: "Both" })
 			});
 		});
@@ -181,7 +181,7 @@ function show_rate_comparison_dialog(frm, { silent_if_empty = false } = {}) {
 		.map((d) => d.nature_of_service))];
 
 	frappe.call({
-		method: "p2p_customization.settlement.customization.purchase_order.api.get_vendor_rate_comparison",
+		method: "p2p_customization.settlement.api.v1.purchase_order.get_vendor_rate_comparison",
 		args: {
 			supplier: frm.doc.supplier,
 			nature_of_services: nature_of_services,
@@ -357,7 +357,7 @@ function validate_brn_dates(frm){
 	if (!frm.doc.brn || !frm.doc.transaction_date) return;
 
 	frappe.call({
-		method: "p2p_customization.settlement.customization.purchase_order.api.validate_transaction_date_with_brn_dates",
+		method: "p2p_customization.settlement.api.v1.purchase_order.validate_transaction_date_with_brn_dates",
 		args: {
 			brn: frm.doc.brn,
 			transaction_date: frm.doc.transaction_date
@@ -403,7 +403,7 @@ frappe.ui.form.on('Purchase Order', {
 	"transaction_date": function(frm){
 		if (frm.doc.transaction_date){
 			frappe.call({
-				method: "p2p_customization.settlement.customization.purchase_order.api.get_fiscal_year_and_validity",
+				method: "p2p_customization.settlement.api.v1.purchase_order.get_fiscal_year_and_validity",
 				args: {
 					date: frm.doc.transaction_date,
 					brn: frm.doc.brn

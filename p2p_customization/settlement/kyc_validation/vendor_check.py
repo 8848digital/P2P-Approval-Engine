@@ -1,4 +1,14 @@
 # Copyright (c) 2026, p2p_customization
+"""Business logic for running KYC Vendor checks against a Supplier.
+
+Relocated out of settlement/kyc_validation/api.py (which is no longer a
+whitelisted-endpoint file, see settlement/api/v1/kyc_validation.py) so the
+whitelisted wrappers stay thin per the app's api.md convention. Behavior is
+unchanged from the original api.py implementation -- only the location and
+whitelist decorators are new (removed here, since none of these are
+directly HTTP-callable any more).
+"""
+
 import json
 import re
 import time
@@ -41,7 +51,7 @@ def _mask_sensitive(payload_str: str, field_map) -> str:
 			for k, v in obj.items():
 				if isinstance(v, str) and any(h in k.lower() for h in SENSITIVE_KEY_HINTS):
 					obj[k] = _mask(v)
-				elif isinstance(v, (dict, list)):
+				elif isinstance(v, dict | list):
 					walk(v)
 		elif isinstance(obj, list):
 			for item in obj:
@@ -273,7 +283,6 @@ def _append_log_row(run, vendor_name, result, attempt_no, remarks=None) -> None:
 	)
 
 
-@frappe.whitelist()
 def get_kyc_vendor_options(supplier=None):
 	"""Enabled vendors for the multiselect dialog, flagged with whether they
 	should be pre-checked by default."""
@@ -292,7 +301,6 @@ def get_kyc_vendor_options(supplier=None):
 	return vendors
 
 
-@frappe.whitelist()
 def run_kyc_validation(supplier, vendors):
 	"""Create a fresh KYC Validation Run for the given Supplier + selected vendors."""
 	_check_supplier_permission(supplier)
@@ -319,7 +327,6 @@ def run_kyc_validation(supplier, vendors):
 	return _run_summary(run)
 
 
-@frappe.whitelist()
 def revalidate_in_run(run_name, vendors, remarks=None):
 	"""Re-run one or more vendor checks inside an EXISTING run, appending new
 	log rows (attempt_no incremented) so the full history is preserved.
@@ -346,7 +353,6 @@ def revalidate_in_run(run_name, vendors, remarks=None):
 	return _run_summary(run)
 
 
-@frappe.whitelist()
 def test_kyc_vendor(vendor_name):
 	"""Used by the 'Test with Sample Values' button on the KYC Vendor form.
 	Runs the API call using each Field Map row's Sample Value instead of a
@@ -392,7 +398,6 @@ def _run_summary(run):
 	}
 
 
-@frappe.whitelist()
 def get_last_kyc_run(supplier):
 	"""
 	Return the most recent KYC Validation Run for supplier, with one row

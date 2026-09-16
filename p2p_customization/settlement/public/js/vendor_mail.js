@@ -63,7 +63,7 @@ p2p_customization.vendor = {
 						}
 
 						frappe.call({
-							method: "p2p_customization.settlement.doctype.vendor_email.api.send_vendor_mail",
+							method: "p2p_customization.settlement.api.v1.vendor_email.send_vendor_mail",
 							args: {
 								reference_doctype: doctype,
 								reference_docname: docname,

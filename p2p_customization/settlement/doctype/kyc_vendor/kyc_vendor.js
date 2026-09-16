@@ -5,7 +5,7 @@ frappe.ui.form.on("KYC Vendor", {
 
 		frm.add_custom_button(__("Test with Sample Values"), () => {
 			frappe.call({
-				method: "p2p_customization.settlement.kyc_validation.api.test_kyc_vendor",
+				method: "p2p_customization.settlement.api.v1.kyc_validation.test_kyc_vendor",
 				args: { vendor_name: frm.doc.name },
 				freeze: true,
 				freeze_message: __("Calling API with sample values..."),

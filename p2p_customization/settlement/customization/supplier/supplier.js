@@ -2,7 +2,7 @@ frappe.ui.form.on('Supplier', {
     setup: function(frm) {
         frm.set_query("nature_of_service", function() {
             return {
-                query: "p2p_customization.settlement.customization.supplier.api.get_nature_of_service_query"
+                query: "p2p_customization.settlement.api.v1.supplier.get_nature_of_service_query"
             };
         });
     },
@@ -60,7 +60,7 @@ async function handle_approve_action(frm) {
 
 function send_supplier_message(frm, message, action) {
     frappe.call({
-        method: "p2p_customization.settlement.customization.supplier.api.send_supplier_message",
+        method: "p2p_customization.settlement.api.v1.supplier.send_supplier_message",
         args: {
             supplier: frm.doc.name,
             reason: message,
@@ -82,7 +82,7 @@ function send_supplier_message(frm, message, action) {
 
 function send_approval_mail(frm) {
     frappe.call({
-        method: "p2p_customization.settlement.customization.supplier.api.send_approval_mail",
+        method: "p2p_customization.settlement.api.v1.supplier.send_approval_mail",
         args: {
             supplier_name: frm.doc.supplier_name,
             email_id: frm.doc.email_id,

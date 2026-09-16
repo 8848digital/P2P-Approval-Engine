@@ -31,7 +31,7 @@ def resolve_website_path(path):
 
 
 def _is_vendor(user):
-	from p2p_customization.settlement.api import is_vendor
+	from p2p_customization.settlement.vendor_auth_hooks import is_vendor
 	return is_vendor(user)
 
 

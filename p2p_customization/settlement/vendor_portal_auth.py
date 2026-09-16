@@ -1,39 +1,64 @@
+# Copyright (c) 2026, p2p_customization
+"""Business logic backing the vendor-portal auth endpoints.
+
+Relocated out of settlement/api.py (which is no longer a whitelisted-endpoint
+file, see settlement/api/v1/vendor_portal.py) so the whitelisted wrappers stay
+thin per the app's api.md convention. Behavior is unchanged from the
+original settlement/api.py implementation -- only the location and the
+public/internal name split are new.
+"""
 
 import frappe
 from frappe import _
 from frappe.auth import LoginManager
 from frappe.utils.file_manager import save_file
 
+from p2p_customization.settlement.vendor_auth_hooks import is_vendor
+from p2p_customization.vendor_portal.utils import (
+	get_portal_doctype_by_route,
+	get_vendor_landing_route,
+	get_vendor_suppliers,
+	is_vendor_portal_enabled,
+	require_row_access,
+)
 
-@frappe.whitelist(allow_guest=True)
-def vendor_login(usr: str, pwd: str):
+
+def authenticate_vendor_login(usr: str, pwd: str) -> dict:
 	"""
-	Custom login endpoint for the vendor portal.
+	Authenticate a vendor-portal login attempt and establish the session.
 
-	Authenticates the given credentials, then additionally checks that the
-	account is actually a vendor before establishing the session. This keeps
-	the vendor portal separate from the standard Frappe /login flow, so an
-	arbitrary system user (or a vendor trying to use the wrong door) can't
-	just log in here.
+	Checks the vendor portal is enabled, authenticates the given credentials,
+	then additionally verifies the account is actually a vendor before
+	keeping the session -- this keeps the vendor portal separate from the
+	standard Frappe /login flow, so an arbitrary system user (or a vendor
+	trying to use the wrong door) can't just log in here.
+
+	Parameters:
+		usr (str, required): The login email/username.
+		pwd (str, required): The login password.
+
+	Returns:
+		dict: {"success": bool, "error": str} on failure, or
+			{"success": True, "redirect_to": str} on success.
 	"""
 	if not usr or not pwd:
 		frappe.response["http_status_code"] = 400
 		return {"success": False, "error": _("Email and password are required")}
 
-	# Local import: vendor_portal.utils imports is_vendor from this same
-	# module, so a module-level import here would be circular.
-	from p2p_customization.vendor_portal.utils import is_vendor_portal_enabled
-
 	if not is_vendor_portal_enabled():
 		frappe.response["http_status_code"] = 503
-		return {"success": False, "error": _("The vendor portal is currently unavailable. Please contact support.")}
+		return {
+			"success": False,
+			"error": _("The vendor portal is currently unavailable. Please contact support."),
+		}
 
 	try:
 		login_manager = LoginManager()
 		login_manager.authenticate(user=usr, pwd=pwd)
-		# Lets the on_login hook (block_vendor_from_standard_login, below) know
-		# this post_login() call is the legitimate vendor-portal path, so it
-		# doesn't reject the very login it's meant to allow.
+		# Lets the on_login hook (block_vendor_from_standard_login, in
+		# settlement/api.py) know this post_login() call is the legitimate
+		# vendor-portal path, so it doesn't reject the very login it's meant
+		# to allow.
 		frappe.flags.in_vendor_portal_login = True
 		login_manager.post_login()
 	except frappe.exceptions.AuthenticationError:
@@ -60,63 +85,25 @@ def vendor_login(usr: str, pwd: str):
 
 	frappe.db.commit()
 
-	# Local import: vendor_portal.utils imports is_vendor from this same
-	# module, so a module-level import here would be circular.
-	from p2p_customization.vendor_portal.utils import get_vendor_landing_route
-
 	return {
 		"success": True,
 		"redirect_to": get_vendor_landing_route(user),
 	}
 
 
-def is_vendor(user: str) -> bool:
-	"""Only accounts with the "Vendor" checkbox on their User record may use
-	the vendor portal. The checkbox is set automatically when a user is
-	created via vendor onboarding."""
-	return bool(frappe.db.get_value("User", user, "vendor"))
-
-
-def update_website_context(context):
-	"""update_website_context hook: points the website navbar's "Home" link
-	at this vendor's actual landing route, so it doesn't fall back to the
-	site root. Reuses get_vendor_landing_route() rather than hardcoding
-	/portal here too, so onboarded vs not-yet-onboarded vendors land on
-	"Home" exactly where they'd land right after logging in. Only applies
-	to logged-in vendor accounts -- every other visitor keeps the default
-	Home behaviour."""
-	if frappe.session.user != "Guest" and is_vendor(frappe.session.user):
-		from p2p_customization.vendor_portal.utils import get_vendor_landing_route
-
-		return {"home_page": get_vendor_landing_route(frappe.session.user)}
-
-
-def block_vendor_from_standard_login(login_manager):
+def logout_vendor_user() -> None:
 	"""
-	Fires for every successful authentication that goes through Frappe's standard /login,
-	including the desk login and any other core entry point -- vendor
-	accounts must sign in through /vendor-login instead. vendor_login()
-	(above) sets the in_vendor_portal_login flag before its own post_login()
-	call, so that legitimate path isn't blocked by its own check.
+	Log the current session out and set the redirect response.
 
-	This runs before the session is created (make_session() happens later in
-	post_login()), so raising here leaves the account logged out.
-	"""
-	if frappe.flags.in_vendor_portal_login:
-		return
-
-	if is_vendor(login_manager.user):
-		frappe.throw(
-			_("Vendor accounts cannot sign in here. Please use the Vendor Portal login page."),
-			frappe.PermissionError,
-		)
-
-@frappe.whitelist()
-def vendor_web_logout():
-	"""
-	Custom logout for portal users.
 	Redirects to /vendor-login if the logged-out user had vendor access,
-	otherwise falls back to the standard /login page.
+	otherwise falls back to the standard /login page. Sets the redirect via
+	frappe.local.response as a side effect; returns nothing.
+
+	Parameters:
+		None.
+
+	Returns:
+		None
 	"""
 	user = frappe.session.user
 	was_vendor = is_vendor(user)
@@ -128,18 +115,24 @@ def vendor_web_logout():
 	frappe.local.response["location"] = "/vendor-login" if was_vendor else "/login"
 
 
-@frappe.whitelist()
-def vendor_update_password(old_password: str, new_password: str):
+def change_vendor_password(old_password: str, new_password: str) -> None:
 	"""
-	Password change for vendor-portal accounts.
+	Change the current vendor-portal user's password.
 
 	frappe.core.doctype.user.user.update_password() re-establishes the
 	session via login_manager.login_as() once the password is saved, which
 	fires the on_login hook -- that's block_vendor_from_standard_login,
 	which throws for any vendor login not explicitly flagged as coming
-	through vendor_login() above. A vendor changing their own password
-	would otherwise always get blocked by their own account's guard, so
-	this sets the same bypass flag around the call.
+	through authenticate_vendor_login() above. A vendor changing their own
+	password would otherwise always get blocked by their own account's
+	guard, so this sets the same bypass flag around the call.
+
+	Parameters:
+		old_password (str, required): The user's current password.
+		new_password (str, required): The new password to set.
+
+	Returns:
+		None
 	"""
 	if not is_vendor(frappe.session.user):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
@@ -153,25 +146,24 @@ def vendor_update_password(old_password: str, new_password: str):
 		frappe.flags.in_vendor_portal_login = False
 
 
-@frappe.whitelist()
-def vendor_attach_invoice_copy(route: str, docname: str):
+def attach_vendor_invoice_copy(route: str, docname: str) -> dict:
 	"""
+	Attach an uploaded invoice-copy file to a vendor-visible document.
+
 	Lets a vendor upload their invoice copy straight from a record's own
 	detail page in the portal -- for whichever Portal Section Config rows
 	have Allow Attaching Invoice Copy turned on (Purchase Order, by
 	default), while it isn't fully billed yet.
 
-	Local imports: vendor_portal.utils imports is_vendor from this same
-	module, so module-level imports here would be circular.
+	Parameters:
+		route (str, required): The portal route identifying the section config row.
+		docname (str, required): The name of the document to attach the file to.
+
+	Returns:
+		dict: {"file_name": str, "file_url": str}
 	"""
 	if not is_vendor(frappe.session.user):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
-
-	from p2p_customization.vendor_portal.utils import (
-		get_portal_doctype_by_route,
-		get_vendor_suppliers,
-		require_row_access,
-	)
 
 	row = get_portal_doctype_by_route(route)
 	if not row or not row.allow_invoice_attach:
