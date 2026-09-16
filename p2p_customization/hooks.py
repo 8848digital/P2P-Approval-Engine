@@ -181,7 +181,7 @@ doc_events = {
 			"p2p_customization.settlement.tax_withholding.update_tds_rate_for_po",
 			"p2p_customization.settlement.customization.purchase_order.purchase_order.validate",
 		],
-		"before_save": "p2p_customization.settlement.utils.backdated_po_validation",
+		"before_save": "p2p_customization.settlement.customization.purchase_order.purchase_order.before_save",
 	},
 	"Purchase Invoice": {
 		"before_validate": [
@@ -194,8 +194,7 @@ doc_events = {
 			"p2p_customization.settlement.tax_withholding.apply_supplier_allowance_limit",
 			"p2p_customization.settlement.tax_withholding.apply_return_tds_reversal",
 			"p2p_customization.settlement.tax_withholding.update_tds_rate",
-			"p2p_customization.settlement.customization.purchase_invoice.doc_events.validate_rate_and_qty",
-			"p2p_customization.settlement.utils.validate_fiscal_year_and_brn_dates",
+			"p2p_customization.settlement.customization.purchase_invoice.purchase_invoice.validate",
 		],
 		"after_insert": [
 			"p2p_customization.settlement.doc_events.purchase_invoice_itc_reversal.set_itc_status",
@@ -227,7 +226,7 @@ doc_events = {
 		"after_insert": "p2p_customization.settlement.customization.supplier.supplier.after_insert",
 	},
 	"Supplier Quotation": {
-		"on_update_after_submit": "p2p_customization.settlement.doc_events.supplier_quotation.get_requisition_items",
+		"on_update_after_submit": "p2p_customization.settlement.customization.supplier_quotation.supplier_quotation.on_update_after_submit",
 	},
 }
 

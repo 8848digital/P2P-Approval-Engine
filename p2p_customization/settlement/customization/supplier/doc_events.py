@@ -1,5 +1,6 @@
 import frappe
 
+
 def manage_supplier_role_based_on_workflow(doc):
 	if not doc.email_id:
 		return
@@ -9,13 +10,15 @@ def manage_supplier_role_based_on_workflow(doc):
 		return
 
 	if not frappe.db.exists("Has Role", {"parent": user_id, "role": "Supplier"}):
-		frappe.get_doc({
-			"doctype": "Has Role",
-			"parent": user_id,
-			"parenttype": "User",
-			"parentfield": "roles",
-			"role": "Supplier"
-		}).insert(ignore_permissions=True)
+		frappe.get_doc(
+			{
+				"doctype": "Has Role",
+				"parent": user_id,
+				"parenttype": "User",
+				"parentfield": "roles",
+				"role": "Supplier",
+			}
+		).insert(ignore_permissions=True)
 		# Has Role is inserted directly here rather than via User.save(), so
 		# User's own cache-clearing on update never fires -- frappe.get_roles()
 		# caches per-user in redis (see frappe.permissions.get_roles) and
@@ -23,6 +26,7 @@ def manage_supplier_role_based_on_workflow(doc):
 		# vendor's next fresh login, hiding role-gated portal sidebar items
 		# even though the role was actually granted.
 		frappe.cache.hdel("roles", user_id)
+
 
 def update_vendor_email_doc(doc, method=None):
 	if not doc.is_created_from_webform:
@@ -34,11 +38,9 @@ def update_vendor_email_doc(doc, method=None):
 
 		existing_users = [d.user for d in doc.get("portal_users") if d.user]
 
-		if (
-			doc.email_id not in existing_users
-			and frappe.db.exists("User", doc.email_id)
-		):
+		if doc.email_id not in existing_users and frappe.db.exists("User", doc.email_id):
 			doc.append("portal_users", {"user": doc.email_id})
+
 
 def update_supplier_in_brn(doc, method=None):
 	if not doc.brn:
@@ -73,28 +75,34 @@ def update_comparision_row_for_onboarded_vendor(doc):
 	if matched:
 		brn.save(ignore_permissions=True)
 
+
 def log_supplier_onboarded_from_brn(doc):
 	# reference_name has to point at a real document -- guard each insert
 	# individually rather than bailing out on the whole function, so a
 	# stale/mistyped doc.brn only costs the BRN-side comment, not the
 	# Supplier-side one (and vice versa).
 	if frappe.db.exists("BRN", doc.brn):
-		frappe.get_doc({
-			"doctype": "Comment",
-			"comment_type": "Info",
-			"reference_doctype": "BRN",
-			"reference_name": doc.brn,
-			"content": f"Vendor {frappe.bold(doc.name)} was onboarded from this BRN.",
-		}).insert(ignore_permissions=True)
+		frappe.get_doc(
+			{
+				"doctype": "Comment",
+				"comment_type": "Info",
+				"reference_doctype": "BRN",
+				"reference_name": doc.brn,
+				"content": f"Vendor {frappe.bold(doc.name)} was onboarded from this BRN.",
+			}
+		).insert(ignore_permissions=True)
 
 	if frappe.db.exists("Supplier", doc.name):
-		frappe.get_doc({
-			"doctype": "Comment",
-			"comment_type": "Info",
-			"reference_doctype": "Supplier",
-			"reference_name": doc.name,
-			"content": f"This Supplier was onboarded from BRN {frappe.bold(doc.brn)}.",
-		}).insert(ignore_permissions=True)
+		frappe.get_doc(
+			{
+				"doctype": "Comment",
+				"comment_type": "Info",
+				"reference_doctype": "Supplier",
+				"reference_name": doc.name,
+				"content": f"This Supplier was onboarded from BRN {frappe.bold(doc.brn)}.",
+			}
+		).insert(ignore_permissions=True)
+
 
 def create_bank_accounts_for_supplier(doc, method=None):
 	for row in doc.get("bank_account") or []:
@@ -106,16 +114,18 @@ def create_bank_accounts_for_supplier(doc, method=None):
 
 
 def create_bank_account_for_row(doc, row):
-	bank_account = frappe.get_doc({
-		"doctype": "Bank Account",
-		"account_name": doc.supplier_name or doc.name,
-		"bank": get_or_create_bank(row.bank_name),
-		"party_type": "Supplier",
-		"party": doc.name,
-		"bank_account_no": row.bank_account_no,
-		"ifsc": row.ifsc,
-		"branch_code": row.ifsc,
-	})
+	bank_account = frappe.get_doc(
+		{
+			"doctype": "Bank Account",
+			"account_name": doc.supplier_name or doc.name,
+			"bank": get_or_create_bank(row.bank_name),
+			"party_type": "Supplier",
+			"party": doc.name,
+			"bank_account_no": row.bank_account_no,
+			"ifsc": row.ifsc,
+			"branch_code": row.ifsc,
+		}
+	)
 	bank_account.insert(ignore_permissions=True)
 	return bank_account
 
@@ -142,55 +152,68 @@ def create_supplier_address(doc):
 	address.flags.ignore_permissions = True
 	address.insert(ignore_permissions=True)
 
-def supplier_address_exists(doc):
-	return frappe.db.sql(
-		"""
-		SELECT a.name
-		FROM `tabAddress` a
-		INNER JOIN `tabDynamic Link` dl
-			ON dl.parent = a.name
-		WHERE
-			dl.link_doctype = 'Supplier'
-			AND dl.link_name = %s
-			AND IFNULL(a.address_line1, '') = %s
-			AND IFNULL(a.city, '') = %s
-			AND IFNULL(a.state, '') = %s
-			AND IFNULL(a.country, '') = %s
-			AND IFNULL(a.pincode, '') = %s
-		LIMIT 1
-		""",
-		(
-			doc.name,
-			doc.get("address_line1") or "",
-			doc.get("city") or "",
-			doc.get("state") or "",
-			doc.get("country") or "",
-			doc.get("pincode") or "",
-		),
+
+def supplier_address_exists(doc) -> bool:
+	"""
+	Check whether an Address matching doc's address fields is already
+	linked to this Supplier, so create_supplier_address() doesn't create a
+	duplicate. Field comparisons treat NULL and "" as equal, matching how
+	the address form leaves an unfilled field.
+
+	Parameters:
+		doc (Document, required): The Supplier document being saved.
+
+	Returns:
+		bool: True if a matching Address is already linked.
+	"""
+	Address = frappe.qb.DocType("Address")
+	DynamicLink = frappe.qb.DocType("Dynamic Link")
+
+	linked_addresses = (
+		frappe.qb.from_(Address)
+		.inner_join(DynamicLink)
+		.on(DynamicLink.parent == Address.name)
+		.select(Address.address_line1, Address.city, Address.state, Address.country, Address.pincode)
+		.where(DynamicLink.link_doctype == "Supplier")
+		.where(DynamicLink.link_name == doc.name)
+	).run(as_dict=True)
+
+	target = (
+		doc.get("address_line1") or "",
+		doc.get("city") or "",
+		doc.get("state") or "",
+		doc.get("country") or "",
+		doc.get("pincode") or "",
+	)
+	return any(
+		(a.address_line1 or "", a.city or "", a.state or "", a.country or "", a.pincode or "") == target
+		for a in linked_addresses
 	)
 
 
 def get_supplier_address_doc(doc):
-	return frappe.get_doc({
-		"doctype": "Address",
-		"address_title": doc.get("supplier_name"),
-		"address_type": "Billing",
-		"address_line1": doc.get("address_line1"),
-		"city": doc.get("city"),
-		"state": doc.get("state"),
-		"country": doc.get("country"),
-		"pincode": doc.get("pincode"),
-		"phone": doc.get("mobile_no") or doc.get("phone"),
-		"email_id": doc.get("email_id"),
-		"gstin": doc.get("gstin"),
-		"gst_category": doc.get("gst_category") or "Unregistered",
-		"applicable_date": "2020-01-01",
-		"cancellation_date": "2099-12-31",
-		"is_primary_address": 1,
-		"links": [
-			{
-				"link_doctype": "Supplier",
-				"link_name": doc.name,
-			}
-		],
-	})
+	return frappe.get_doc(
+		{
+			"doctype": "Address",
+			"address_title": doc.get("supplier_name"),
+			"address_type": "Billing",
+			"address_line1": doc.get("address_line1"),
+			"city": doc.get("city"),
+			"state": doc.get("state"),
+			"country": doc.get("country"),
+			"pincode": doc.get("pincode"),
+			"phone": doc.get("mobile_no") or doc.get("phone"),
+			"email_id": doc.get("email_id"),
+			"gstin": doc.get("gstin"),
+			"gst_category": doc.get("gst_category") or "Unregistered",
+			"applicable_date": "2020-01-01",
+			"cancellation_date": "2099-12-31",
+			"is_primary_address": 1,
+			"links": [
+				{
+					"link_doctype": "Supplier",
+					"link_name": doc.name,
+				}
+			],
+		}
+	)

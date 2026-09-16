@@ -1,5 +1,6 @@
 import frappe
 from frappe.utils import flt
+from pypika import functions as fn
 
 
 def auto_close_brns():
@@ -40,7 +41,17 @@ def on_purchase_invoice_submit(doc):
 		)
 
 
-def check_and_close_brn(brn_name):
+def check_and_close_brn(brn_name) -> bool:
+	"""
+	Close brn_name if it's still open and fully consumed. No-op (returns
+	False) if it's already closed/cancelled or not yet submitted.
+
+	Parameters:
+		brn_name (str, required): The BRN document name.
+
+	Returns:
+		bool: True if this call closed the BRN, False otherwise.
+	"""
 	brn = frappe.db.get_value(
 		"BRN",
 		brn_name,
@@ -70,7 +81,45 @@ def _should_close_brn(brn):
 		return False
 
 
-def _brn_amount_fully_invoiced(brn_name):
+def _billed_totals_by_item(brn_name: str, item_codes: list) -> dict:
+	"""
+	Batch-fetch billed qty/amount per item_code across every submitted PI
+	linked to this BRN, in one query -- shared by both the amount- and
+	qty-based closure checks below, instead of one query per BRN item.
+
+	Parameters:
+		brn_name (str, required): The BRN document name.
+		item_codes (list, required): The item codes to sum for.
+
+	Returns:
+		dict: {item_code: {"billed_qty": float, "billed_amount": float}}.
+			An item_code with no billed rows is simply absent.
+	"""
+	if not item_codes:
+		return {}
+
+	PII = frappe.qb.DocType("Purchase Invoice Item")
+	PI = frappe.qb.DocType("Purchase Invoice")
+
+	rows = (
+		frappe.qb.from_(PII)
+		.inner_join(PI)
+		.on(PI.name == PII.parent)
+		.select(
+			PII.item_code,
+			fn.Sum(PII.qty).as_("billed_qty"),
+			fn.Sum(PII.amount).as_("billed_amount"),
+		)
+		.where(PI.brn == brn_name)
+		.where(PI.docstatus == 1)
+		.where(PII.item_code.isin(item_codes))
+		.groupby(PII.item_code)
+	).run(as_dict=True)
+
+	return {r.item_code: r for r in rows}
+
+
+def _brn_amount_fully_invoiced(brn_name: str) -> bool:
 	"""
 	Service BRN: a PI is raised against exactly one BRN item at a time, and BRN
 	carries no taxes/charges, so compare item-wise net amount rather than the
@@ -80,50 +129,28 @@ def _brn_amount_fully_invoiced(brn_name):
 	sanctioned amount.
 	"""
 	doc = frappe.get_doc("BRN", brn_name)
+	totals = _billed_totals_by_item(brn_name, [d.item_code for d in doc.items])
+
 	for brn_item in doc.items:
 		sanctioned_amount = flt(brn_item.amount)
-		billed_amount = flt(
-			frappe.db.sql(
-				"""
-				SELECT SUM(pii.amount)
-				FROM `tabPurchase Invoice Item` pii
-				INNER JOIN `tabPurchase Invoice` pi ON pi.name = pii.parent
-				WHERE pi.brn = %(brn)s
-				  AND pii.item_code = %(item_code)s
-				  AND pi.docstatus = 1
-				""",
-				{"brn": brn_name, "item_code": brn_item.item_code},
-			)[0][0]
-			or 0
-		)
+		billed_amount = flt((totals.get(brn_item.item_code) or {}).get("billed_amount") or 0)
 		if billed_amount < sanctioned_amount:
 			return False
 	return True
 
 
-def _brn_qty_fully_invoiced(brn_name):
+def _brn_qty_fully_invoiced(brn_name: str) -> bool:
 	"""
 	Material / Fixed Asset BRN: since `brn` sits on the PI header (not per item),
 	sum billed qty per item_code across all submitted PIs linked to this BRN,
 	and compare against each BRN Item's sanctioned qty.
 	"""
 	doc = frappe.get_doc("BRN", brn_name)
+	totals = _billed_totals_by_item(brn_name, [d.item_code for d in doc.items])
+
 	for brn_item in doc.items:
 		ordered_qty = flt(brn_item.qty)
-		billed_qty = flt(
-			frappe.db.sql(
-				"""
-				SELECT SUM(pii.qty)
-				FROM `tabPurchase Invoice Item` pii
-				INNER JOIN `tabPurchase Invoice` pi ON pi.name = pii.parent
-				WHERE pi.brn = %(brn)s
-				  AND pii.item_code = %(item_code)s
-				  AND pi.docstatus = 1
-				""",
-				{"brn": brn_name, "item_code": brn_item.item_code},
-			)[0][0]
-			or 0
-		)
+		billed_qty = flt((totals.get(brn_item.item_code) or {}).get("billed_qty") or 0)
 		if billed_qty < ordered_qty:
 			return False
 	return True

@@ -79,7 +79,7 @@ def _get_by_path(data, path):
 	return cur
 
 
-def _check_supplier_permission(supplier):
+def _check_supplier_permission(supplier) -> None:
 	"""Raise PermissionError unless the current user can write to this Supplier."""
 	if not frappe.has_permission("Supplier", ptype="write", doc=supplier):
 		frappe.throw(
@@ -263,7 +263,7 @@ def _classify_response(vendor_doc, resp, resp_json):
 	return "Failed", _("Verification failed — please check the entered value(s) and retry")
 
 
-def _append_log_row(run, vendor_name, result, attempt_no, remarks=None):
+def _append_log_row(run, vendor_name, result, attempt_no, remarks=None) -> None:
 	"""Append one KYC Validation Log child row to run, from a call_vendor_api() result."""
 	run.append(
 		"logs",
@@ -399,8 +399,16 @@ def _run_summary(run):
 
 
 def get_last_kyc_run(supplier):
-	"""Return the most recent KYC Validation Run for supplier, with one row
-	per vendor/kyc_type showing only its latest attempt."""
+	"""
+	Return the most recent KYC Validation Run for supplier, with one row
+	per vendor/kyc_type showing only its latest attempt.
+
+	Kept as raw SQL rather than frappe.qb: this is a "latest row per
+	group" query (max(attempt_no) per kyc_vendor, joined back to fetch
+	the full matching row) -- exactly the kind of correlated-subquery
+	shape database.md's skill carves out alongside window functions/CTEs
+	as not cleanly expressible via frappe.qb.
+	"""
 	last_run = frappe.db.get_value(
 		"KYC Validation Run",
 		{"supplier": supplier},

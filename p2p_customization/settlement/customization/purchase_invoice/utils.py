@@ -1,6 +1,8 @@
 import frappe
 from frappe import _
 from frappe.utils import flt, get_link_to_form
+from pypika import Case
+from pypika import functions as fn
 
 # Only these doctype/fieldname combinations may be written by
 # upload_invoice_file_from_portal (below) -- the vendor portal
@@ -113,14 +115,26 @@ def upload_invoice_file_from_portal(**args) -> str:
 	return upload_file(**args)
 
 
-def upload_file(**args):
+def upload_file(**args) -> str:
+	"""
+	Replace whatever file currently sits in a document's attach field with a
+	newly-uploaded one, deleting the old File record(s) first.
+
+	Parameters:
+		**args: doctype (str, required), name (str, required, the docname),
+			fieldname (str, required, the attach field to update),
+			value (str, required, the new file's URL).
+
+	Returns:
+		str: "success" once the field is updated.
+	"""
 	doctype = args.get("doctype")
 	docname = args.get("name")
 	fieldname = args.get("fieldname")
 	file_url = args.get("value")
 
 	if not (doctype and docname and fieldname and file_url):
-		frappe.throw("Missing required parameters")
+		frappe.throw(_("Missing required parameters"))
 
 	old_file = frappe.db.get_value(doctype, docname, fieldname)
 
@@ -142,7 +156,19 @@ def upload_file(**args):
 	return "success"
 
 
-def validate_item_qty_with_brn(self):
+def validate_item_qty_with_brn(self) -> None:
+	"""
+	Validate a standalone (non-PO) BRN-linked Purchase Invoice: item
+	qty/rate (non-Service only) and amount must stay within the balance
+	still available on the BRN, across every other non-cancelled PI
+	against the same BRN.
+
+	Parameters:
+		self (Document, required): The Purchase Invoice document being validated.
+
+	Returns:
+		None
+	"""
 	if not self.items or not self.brn:
 		return
 
@@ -164,29 +190,23 @@ def validate_item_qty_with_brn(self):
 	brn_item_map = {d.item_code: d for d in brn_items}
 
 	# Get already invoiced qty/amount
-	invoiced_data = frappe.db.sql(
-		"""
-		SELECT
-			pii.item_code,
-			SUM(pii.qty) AS invoiced_qty,
-			SUM(pii.amount) AS invoiced_amount
-		FROM `tabPurchase Invoice Item` pii
-		INNER JOIN `tabPurchase Invoice` pi
-			ON pi.name = pii.parent
-		WHERE
-			pi.brn = %(brn)s
-			AND pi.name != %(pi)s
-			AND pi.docstatus < 2
-			AND pii.item_code IN %(item_codes)s
-		GROUP BY pii.item_code
-		""",
-		{
-			"brn": self.brn,
-			"pi": self.name,
-			"item_codes": tuple(item_codes),
-		},
-		as_dict=True,
-	)
+	PII = frappe.qb.DocType("Purchase Invoice Item")
+	PI = frappe.qb.DocType("Purchase Invoice")
+	invoiced_data = (
+		frappe.qb.from_(PII)
+		.inner_join(PI)
+		.on(PI.name == PII.parent)
+		.select(
+			PII.item_code,
+			fn.Sum(PII.qty).as_("invoiced_qty"),
+			fn.Sum(PII.amount).as_("invoiced_amount"),
+		)
+		.where(PI.brn == self.brn)
+		.where(PI.name != self.name)
+		.where(PI.docstatus < 2)
+		.where(PII.item_code.isin(item_codes))
+		.groupby(PII.item_code)
+	).run(as_dict=True)
 
 	invoiced_map = {d.item_code: (flt(d.invoiced_qty), flt(d.invoiced_amount)) for d in invoiced_data}
 
@@ -248,7 +268,19 @@ def validate_item_qty_with_brn(self):
 			)
 
 
-def validate_item_qty_with_po(self):
+def validate_item_qty_with_po(self) -> None:
+	"""
+	Validate a PO-based Purchase Invoice: each row's qty/rate (non-Service
+	only) and amount must stay within its Purchase Order Item's balance,
+	across every other non-cancelled PI already invoiced against that PO
+	line.
+
+	Parameters:
+		self (Document, required): The Purchase Invoice document being validated.
+
+	Returns:
+		None
+	"""
 	if not self.items:
 		return
 
@@ -257,32 +289,41 @@ def validate_item_qty_with_po(self):
 	if not po_details:
 		return
 
-	po_details_tuple = tuple(po_details)
-
 	# Fetch PO Item info + cumulative qty/amount already invoiced (exclude current PI if submitted)
-	po_item_map = frappe.db.sql(
-		f"""
-		SELECT
-			poi.name AS po_detail,
-			poi.item_code,
-			poi.qty AS po_qty,
-			poi.rate AS po_rate,
-			poi.amount AS po_amount,
-			poi.parent AS po_name,
-			po.brn,
-			po.requisition_type,
-			COALESCE(SUM(CASE WHEN pi.docstatus < 2 AND pi.name != %s THEN pii.qty ELSE 0 END), 0) AS already_invoiced_qty,
-			COALESCE(SUM(CASE WHEN pi.docstatus < 2 AND pi.name != %s THEN pii.amount ELSE 0 END), 0) AS already_invoiced_amount
-		FROM `tabPurchase Order Item` poi
-		JOIN `tabPurchase Order` po ON po.name = poi.parent
-		LEFT JOIN `tabPurchase Invoice Item` pii ON pii.po_detail = poi.name
-		LEFT JOIN `tabPurchase Invoice` pi ON pi.name = pii.parent
-		WHERE poi.name IN ({", ".join(["%s"] * len(po_details_tuple))})
-		GROUP BY poi.name, poi.item_code, poi.qty, poi.rate, poi.amount, poi.parent, po.brn, po.requisition_type
-	""",
-		(self.name, self.name, *po_details_tuple),
-		as_dict=True,
-	)
+	POI = frappe.qb.DocType("Purchase Order Item")
+	PO = frappe.qb.DocType("Purchase Order")
+	PII = frappe.qb.DocType("Purchase Invoice Item")
+	PI = frappe.qb.DocType("Purchase Invoice")
+
+	still_counted = (PI.docstatus < 2) & (PI.name != self.name)
+	invoiced_qty_case = Case().when(still_counted, PII.qty).else_(0)
+	invoiced_amount_case = Case().when(still_counted, PII.amount).else_(0)
+
+	po_item_map = (
+		frappe.qb.from_(POI)
+		.join(PO)
+		.on(PO.name == POI.parent)
+		.left_join(PII)
+		.on(PII.po_detail == POI.name)
+		.left_join(PI)
+		.on(PI.name == PII.parent)
+		.select(
+			POI.name.as_("po_detail"),
+			POI.item_code,
+			POI.qty.as_("po_qty"),
+			POI.rate.as_("po_rate"),
+			POI.amount.as_("po_amount"),
+			POI.parent.as_("po_name"),
+			PO.brn,
+			PO.requisition_type,
+			fn.Coalesce(fn.Sum(invoiced_qty_case), 0).as_("already_invoiced_qty"),
+			fn.Coalesce(fn.Sum(invoiced_amount_case), 0).as_("already_invoiced_amount"),
+		)
+		.where(POI.name.isin(po_details))
+		.groupby(
+			POI.name, POI.item_code, POI.qty, POI.rate, POI.amount, POI.parent, PO.brn, PO.requisition_type
+		)
+	).run(as_dict=True)
 
 	po_map = {d.po_detail: d for d in po_item_map}
 

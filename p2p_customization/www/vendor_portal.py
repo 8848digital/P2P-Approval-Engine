@@ -1,18 +1,29 @@
 import frappe
 
-from p2p_customization.vendor_portal.utils import (
-	require_vendor_portal_access,
-	base_portal_context,
-	get_docstatus_filter,
-)
 from p2p_customization.vendor_portal.doctype.vendor_portal_settings.vendor_portal_settings import (
 	seed_default_settings,
+)
+from p2p_customization.vendor_portal.utils import (
+	base_portal_context,
+	get_docstatus_filter,
+	require_vendor_portal_access,
 )
 
 no_cache = 1
 
 
-def get_context(context):
+def get_context(context: frappe._dict) -> None:
+	"""
+	Page controller for `/vendor-portal`: the vendor's dashboard, showing a
+	count tile per visible portal section.
+
+	Parameters:
+		context (frappe._dict, required): Website render context, mutated
+			in place.
+
+	Returns:
+		None
+	"""
 	suppliers = require_vendor_portal_access()
 	seed_default_settings()
 
@@ -30,11 +41,13 @@ def get_context(context):
 		if docstatus_filter is not None:
 			filters["docstatus"] = docstatus_filter
 		count = frappe.db.count(row.document_type, filters)
-		stats.append({
-			"label": row.label or row.document_type,
-			"route": row.route,
-			"icon": row.icon or "file-text",
-			"count": count,
-		})
+		stats.append(
+			{
+				"label": row.label or row.document_type,
+				"route": row.route,
+				"icon": row.icon or "file-text",
+				"count": count,
+			}
+		)
 
 	context.stats = stats

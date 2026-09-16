@@ -1,15 +1,18 @@
 import frappe
 from frappe import _
 
+from p2p_customization.vendor_portal.doctype.portal_section_config.portal_section_config import (
+	PortalSectionConfig,
+)
 from p2p_customization.vendor_portal.utils import (
-	require_vendor_portal_access,
-	require_row_access,
-	row_allowed_for_user,
 	base_portal_context,
-	status_pill_color,
-	get_portal_doctype_by_route,
-	get_portal_doctype_by_document_type,
 	get_docstatus_filter,
+	get_portal_doctype_by_document_type,
+	get_portal_doctype_by_route,
+	require_row_access,
+	require_vendor_portal_access,
+	row_allowed_for_user,
+	status_pill_color,
 )
 
 no_cache = 1
@@ -18,8 +21,18 @@ no_cache = 1
 # grid -- Table/Table MultiSelect/Attach/etc. need their own handling and
 # are skipped.
 DISPLAYABLE_FIELDTYPES = {
-	"Data", "Link", "Select", "Date", "Datetime", "Currency", "Int", "Float",
-	"Percent", "Small Text", "Check", "Read Only",
+	"Data",
+	"Link",
+	"Select",
+	"Date",
+	"Datetime",
+	"Currency",
+	"Int",
+	"Float",
+	"Percent",
+	"Small Text",
+	"Check",
+	"Read Only",
 }
 
 ITEM_COLUMNS = [
@@ -30,7 +43,25 @@ ITEM_COLUMNS = [
 ]
 
 
-def get_context(context):
+def get_context(context: frappe._dict) -> None:
+	"""
+	Page controller for `/vendor-portal-detail`: a single document's detail
+	view (key/value fields, child-table items, linked documents, and the
+	invoice-attach uploader when configured).
+
+	Parameters:
+		context (frappe._dict, required): Website render context, mutated
+			in place. Expects `route` and `name` in `frappe.form_dict`.
+
+	Returns:
+		None
+
+	Raises:
+		frappe.DoesNotExistError: If the route or document doesn't exist,
+			or the document is filtered out by its docstatus rule.
+		frappe.PermissionError: If the current user isn't allowed to view
+			this row/document.
+	"""
 	suppliers = require_vendor_portal_access()
 
 	route = frappe.form_dict.get("route")
@@ -66,21 +97,43 @@ def get_context(context):
 	context.currency_value = doc.get(row.currency_field) if row.currency_field else None
 	context.date_value = doc.get(row.date_field) if row.date_field else None
 
-	context.kv_fields = _build_kv_fields(doc, row)
-	context.item_rows, context.item_columns = _build_child_table(doc, row)
+	context.kv_fields = __build_kv_fields(doc, row)
+	context.item_rows, context.item_columns = __build_child_table(doc, row)
 	context.edit_web_form_name = row.edit_web_form
-	context.linked_documents, context.linked_documents_label = _build_linked_documents(doc, row)
+	context.linked_documents, context.linked_documents_label = __build_linked_documents(doc, row)
 
-	context.show_attach_invoice = _show_attach_invoice(doc, row)
+	context.show_attach_invoice = __show_attach_invoice(doc, row)
 	# Fetched whenever the feature is on for this row, not just while the
 	# upload form itself is showing -- a vendor should still see what they
 	# already uploaded once a record becomes fully billed.
-	context.invoice_attachments = _get_invoice_attachments(row.document_type, doc.name) if row.allow_invoice_attach else []
+	context.invoice_attachments = (
+		__get_invoice_attachments(row.document_type, doc.name) if row.allow_invoice_attach else []
+	)
 
 
-def _build_kv_fields(doc, row):
-	skip = {row.title_field, row.status_field, row.amount_field, row.currency_field,
-			row.date_field, row.party_fieldname, "name"}
+def __build_kv_fields(doc: "frappe.model.document.Document", row: PortalSectionConfig) -> list[dict]:
+	"""
+	Build the generic key/value grid shown on a detail page: every visible,
+	displayable field on `doc` not already surfaced as a title/status/
+	amount/etc, capped at 8 entries.
+
+	Parameters:
+		doc (Document, required): The document being displayed.
+		row (PortalSectionConfig, required): Portal section config for
+			`doc`'s DocType.
+
+	Returns:
+		list[dict]: Up to 8 `{"label": str, "value": Any}` entries.
+	"""
+	skip = {
+		row.title_field,
+		row.status_field,
+		row.amount_field,
+		row.currency_field,
+		row.date_field,
+		row.party_fieldname,
+		"name",
+	}
 
 	fields = []
 	for df in doc.meta.fields:
@@ -97,7 +150,26 @@ def _build_kv_fields(doc, row):
 	return fields
 
 
-def _build_child_table(doc, row):
+def __build_child_table(
+	doc: "frappe.model.document.Document", row: PortalSectionConfig
+) -> tuple[list[dict], list[tuple[str, str]]]:
+	"""
+	Build the item-table rows/columns shown on a detail page, from
+	`row.child_table_fieldname`.
+
+	Parameters:
+		doc (Document, required): The document being displayed.
+		row (PortalSectionConfig, required): Portal section config for
+			`doc`'s DocType; `child_table_fieldname` names the child table
+			to render.
+
+	Returns:
+		tuple[list[dict], list[tuple[str, str]]]: `(rows, columns)`, where
+		`columns` is a `(fieldname, label)` list limited to the columns
+		present on the child doctype, and `rows` is one dict per child row
+		keyed by those fieldnames (plus `description`/`item_name`/`uom`
+		when present). Both empty if there's no child table or no rows.
+	"""
 	if not row.child_table_fieldname:
 		return [], []
 
@@ -123,12 +195,21 @@ def _build_child_table(doc, row):
 	return out_rows, columns
 
 
-def _show_attach_invoice(doc, row):
-	"""Whether to show the "Attach Invoice Copy" upload -- row has to have
-	it turned on, and the record itself has to still be under 100% billed
-	(a doctype with no billed-percent field at all, or none set for this
-	row, is treated as always eligible rather than silently never showing
-	it)."""
+def __show_attach_invoice(doc: "frappe.model.document.Document", row: PortalSectionConfig) -> bool:
+	"""
+	Whether to show the "Attach Invoice Copy" upload -- row has to have it
+	turned on, and the record itself has to still be under 100% billed (a
+	doctype with no billed-percent field at all, or none set for this row,
+	is treated as always eligible rather than silently never showing it).
+
+	Parameters:
+		doc (Document, required): The document being displayed.
+		row (PortalSectionConfig, required): Portal section config for
+			`doc`'s DocType.
+
+	Returns:
+		bool: True if the invoice-attach uploader should be shown.
+	"""
 	if not row.allow_invoice_attach:
 		return False
 	billed_field = row.billed_percent_fieldname or "per_billed"
@@ -137,7 +218,20 @@ def _show_attach_invoice(doc, row):
 	return (doc.get(billed_field) or 0) < 100
 
 
-def _get_invoice_attachments(document_type, docname):
+def __get_invoice_attachments(document_type: str, docname: str) -> list[dict]:
+	"""
+	Public File attachments already uploaded against a document, newest
+	first.
+
+	Parameters:
+		document_type (str, required): DocType the files are attached to.
+		docname (str, required): Name of the document the files are
+			attached to.
+
+	Returns:
+		list[dict]: File rows with `name`, `file_name`, `file_url`,
+		`creation`.
+	"""
 	# ignore_permissions: same reasoning as the rest of this system's data
 	# fetches -- ownership was already checked against the parent record
 	# (doc.get(party_fieldname) in suppliers) before this is ever called,
@@ -156,14 +250,29 @@ def _get_invoice_attachments(document_type, docname):
 	)
 
 
-def _build_linked_documents(doc, row):
-	"""Documents of another configured type that link back to this one via
-	a child table -- e.g. the Purchase Invoices actually raised against a
+def __build_linked_documents(
+	doc: "frappe.model.document.Document", row: PortalSectionConfig
+) -> tuple[list[dict], str | None]:
+	"""
+	Documents of another configured type that link back to this one via a
+	child table -- e.g. the Purchase Invoices actually raised against a
 	Purchase Order, found through Purchase Invoice Item.purchase_order
 	rather than any field on Purchase Invoice itself. Reuses the linked
 	Document Type's OWN Portal Section Config row for its route/labels/
 	status field, so display stays consistent with its own list page
-	instead of duplicating that config here."""
+	instead of duplicating that config here.
+
+	Parameters:
+		doc (Document, required): The document being displayed.
+		row (PortalSectionConfig, required): Portal section config for
+			`doc`'s DocType; `linked_document_type`/
+			`linked_via_child_doctype`/`linked_via_fieldname` describe the
+			link.
+
+	Returns:
+		tuple[list[dict], str | None]: `(linked_docs, label)`. `label` is
+		None only when there's nothing configured to link.
+	"""
 	if not (row.linked_document_type and row.linked_via_child_doctype and row.linked_via_fieldname):
 		return [], None
 
@@ -188,7 +297,13 @@ def _build_linked_documents(doc, row):
 		return [], linked_row.label or row.linked_document_type
 
 	fields = ["name"]
-	for fieldname in (linked_row.title_field, linked_row.status_field, linked_row.amount_field, linked_row.currency_field, linked_row.date_field):
+	for fieldname in (
+		linked_row.title_field,
+		linked_row.status_field,
+		linked_row.amount_field,
+		linked_row.currency_field,
+		linked_row.date_field,
+	):
 		if fieldname and fieldname not in fields:
 			fields.append(fieldname)
 
@@ -203,16 +318,18 @@ def _build_linked_documents(doc, row):
 	out = []
 	for d in linked_docs:
 		status = d.get(linked_row.status_field) if linked_row.status_field else None
-		out.append({
-			"name": d.name,
-			"route": linked_row.route,
-			"title": d.get(linked_row.title_field) if linked_row.title_field else d.name,
-			"status": status,
-			"pill_color": status_pill_color(status) if status else "gray",
-			"amount": d.get(linked_row.amount_field) if linked_row.amount_field else None,
-			"currency": d.get(linked_row.currency_field) if linked_row.currency_field else None,
-			"date": d.get(linked_row.date_field) if linked_row.date_field else None,
-		})
+		out.append(
+			{
+				"name": d.name,
+				"route": linked_row.route,
+				"title": d.get(linked_row.title_field) if linked_row.title_field else d.name,
+				"status": status,
+				"pill_color": status_pill_color(status) if status else "gray",
+				"amount": d.get(linked_row.amount_field) if linked_row.amount_field else None,
+				"currency": d.get(linked_row.currency_field) if linked_row.currency_field else None,
+				"date": d.get(linked_row.date_field) if linked_row.date_field else None,
+			}
+		)
 
 	label = row.linked_documents_label or linked_row.label or row.linked_document_type
 	return out, label

@@ -6,4 +6,4 @@ from frappe.model.document import Document
 
 
 class VendorRateComparisonSettings(Document):
-	pass
+	"""Single: whether/how the Purchase Order rate-comparison dialog is enabled (see customization/purchase_order/rate_comparison.py)."""

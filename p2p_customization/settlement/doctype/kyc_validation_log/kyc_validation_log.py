@@ -12,17 +12,24 @@ STATUS_STYLE = {
 
 
 def build_status_html(status: str) -> str:
+	"""Render a colored pill span for status, per STATUS_STYLE (falls back
+	to the Pending style for an unrecognised status)."""
 	style = STATUS_STYLE.get(status, STATUS_STYLE["Pending"])
 	return (
 		f'<span style="display:inline-flex;align-items:center;gap:4px;'
-		f'padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600;'
+		f"padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600;"
 		f'color:{style["color"]};background:{style["bg"]};border:1px solid {style["color"]}33;">'
-		f'{style["icon"]} {status}</span>'
+		f"{style['icon']} {status}</span>"
 	)
 
 
 class KYCValidationLog(Document):
-	def validate(self):
+	"""KYC Validation Run child table row: one attempt of one vendor check
+	against one Supplier."""
+
+	def validate(self) -> None:
+		"""Default checked_on/checked_by/attempt_no, and keep status_html
+		in sync with the current status value."""
 		if not self.checked_on:
 			self.checked_on = frappe.utils.now_datetime()
 		if not self.checked_by:

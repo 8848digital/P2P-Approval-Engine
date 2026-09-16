@@ -19,19 +19,18 @@ def get_nature_of_service_options(txt: str):
 	Returns:
 		list[tuple]: Rows of (name, section_as_per_it_act_1961, tds_rate).
 	"""
-	return frappe.db.sql(
-		"""
-		select name, section_as_per_it_act_1961, tds_rate
-		from `tabTDS Reference`
-		where name like %(txt)s
-			or section_as_per_it_act_1961 like %(txt)s
-			or tds_rate like %(txt)s
-		order by
-			case when name = %(exact_txt)s then 0 else 1 end,
-			name
-		""",
-		{
-			"txt": "%{}%".format(txt or ""),
-			"exact_txt": txt or "",
-		},
-	)
+	TDS = frappe.qb.DocType("TDS Reference")
+	txt_like = f"%{txt or ''}%"
+	exact_txt = txt or ""
+
+	return (
+		frappe.qb.from_(TDS)
+		.select(TDS.name, TDS.section_as_per_it_act_1961, TDS.tds_rate)
+		.where(
+			(TDS.name.like(txt_like))
+			| (TDS.section_as_per_it_act_1961.like(txt_like))
+			| (TDS.tds_rate.like(txt_like))
+		)
+		.orderby(TDS.name != exact_txt)
+		.orderby(TDS.name)
+	).run()

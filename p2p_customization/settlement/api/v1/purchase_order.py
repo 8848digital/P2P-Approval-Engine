@@ -5,11 +5,17 @@ portal invoice creation, BRN date validation, vendor rate comparison).
 Thin wrappers only -- the actual logic lives in
 settlement/customization/purchase_order/utils.py,
 settlement/customization/purchase_order/rate_comparison.py, and
-settlement/utils.py.
+settlement/customization/procure_to_pay/utils.py.
 """
 
 import frappe
 
+from p2p_customization.settlement.customization.procure_to_pay.utils import (
+	get_fiscal_year_and_validity as _get_fiscal_year_and_validity,
+)
+from p2p_customization.settlement.customization.procure_to_pay.utils import (
+	validate_brn_dates,
+)
 from p2p_customization.settlement.customization.purchase_order.rate_comparison import (
 	get_rate_comparison_config,
 	get_rate_comparison_rows,
@@ -17,10 +23,6 @@ from p2p_customization.settlement.customization.purchase_order.rate_comparison i
 from p2p_customization.settlement.customization.purchase_order.utils import (
 	make_purchase_invoice,
 	send_po_mail_to_vendor,
-)
-from p2p_customization.settlement.utils import (
-	_get_fiscal_year_and_validity,
-	validate_brn_dates,
 )
 
 

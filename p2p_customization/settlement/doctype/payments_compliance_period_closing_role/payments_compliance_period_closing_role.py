@@ -6,4 +6,6 @@ from frappe.model.document import Document
 
 
 class PaymentsCompliancePeriodClosingRole(Document):
-	pass
+	"""Payments Compliance Settings child table row: a Role permitted to run
+	period-closing account updates (see procure_to_pay_management.py's
+	can_view_period_closing)."""

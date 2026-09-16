@@ -34,23 +34,19 @@ def get_nature_of_service_options_for_supplier(txt: str, supplier: str | None):
 	if not allowed_services:
 		return []
 
-	return frappe.db.sql(
-		"""
-		select name, section_as_per_it_act_1961, tds_rate
-		from `tabTDS Reference`
-		where (
-				name like %(txt)s
-				or section_as_per_it_act_1961 like %(txt)s
-				or tds_rate like %(txt)s
-			)
-			and name in %(allowed_services)s
-		order by
-			case when name = %(exact_txt)s then 0 else 1 end,
-			name
-		""",
-		{
-			"txt": "%{}%".format(txt or ""),
-			"exact_txt": txt or "",
-			"allowed_services": allowed_services,
-		},
-	)
+	TDS = frappe.qb.DocType("TDS Reference")
+	txt_like = f"%{txt or ''}%"
+	exact_txt = txt or ""
+
+	return (
+		frappe.qb.from_(TDS)
+		.select(TDS.name, TDS.section_as_per_it_act_1961, TDS.tds_rate)
+		.where(
+			(TDS.name.like(txt_like))
+			| (TDS.section_as_per_it_act_1961.like(txt_like))
+			| (TDS.tds_rate.like(txt_like))
+		)
+		.where(TDS.name.isin(allowed_services))
+		.orderby(TDS.name != exact_txt)
+		.orderby(TDS.name)
+	).run()

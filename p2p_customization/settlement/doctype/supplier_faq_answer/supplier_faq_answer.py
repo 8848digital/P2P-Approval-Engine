@@ -6,4 +6,4 @@ from frappe.model.document import Document
 
 
 class SupplierFAQAnswer(Document):
-	pass
+	"""Child table row: one onboarding FAQ question/answer pair (faq_question, question_label, answer)."""
