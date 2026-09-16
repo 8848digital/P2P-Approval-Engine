@@ -6,8 +6,8 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils.user import is_website_user
 
-from .api import get_expiry_date
 from .doc_events import block_requisition_id, set_total_amount, validate_comparision_rows
+from .utils import calculate_brn_expiry_date
 
 
 class BRN(Document):
@@ -17,7 +17,7 @@ class BRN(Document):
 	def validate(self):
 		"""Recompute the expiry date and total amount, and enforce the
 		Comparision table's Single/Multi/Preferred row constraints."""
-		self.expiry_date = get_expiry_date(self.service_start_date, self.duration_of_service_months)
+		self.expiry_date = calculate_brn_expiry_date(self.service_start_date, self.duration_of_service_months)
 		set_total_amount(self)
 		validate_comparision_rows(self)
 

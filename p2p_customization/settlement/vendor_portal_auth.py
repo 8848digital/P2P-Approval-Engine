@@ -13,7 +13,14 @@ from frappe import _
 from frappe.auth import LoginManager
 from frappe.utils.file_manager import save_file
 
-from p2p_customization.settlement.api import is_vendor
+from p2p_customization.settlement.vendor_auth_hooks import is_vendor
+from p2p_customization.vendor_portal.utils import (
+	get_portal_doctype_by_route,
+	get_vendor_landing_route,
+	get_vendor_suppliers,
+	is_vendor_portal_enabled,
+	require_row_access,
+)
 
 
 def authenticate_vendor_login(usr: str, pwd: str) -> dict:
@@ -37,10 +44,6 @@ def authenticate_vendor_login(usr: str, pwd: str) -> dict:
 	if not usr or not pwd:
 		frappe.response["http_status_code"] = 400
 		return {"success": False, "error": _("Email and password are required")}
-
-	# Local import: vendor_portal.utils imports is_vendor from settlement.api,
-	# so a module-level import here would be circular.
-	from p2p_customization.vendor_portal.utils import is_vendor_portal_enabled
 
 	if not is_vendor_portal_enabled():
 		frappe.response["http_status_code"] = 503
@@ -81,10 +84,6 @@ def authenticate_vendor_login(usr: str, pwd: str) -> dict:
 		}
 
 	frappe.db.commit()
-
-	# Local import: vendor_portal.utils imports is_vendor from settlement.api,
-	# so a module-level import here would be circular.
-	from p2p_customization.vendor_portal.utils import get_vendor_landing_route
 
 	return {
 		"success": True,
@@ -165,14 +164,6 @@ def attach_vendor_invoice_copy(route: str, docname: str) -> dict:
 	"""
 	if not is_vendor(frappe.session.user):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
-
-	# Local imports: vendor_portal.utils imports is_vendor from settlement.api,
-	# so module-level imports here would be circular.
-	from p2p_customization.vendor_portal.utils import (
-		get_portal_doctype_by_route,
-		get_vendor_suppliers,
-		require_row_access,
-	)
 
 	row = get_portal_doctype_by_route(route)
 	if not row or not row.allow_invoice_attach:
