@@ -1,6 +1,8 @@
 import frappe
 from frappe.utils import get_url_to_form
+
 from .utils import upload_file
+
 
 @frappe.whitelist()
 def send_po_to_vendor(purchase_invoice):
@@ -35,7 +37,7 @@ def send_po_to_vendor(purchase_invoice):
 		<p>Please find attached Purchase Invoice <b>{doc.name}</b> for your reference.</p>
 		<p>Regards,<br>{frappe.session.user}</p>
 	"""
- # <p>You can also view it online: <a href="{get_url_to_form('Purchase Invoice', doc.name)}">{doc.name}</a></p>
+	# <p>You can also view it online: <a href="{get_url_to_form('Purchase Invoice', doc.name)}">{doc.name}</a></p>
 	# Send Email with PDF attachment
 	frappe.sendmail(
 		recipients=[supplier_email],
@@ -48,12 +50,13 @@ def send_po_to_vendor(purchase_invoice):
 				doctype="Purchase Invoice",
 				name=doc.name,
 				# print_format="Payment Voucher 1",   # or your custom format
-				file_name=f"{doc.name}.pdf"
+				file_name=f"{doc.name}.pdf",
 			)
-		]
+		],
 	)
 
 	return True
+
 
 # Only these doctype/fieldname combinations may be written by
 # upload_file_to_pi_from_portal (see .utils.upload_file) -- the vendor
@@ -75,7 +78,9 @@ def upload_file_to_pi_from_portal(**args):
 	doctype = args.get("doctype")
 	fieldname = args.get("fieldname")
 
-	if doctype not in PORTAL_UPLOAD_ALLOWED_FIELDS or fieldname not in PORTAL_UPLOAD_ALLOWED_FIELDS.get(doctype, ()):
+	if doctype not in PORTAL_UPLOAD_ALLOWED_FIELDS or fieldname not in PORTAL_UPLOAD_ALLOWED_FIELDS.get(
+		doctype, ()
+	):
 		frappe.throw(
 			frappe._("This field cannot be updated from the vendor portal."),
 			frappe.PermissionError,
@@ -111,29 +116,25 @@ def get_nature_of_service_query(doctype, txt, searchfield, start, page_len, filt
 	allowed_services = frappe.get_all(
 		"Nature of Service Reference",
 		filters={"parent": supplier, "parenttype": "Supplier"},
-		pluck="nature_of_service"
+		pluck="nature_of_service",
 	)
 
 	if not allowed_services:
 		return []
 
-	return frappe.db.sql(
-		"""
-		select name, section_as_per_it_act_1961, tds_rate
-		from `tabTDS Reference`
-		where (
-				name like %(txt)s
-				or section_as_per_it_act_1961 like %(txt)s
-				or tds_rate like %(txt)s
-			)
-			and name in %(allowed_services)s
-		order by
-			case when name = %(exact_txt)s then 0 else 1 end,
-			name
-		""",
-		{
-			"txt": "%{}%".format(txt or ""),
-			"exact_txt": txt or "",
-			"allowed_services": allowed_services,
-		},
-	)
+	TDS = frappe.qb.DocType("TDS Reference")
+	txt_like = f"%{txt or ''}%"
+	exact_txt = txt or ""
+
+	return (
+		frappe.qb.from_(TDS)
+		.select(TDS.name, TDS.section_as_per_it_act_1961, TDS.tds_rate)
+		.where(
+			(TDS.name.like(txt_like))
+			| (TDS.section_as_per_it_act_1961.like(txt_like))
+			| (TDS.tds_rate.like(txt_like))
+		)
+		.where(TDS.name.isin(allowed_services))
+		.orderby(TDS.name != exact_txt)
+		.orderby(TDS.name)
+	).run()

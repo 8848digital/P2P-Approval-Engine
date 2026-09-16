@@ -1,8 +1,8 @@
-import frappe
 import re
-from frappe import _
 from datetime import datetime
 
+import frappe
+from frappe import _
 
 
 @frappe.whitelist()
@@ -61,11 +61,8 @@ def create_brn(supplier_quotation):
 
 
 
-import re
-from datetime import datetime
 
 import frappe
-
 
 # =====================================================================
 # CREATE SUPPLIER QUOTATION
@@ -694,16 +691,3 @@ def _get_or_create_placeholder_item():
     })
     item.insert(ignore_permissions=True, ignore_mandatory=True)
     return item.name
-
-@frappe.whitelist()
-def get_requisition_items(doc,method):
-    if doc.custom_requisition_id=='New Requisition' and not doc.custom_requisition_no:
-        requisition_id = frappe.model.naming.make_autoname("REQ-.YYYY.-.###")
-        requisition_no = frappe.get_doc({
-            "doctype": "Requisition ID",
-            "requisition_no": requisition_id,
-        })
-        requisition_no.insert(ignore_permissions=True, ignore_mandatory=True)
-        doc.custom_requisition_no = requisition_no.requisition_no
-        doc.flags.ignore_mandatory = True
-        doc.save()
