@@ -4,19 +4,38 @@ import frappe
 from frappe import _
 
 from p2p_customization.vendor_portal.utils import (
-	require_vendor_portal_access,
-	require_row_access,
 	base_portal_context,
-	status_pill_color,
+	get_docstatus_filter,
 	get_portal_doctype_by_route,
 	get_tab_siblings,
-	get_docstatus_filter,
+	require_row_access,
+	require_vendor_portal_access,
+	status_pill_color,
 )
 
 no_cache = 1
 
 
-def get_context(context):
+def get_context(context: frappe._dict) -> None:
+	"""
+	Page controller for `/vendor-portal-list`: a filterable, searchable,
+	sortable list of documents for one portal section (or one tab within a
+	shared Tab Group).
+
+	Parameters:
+		context (frappe._dict, required): Website render context, mutated
+			in place. Expects `route` and reads optional `q`/`sort` from
+			`frappe.form_dict`.
+
+	Returns:
+		None
+
+	Raises:
+		frappe.DoesNotExistError: If `route` doesn't match a configured
+			portal section.
+		frappe.PermissionError: If the current user isn't allowed to view
+			this row.
+	"""
 	suppliers = require_vendor_portal_access()
 
 	route = frappe.form_dict.get("route")
@@ -32,13 +51,17 @@ def get_context(context):
 	tab_siblings = get_tab_siblings(row)
 	context.tab_siblings = tab_siblings
 	context.tab_group_label = (
-		next((s.tab_group_label for s in tab_siblings if s.tab_group_label), None)
-		if tab_siblings
-		else None
+		next((s.tab_group_label for s in tab_siblings if s.tab_group_label), None) if tab_siblings else None
 	)
 
 	fields = ["name"]
-	for fieldname in (row.title_field, row.status_field, row.amount_field, row.currency_field, row.date_field):
+	for fieldname in (
+		row.title_field,
+		row.status_field,
+		row.amount_field,
+		row.currency_field,
+		row.date_field,
+	):
 		if fieldname and fieldname not in fields:
 			fields.append(fieldname)
 
@@ -64,7 +87,9 @@ def get_context(context):
 		sort_dir = "desc"
 
 	has_date_field = bool(row.date_field and meta.has_field(row.date_field))
-	order_by = f"{row.date_field} {sort_dir}, creation {sort_dir}" if has_date_field else f"creation {sort_dir}"
+	order_by = (
+		f"{row.date_field} {sort_dir}, creation {sort_dir}" if has_date_field else f"creation {sort_dir}"
+	)
 
 	# ignore_permissions: this system's own security boundary is the
 	# party_fieldname filter above plus the role gate already enforced by

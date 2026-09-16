@@ -4,8 +4,8 @@ import frappe
 from frappe import _
 
 from p2p_customization.vendor_portal.utils import (
-	require_vendor_login,
 	base_portal_context,
+	require_vendor_login,
 	row_allowed_for_user,
 )
 
@@ -17,7 +17,24 @@ no_cache = 1
 OWN_PARAMS = {"web_form", "name", "cmd"}
 
 
-def get_context(context):
+def get_context(context: frappe._dict) -> None:
+	"""
+	Page controller for `/vendor-embed`: iframes a whitelisted Web Form
+	(the vendor onboarding form, or an edit_web_form configured on a
+	Portal Section Config row) inside the portal shell.
+
+	Parameters:
+		context (frappe._dict, required): Website render context, mutated
+			in place. Expects `web_form` and optional `name` in
+			`frappe.form_dict`.
+
+	Returns:
+		None
+
+	Raises:
+		frappe.PermissionError: If `web_form` isn't a configured
+			edit_web_form the current user is allowed to see.
+	"""
 	# Lighter guard than require_vendor_portal_access(): a brand-new vendor
 	# invited by email has no Supplier yet -- that's only created once they
 	# submit the onboarding form, so this page can't require one already

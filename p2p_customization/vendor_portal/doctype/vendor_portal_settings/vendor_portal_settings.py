@@ -3,6 +3,16 @@ from frappe.model.document import Document
 
 
 class VendorPortalSettings(Document):
+	"""
+	Single doctype configuring the vendor-facing portal: which DocTypes
+	appear as sections, their labels/icons/routes, and per-section display
+	and permission rules. `vendor_portal.utils` reads this document (via
+	`frappe.get_cached_doc`) to build the portal's nav, filters, and pages.
+
+	Carries no custom validation of its own; each row's shape is defined
+	by the Portal Section Config child doctype.
+	"""
+
 	pass
 
 
@@ -82,10 +92,18 @@ DEFAULT_DOCTYPES = [
 ]
 
 
-def seed_default_settings():
-	"""Idempotent: only runs the first time, if no Document Types are
+def seed_default_settings() -> None:
+	"""
+	Idempotent: only runs the first time, if no Document Types are
 	configured yet -- lets the portal work out of the box, while any admin
-	edit to Vendor Portal Settings afterwards is left alone."""
+	edit to Vendor Portal Settings afterwards is left alone.
+
+	Parameters:
+		None.
+
+	Returns:
+		None
+	"""
 	settings = frappe.get_single("Vendor Portal Settings")
 	if settings.doctypes:
 		return
