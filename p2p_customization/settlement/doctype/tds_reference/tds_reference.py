@@ -9,5 +9,10 @@ from p2p_customization.settlement.doc_events.tds_reference import (
 
 
 class TDSReference(Document):
-	def after_insert(self):
+	"""Master list of TDS rates per Nature of Service / IT Act section --
+	source of truth for the Tax Withholding Category records auto-created
+	on insert (see doc_events/tds_reference.py)."""
+
+	def after_insert(self) -> None:
+		"""Auto-create the matching Tax Withholding Category record(s)."""
 		create_tax_withholding_categories(self)
