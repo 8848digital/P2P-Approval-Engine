@@ -188,7 +188,7 @@
 						fd.append("route", "{{ row_config.route }}");
 						fd.append("docname", "{{ doc.name }}");
 
-						fetch("/api/method/p2p_customization.settlement.api.vendor_attach_invoice_copy", {
+						fetch("/api/method/p2p_customization.settlement.api.v1.vendor_portal.vendor_attach_invoice_copy", {
 							method: "POST",
 							headers: {
 								"X-Frappe-CSRF-Token": frappe.csrf_token || ""

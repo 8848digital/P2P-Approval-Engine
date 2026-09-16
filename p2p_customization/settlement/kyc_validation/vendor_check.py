@@ -1,7 +1,18 @@
 # Copyright (c) 2026, p2p_customization
+"""Business logic for running KYC Vendor checks against a Supplier.
+
+Relocated out of settlement/kyc_validation/api.py (which is no longer a
+whitelisted-endpoint file, see settlement/api/v1/kyc_validation.py) so the
+whitelisted wrappers stay thin per the app's api.md convention. Behavior is
+unchanged from the original api.py implementation -- only the location and
+whitelist decorators are new (removed here, since none of these are
+directly HTTP-callable any more).
+"""
+
 import json
 import re
 import time
+
 import frappe
 import requests
 from frappe import _
@@ -13,14 +24,19 @@ PLACEHOLDER_RE = re.compile(r"\{\{\s*([a-zA-Z0-9_]+)\s*\}\}")
 # admin forgets to list them explicitly - belt and suspenders for Aadhaar etc.
 SENSITIVE_KEY_HINTS = ("aadhaar", "aadhar", "adhar")
 
+
 def _settings():
+	"""Return the singleton JFS Settings document."""
 	return frappe.get_single("JFS Settings")
 
+
 def _mask(value: str) -> str:
+	"""Mask all but the last 4 characters of value with asterisks."""
 	value = str(value)
 	if len(value) <= 4:
 		return "*" * len(value)
 	return "*" * (len(value) - 4) + value[-4:]
+
 
 def _mask_sensitive(payload_str: str, field_map) -> str:
 	"""Best-effort masking of Aadhaar-like values inside a JSON string before it
@@ -35,7 +51,7 @@ def _mask_sensitive(payload_str: str, field_map) -> str:
 			for k, v in obj.items():
 				if isinstance(v, str) and any(h in k.lower() for h in SENSITIVE_KEY_HINTS):
 					obj[k] = _mask(v)
-				elif isinstance(v, (dict, list)):
+				elif isinstance(v, dict | list):
 					walk(v)
 		elif isinstance(obj, list):
 			for item in obj:
@@ -44,7 +60,9 @@ def _mask_sensitive(payload_str: str, field_map) -> str:
 	walk(data)
 	return json.dumps(data, indent=2)
 
+
 def _get_by_path(data, path):
+	"""Resolve a dotted/indexed path (e.g. "a.b.0.c") against a nested dict/list."""
 	if not path:
 		return None
 	cur = data
@@ -60,9 +78,14 @@ def _get_by_path(data, path):
 			return None
 	return cur
 
+
 def _check_supplier_permission(supplier):
+	"""Raise PermissionError unless the current user can write to this Supplier."""
 	if not frappe.has_permission("Supplier", ptype="write", doc=supplier):
-		frappe.throw(_("You do not have permission to run KYC validation for this Supplier"), frappe.PermissionError)
+		frappe.throw(
+			_("You do not have permission to run KYC validation for this Supplier"), frappe.PermissionError
+		)
+
 
 def _resolve_values(vendor, supplier_doc):
 	"""Return {placeholder_key: value} and raise a clear error if a mandatory
@@ -84,7 +107,9 @@ def _resolve_values(vendor, supplier_doc):
 		)
 	return values
 
+
 def _build_request(vendor, values):
+	"""Substitute placeholder values into the vendor's URL path and body template."""
 	template = vendor.request_body_template or "{}"
 	body_str = template
 	url_path = vendor.endpoint_path
@@ -96,6 +121,7 @@ def _build_request(vendor, values):
 
 
 def _do_request(vendor, cred, url, body_str, values, timeout):
+	"""Issue the actual HTTP request to the KYC vendor per its configured request style."""
 	headers = {"Content-Type": "application/json"}
 	if cred.auth_type != "None":
 		token = cred.get_password("token")
@@ -111,6 +137,7 @@ def _do_request(vendor, cred, url, body_str, values, timeout):
 
 	# Query Params — endpoint_path already has placeholders substituted
 	return requests.request(vendor.http_method, url, headers=headers, timeout=timeout)
+
 
 def call_vendor_api(vendor_doc, supplier_doc, settings=None):
 	"""Executes one KYC Vendor check against one Supplier. Returns a result dict.
@@ -190,9 +217,13 @@ def call_vendor_api(vendor_doc, supplier_doc, settings=None):
 		"response": response_str,
 	}
 
-def _classify_response(vendor_doc, resp, resp_json):
 
-	error_type_val = _get_by_path(resp_json, vendor_doc.error_type_path) if vendor_doc.error_type_path else None
+def _classify_response(vendor_doc, resp, resp_json):
+	"""Classify a vendor HTTP response as Success/Failed/Error using the
+	vendor's configured error/success paths and system-error keywords."""
+	error_type_val = (
+		_get_by_path(resp_json, vendor_doc.error_type_path) if vendor_doc.error_type_path else None
+	)
 	error_message_val = (
 		_get_by_path(resp_json, vendor_doc.error_message_path) if vendor_doc.error_message_path else None
 	)
@@ -201,9 +232,7 @@ def _classify_response(vendor_doc, resp, resp_json):
 	if has_error:
 		haystack = f"{error_type_val or ''} {error_message_val or ''}".lower()
 		keywords = [
-			k.strip().lower()
-			for k in (vendor_doc.system_error_type_keywords or "").splitlines()
-			if k.strip()
+			k.strip().lower() for k in (vendor_doc.system_error_type_keywords or "").splitlines() if k.strip()
 		]
 		is_system_error = any(k in haystack for k in keywords)
 
@@ -217,7 +246,9 @@ def _classify_response(vendor_doc, resp, resp_json):
 	success_val = _get_by_path(resp_json, vendor_doc.success_path)
 
 	if vendor_doc.expected_success_value:
-		is_success = str(success_val or "").strip().lower() == vendor_doc.expected_success_value.strip().lower()
+		is_success = (
+			str(success_val or "").strip().lower() == vendor_doc.expected_success_value.strip().lower()
+		)
 	else:
 		is_success = success_val not in (None, False, "", 0, {}, [])
 
@@ -233,6 +264,7 @@ def _classify_response(vendor_doc, resp, resp_json):
 
 
 def _append_log_row(run, vendor_name, result, attempt_no, remarks=None):
+	"""Append one KYC Validation Log child row to run, from a call_vendor_api() result."""
 	run.append(
 		"logs",
 		{
@@ -250,7 +282,7 @@ def _append_log_row(run, vendor_name, result, attempt_no, remarks=None):
 		},
 	)
 
-@frappe.whitelist()
+
 def get_kyc_vendor_options(supplier=None):
 	"""Enabled vendors for the multiselect dialog, flagged with whether they
 	should be pre-checked by default."""
@@ -268,7 +300,7 @@ def get_kyc_vendor_options(supplier=None):
 
 	return vendors
 
-@frappe.whitelist()
+
 def run_kyc_validation(supplier, vendors):
 	"""Create a fresh KYC Validation Run for the given Supplier + selected vendors."""
 	_check_supplier_permission(supplier)
@@ -294,7 +326,7 @@ def run_kyc_validation(supplier, vendors):
 
 	return _run_summary(run)
 
-@frappe.whitelist()
+
 def revalidate_in_run(run_name, vendors, remarks=None):
 	"""Re-run one or more vendor checks inside an EXISTING run, appending new
 	log rows (attempt_no incremented) so the full history is preserved.
@@ -320,7 +352,7 @@ def revalidate_in_run(run_name, vendors, remarks=None):
 
 	return _run_summary(run)
 
-@frappe.whitelist()
+
 def test_kyc_vendor(vendor_name):
 	"""Used by the 'Test with Sample Values' button on the KYC Vendor form.
 	Runs the API call using each Field Map row's Sample Value instead of a
@@ -335,13 +367,17 @@ def test_kyc_vendor(vendor_name):
 		def get(self, key, default=None):
 			return dict.get(self, key, default)
 
-	fake = _FakeSupplier({row.supplier_fieldname: (row.sample_value or "TEST123") for row in vendor_doc.field_map})
+	fake = _FakeSupplier(
+		{row.supplier_fieldname: (row.sample_value or "TEST123") for row in vendor_doc.field_map}
+	)
 	fake.name = "TEST-SUPPLIER"
 
 	settings = _settings()
 	return call_vendor_api(vendor_doc, fake, settings)
 
+
 def _run_summary(run):
+	"""Build the {run, overall_status, ...rows} summary dict returned to the client."""
 	return {
 		"run": run.name,
 		"overall_status": run.overall_status,
@@ -361,8 +397,10 @@ def _run_summary(run):
 		],
 	}
 
-@frappe.whitelist()
+
 def get_last_kyc_run(supplier):
+	"""Return the most recent KYC Validation Run for supplier, with one row
+	per vendor/kyc_type showing only its latest attempt."""
 	last_run = frappe.db.get_value(
 		"KYC Validation Run",
 		{"supplier": supplier},
@@ -370,7 +408,8 @@ def get_last_kyc_run(supplier):
 		order_by="creation desc",
 		as_dict=True,
 	)
-	if not last_run: return None
+	if not last_run:
+		return None
 
 	rows = frappe.db.sql(
 		"""

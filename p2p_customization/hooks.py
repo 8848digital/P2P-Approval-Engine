@@ -345,7 +345,10 @@ website_path_resolver = "p2p_customization.website.resolve_website_path"
 website_context = {
 	"post_login": [
 		{"label": "My Account", "url": "/me"},
-		{"label": "Log out", "url": "/api/method/p2p_customization.settlement.api.vendor_web_logout"},
+		{
+			"label": "Log out",
+			"url": "/api/method/p2p_customization.settlement.api.v1.vendor_portal.vendor_web_logout",
+		},
 	]
 }
 
@@ -360,4 +363,3 @@ website_context = {
 # ------------
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
-

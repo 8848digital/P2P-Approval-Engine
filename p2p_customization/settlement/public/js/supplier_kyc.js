@@ -39,7 +39,7 @@ class KYCDialog {
 
 	open() {
 		frappe.call({
-			method: "p2p_customization.settlement.kyc_validation.api.get_kyc_vendor_options",
+			method: "p2p_customization.settlement.api.v1.kyc_validation.get_kyc_vendor_options",
 			args: { supplier: this.frm.doc.name },
 			callback: (r) => this.build_dialog(r.message || []),
 		});
@@ -103,7 +103,7 @@ class KYCDialog {
 		this.set_html(`<div class="text-muted kyc-loading">${__("Loading previous KYC results...")}</div>`);
 
 		frappe.call({
-			method: "p2p_customization.settlement.kyc_validation.api.get_last_kyc_run",
+			method: "p2p_customization.settlement.api.v1.kyc_validation.get_last_kyc_run",
 			args: { supplier: this.frm.doc.name },
 			callback: (res) => {
 				if (!res.message || !res.message.run) {
@@ -143,7 +143,7 @@ class KYCDialog {
 		this.set_html(`<div class="text-muted kyc-loading">${__("Running checks...")}</div>`);
 
 		frappe.call({
-			method: "p2p_customization.settlement.kyc_validation.api.run_kyc_validation",
+			method: "p2p_customization.settlement.api.v1.kyc_validation.run_kyc_validation",
 			args: { supplier: this.frm.doc.name, vendors: JSON.stringify(vendor_names) },
 			callback: (res) => {
 				this.dialog.enable_primary_action();
@@ -310,7 +310,7 @@ class KYCDialog {
 		vendor_names.forEach((v) => $wrap.find(`.kyc-card[data-vendor="${v}"]`).css("opacity", 0.5));
 
 		frappe.call({
-			method: "p2p_customization.settlement.kyc_validation.api.revalidate_in_run",
+			method: "p2p_customization.settlement.api.v1.kyc_validation.revalidate_in_run",
 			args: { run_name: this.run_name, vendors: JSON.stringify(vendor_names), remarks: remarks || null },
 			callback: (res) => {
 				frappe.show_alert({ message: __("Revalidation complete"), indicator: "green" });

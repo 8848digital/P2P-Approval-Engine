@@ -1,21 +1,34 @@
 import base64
 import urllib.parse
+
 import frappe
 from frappe import _
-from frappe.utils import today, add_days
 from frappe.model.mapper import get_mapped_doc
+from frappe.utils import add_days, add_months, cint, getdate, today
+
+
+def calculate_brn_expiry_date(date, months):
+	"""
+	Compute a BRN's service expiry date from its start date + duration.
+
+	Parameters:
+		date (str, required): The service start date.
+		months (int, required): Duration of service, in months.
+
+	Returns:
+		date: date + months, anchored to the day before date (matches the
+			existing "expires the day before the anniversary" convention).
+	"""
+	return add_months(getdate(add_days(date, -1)), cint(months))
+
 
 # Send reminder emails to new vendors who haven't completed registration.
 def send_reminder_for_non_registered_vendors():
 	# Get BRNs that are new vendors
 	vendors = frappe.get_all(
 		"BRN",
-		filters={
-			"is_new_vendor": 1,
-			"docstatus": 1,
-			"sent_mail_on": add_days(today(), -2)
-		},
-		fields=["name", "new_vendor", "vendor_email"]
+		filters={"is_new_vendor": 1, "docstatus": 1, "sent_mail_on": add_days(today(), -2)},
+		fields=["name", "new_vendor", "vendor_email"],
 	)
 
 	for vendor in vendors:
@@ -43,14 +56,11 @@ def send_reminder_for_non_registered_vendors():
 			<a href="{webform_link}">Fill Vendor Details</a>
 			"""
 
-			frappe.sendmail(
-				recipients=[vendor.vendor_email],
-				subject=subject,
-				message=message
-			)
+			frappe.sendmail(recipients=[vendor.vendor_email], subject=subject, message=message)
 
 		except Exception as e:
 			frappe.log_error(str(e), "Vendor Reminder Error")
+
 
 # Encode email address in URL-safe Base64 format.
 def encode_email(email):
@@ -60,10 +70,12 @@ def encode_email(email):
 	encoded_email = f"{encoded_local}@{encoded_domain}"
 	return encoded_email
 
+
 # Encode a string part (local or domain) using Base64 without padding.
 def encode_string_part(part):
 	encoded_part = base64.urlsafe_b64encode(part.encode()).decode().rstrip("=")
 	return encoded_part
+
 
 # Decode a Base64-encoded email address back to normal.
 @frappe.whitelist()
@@ -74,12 +86,14 @@ def decode_email(encoded_email):
 	decoded_email = f"{decoded_local}@{decoded_domain}"
 	return decoded_email
 
+
 # Decode a Base64-encoded string part back to text.
 def decode_string_part(encoded_part):
 	padding = "=" * (4 - len(encoded_part) % 4)
 	encoded_part += padding
 	decoded_part = base64.urlsafe_b64decode(encoded_part.encode()).decode()
 	return decoded_part
+
 
 # Create a Purchase Order document from a BRN using field mapping.
 def create_po_from_brn(source_name, vendor=None):
@@ -89,19 +103,19 @@ def create_po_from_brn(source_name, vendor=None):
 		{
 			"BRN": {
 				"doctype": "Purchase Order",
-				"postprocess": lambda source, target, source_parent=None: set_supplier(source, target, vendor),
+				"postprocess": lambda source, target, source_parent=None: set_supplier(
+					source, target, vendor
+				),
 			},
 			"BRN Item": {
 				"doctype": "Purchase Order Item",
-				"field_map": {
-					"rate": "rate",
-					"expense_gl": "expense_account"
-				}
+				"field_map": {"rate": "rate", "expense_gl": "expense_account"},
 			},
 		},
 	)
 
 	return doc
+
 
 # Create a Purchase Invoice document from a BRN using field mapping.
 def _create_pi_from_brn(source_name, vendor=None):
@@ -111,19 +125,19 @@ def _create_pi_from_brn(source_name, vendor=None):
 		{
 			"BRN": {
 				"doctype": "Purchase Invoice",
-				"postprocess": lambda source, target, source_parent=None: set_supplier(source, target, vendor),
+				"postprocess": lambda source, target, source_parent=None: set_supplier(
+					source, target, vendor
+				),
 			},
 			"BRN Item": {
 				"doctype": "Purchase Invoice Item",
-				"field_map": {
-					"rate": "rate",
-					"expense_gl": "expense_account"
-				}
+				"field_map": {"rate": "rate", "expense_gl": "expense_account"},
 			},
 		},
 	)
 
 	return doc
+
 
 def get_comparison_vendor_rows(brn_name):
 	"""Comparision rows on this BRN that have an existing_vendor set --
@@ -136,6 +150,7 @@ def get_comparison_vendor_rows(brn_name):
 		filters={"parent": brn_name, "parenttype": "BRN", "existing_vendor": ["!=", ""]},
 		fields=["existing_vendor"],
 	)
+
 
 def set_supplier(source, target, vendor=None):
 	if not vendor:
@@ -150,37 +165,29 @@ def set_supplier(source, target, vendor=None):
 
 	target.supplier = vendor
 
+
 def msa_aggrement_validation(self, method):
-    # Convert Supplier field (Yes/No) to checkbox value (1/0)
-    msa_value = 1 if self.msa_agreement == 1 else 0
+	# Convert Supplier field (Yes/No) to checkbox value (1/0)
+	msa_value = 1 if self.msa_agreement == 1 else 0
 
-    # Get all BRNs where this supplier is selected as Existing Vendor or New Vendor
-    brns = frappe.get_all(
-        "Purchase Order",
-        filters=[
-            ["docstatus", "!=", 2]
-        ],
-        fields=["name", "is_existing_vendor", "is_new_vendor"]
-    )
+	# Get all BRNs where this supplier is selected as Existing Vendor or New Vendor
+	brns = frappe.get_all(
+		"Purchase Order",
+		filters=[["docstatus", "!=", 2]],
+		fields=["name", "is_existing_vendor", "is_new_vendor"],
+	)
 
-    for brn in brns:
-        filters = {"name": brn.name}
+	for brn in brns:
+		filters = {"name": brn.name}
 
-        if brn.is_existing_vendor:
-            filters["existing_vendor"] = self.name
+		if brn.is_existing_vendor:
+			filters["existing_vendor"] = self.name
 
-        elif brn.is_new_vendor:
-            filters["new_vendor"] = self.name
+		elif brn.is_new_vendor:
+			filters["new_vendor"] = self.name
 
-        else:
-            continue
+		else:
+			continue
 
-        if frappe.db.exists("BRN", filters):
-            frappe.db.set_value(
-                "BRN",
-                brn.name,
-                "msa_agreement",
-                msa_value,
-                update_modified=False
-            )
-		
+		if frappe.db.exists("BRN", filters):
+			frappe.db.set_value("BRN", brn.name, "msa_agreement", msa_value, update_modified=False)

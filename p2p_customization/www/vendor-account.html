@@ -283,7 +283,7 @@
 		submitBtn.innerText = "{{ _('Updating...') }}";
 
 		frappe.call({
-			method: "p2p_customization.settlement.api.vendor_update_password",
+			method: "p2p_customization.settlement.api.v1.vendor_portal.vendor_update_password",
 			args: { old_password: oldPwd, new_password: newPwd },
 			callback: function () {
 				showAlert("{{ _('Password updated successfully') }}", false);

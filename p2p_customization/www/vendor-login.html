@@ -133,7 +133,7 @@ document.getElementById("vendor-login-form").addEventListener("submit", function
 	btn.disabled = true;
 	btn.innerText = "{{ _('Logging in...') }}";
 
-	fetch("/api/method/p2p_customization.settlement.api.vendor_login", {
+	fetch("/api/method/p2p_customization.settlement.api.v1.vendor_portal.vendor_login", {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
