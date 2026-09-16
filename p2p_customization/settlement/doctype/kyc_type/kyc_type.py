@@ -6,4 +6,6 @@ from frappe.model.document import Document
 
 
 class KYCType(Document):
-	pass
+	"""A single KYC check category (e.g. GSTIN, PAN, MSME) -- the master
+	list KYC Vendor.kyc_type and JFS Settings' vendor/block-type child
+	tables link against."""

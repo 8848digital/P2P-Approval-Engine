@@ -1,13 +1,22 @@
 # Copyright (c) 2026, p2p_customization
 import json
 import re
+
 import frappe
 from frappe.model.document import Document
 
 PLACEHOLDER_RE = re.compile(r"\{\{\s*([a-zA-Z0-9_]+)\s*\}\}")
 
+
 class KYCVendor(Document):
-	def validate(self):
+	"""One vendor's KYC check configuration for one check type: which
+	Credential to call, how to build the request, and how to classify the
+	response (see kyc_validation/api.py's call_vendor_api)."""
+
+	def validate(self) -> None:
+		"""Run every field-level validator, in order, so later checks can
+		assume earlier ones already passed (e.g. validate_template_
+		placeholders assumes field_map itself is already well-formed)."""
 		self.endpoint_path = (self.endpoint_path or "").strip()
 		self.success_path = (self.success_path or "").strip()
 
@@ -18,10 +27,15 @@ class KYCVendor(Document):
 		self.validate_json_template()
 		self.validate_success_path()
 		self.validate_response_classification()
-	def autoname(self):
+
+	def autoname(self) -> None:
+		"""Name as "<kyc_type> - <vendor>" so a vendor can only have one
+		config per check type."""
 		self.name = f"{self.kyc_type} - {self.vendor}"
 
-	def validate_credential(self):
+	def validate_credential(self) -> None:
+		"""Require a Credential, that it exists, and that it's active
+		whenever this vendor config is itself Enabled."""
 		if not self.credential:
 			frappe.throw(frappe._("Credential is mandatory"))
 
@@ -36,7 +50,9 @@ class KYCVendor(Document):
 				).format(self.credential)
 			)
 
-	def validate_endpoint_path(self):
+	def validate_endpoint_path(self) -> None:
+		"""Require a relative path (not a full URL, since the base URL
+		comes from the linked Credential); normalize to start with "/"."""
 		if not self.endpoint_path:
 			frappe.throw(frappe._("Endpoint Path is required"))
 		if self.endpoint_path.startswith("http://") or self.endpoint_path.startswith("https://"):
@@ -49,7 +65,9 @@ class KYCVendor(Document):
 		if not self.endpoint_path.startswith("/"):
 			self.endpoint_path = "/" + self.endpoint_path
 
-	def validate_field_map(self):
+	def validate_field_map(self) -> None:
+		"""Require at least one Field Map row when Enabled, and reject
+		duplicate placeholder keys."""
 		if self.enabled and not self.field_map:
 			frappe.throw(
 				frappe._(
@@ -98,7 +116,9 @@ class KYCVendor(Document):
 				alert=True,
 			)
 
-	def validate_json_template(self):
+	def validate_json_template(self) -> None:
+		"""For JSON Body style, require a template and confirm it's still
+		valid JSON once every placeholder is substituted with a dummy value."""
 		if self.request_style != "JSON Body":
 			return
 		if not self.request_body_template:
@@ -118,7 +138,9 @@ class KYCVendor(Document):
 				)
 			)
 
-	def validate_success_path(self):
+	def validate_success_path(self) -> None:
+		"""Require a Success Path -- the JSON key checked in the response to
+		decide Success vs Failed."""
 		if not self.success_path:
 			frappe.throw(
 				frappe._(
@@ -127,13 +149,13 @@ class KYCVendor(Document):
 				)
 			)
 
-	def validate_response_classification(self):
+	def validate_response_classification(self) -> None:
+		"""Normalize the system-error keyword list, and require Success
+		Path whenever Expected Value at Success Path is set."""
 		# normalize keyword list: strip blanks/whitespace, lowercase for matching later
 		if self.system_error_type_keywords:
 			lines = [ln.strip() for ln in self.system_error_type_keywords.splitlines() if ln.strip()]
 			self.system_error_type_keywords = "\n".join(lines)
 
 		if self.expected_success_value and not self.success_path:
-			frappe.throw(
-				frappe._("Expected Value at Success Path requires Success Path to also be set")
-			)
+			frappe.throw(frappe._("Expected Value at Success Path requires Success Path to also be set"))
