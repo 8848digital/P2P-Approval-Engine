@@ -6,4 +6,6 @@ from frappe.model.document import Document
 
 
 class PaymentsComplianceAllowedRole(Document):
-	pass
+	"""Payments Compliance Settings child table row: a Role permitted to
+	view the Procure to Pay Management dashboard (see
+	dashboard_data.py's _check_permission)."""

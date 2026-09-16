@@ -6,4 +6,7 @@ from frappe.model.document import Document
 
 
 class PaymentsComplianceWorkflowStateMapping(Document):
-	pass
+	"""Payments Compliance Settings child table row: maps one doctype's
+	workflow_state value to a dashboard status bucket (Approved/Rejected/
+	Pending) -- see customization/procure_to_pay/dashboard_data.py's
+	_get_state_mapping and _resolve_bucket."""

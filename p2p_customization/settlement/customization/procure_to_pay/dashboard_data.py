@@ -175,7 +175,11 @@ def _base_filters(doctype, company, from_date, to_date, extra=None, date_field=N
 	filters = {}
 	if company and _has_field(doctype, "company"):
 		filters["company"] = company
-	filters.update(_date_range_filter(from_date, to_date, fieldname=date_field or DOCTYPE_DATE_FIELD.get(doctype, "creation")))
+	filters.update(
+		_date_range_filter(
+			from_date, to_date, fieldname=date_field or DOCTYPE_DATE_FIELD.get(doctype, "creation")
+		)
+	)
 	if extra:
 		filters.update(extra)
 	return filters
@@ -363,7 +367,10 @@ def _is_workflow_active(doctype):
 	return bool(custom_name or standard_name)
 
 
-def _get_state_mapping(doctype, settings):
+def _get_state_mapping(doctype, settings) -> dict:
+	"""Build {workflow_state (lowercased) -> status_bucket} for doctype from
+	Payments Compliance Settings' Workflow State Mapping rows, skipping any
+	row for a different doctype or missing a state/bucket value."""
 	mapping = {}
 	for row in settings.get("workflow_state_mapping") or []:
 		if row.reference_doctype != doctype:
@@ -453,7 +460,14 @@ def _resolve_bucket(doctype, state_value, docstatus, target_keys, mapping, use_m
 
 
 def _status_counts(
-	doctype, company, target_keys, settings, from_date=None, to_date=None, extra_filters=None, scope_context=None
+	doctype,
+	company,
+	target_keys,
+	settings,
+	from_date=None,
+	to_date=None,
+	extra_filters=None,
+	scope_context=None,
 ):
 	"""Bucket `doctype`'s documents into target_keys (see module docstring
 	for the rule), and return (counts, bucket_filters):
@@ -502,7 +516,9 @@ def _status_counts(
 	counts = {k: 0 for k in target_keys}
 	bucket_names = {k: [] for k in target_keys}
 	for r in rows:
-		bucket, source = _resolve_bucket(doctype, r.get("state"), r.docstatus, target_keys, mapping, use_mapping)
+		bucket, source = _resolve_bucket(
+			doctype, r.get("state"), r.docstatus, target_keys, mapping, use_mapping
+		)
 		if source == "unmapped_fallback_to_docstatus":
 			_log(
 				f"PCD: {doctype} UNMAPPED workflow_state",
@@ -524,13 +540,18 @@ def _status_counts(
 
 def _msme_ageing(company, settings, from_date=None, to_date=None, extra_filters=None):
 	base = _base_filters(
-		"Purchase Invoice", company, from_date, to_date,
+		"Purchase Invoice",
+		company,
+		from_date,
+		to_date,
 		extra={**(extra_filters or {}), "docstatus": 1, "status": ["not in", ["Paid", "Cancelled"]]},
 	)
 
 	_log("PCD: _msme_ageing filters", f"company={company!r} filters={base}")
 
-	invoices = frappe.db.get_list("Purchase Invoice", filters=base, fields=["name", "due_date"], ignore_permissions=True)
+	invoices = frappe.db.get_list(
+		"Purchase Invoice", filters=base, fields=["name", "due_date"], ignore_permissions=True
+	)
 	_log("PCD: _msme_ageing invoices fetched", f"count={len(invoices)}\nsample={invoices[:5]}")
 	if not invoices:
 		_log("PCD: _msme_ageing ZERO INVOICES", f"No Purchase Invoice matched filters={base}.")
@@ -625,7 +646,9 @@ def build_dashboard_payload(settings, company, from_date=None, to_date=None, sco
 	)
 
 	if scope_user is False:
-		frappe.throw("build_dashboard_payload requires an explicit scope_user (a user ID, or None for aggregate).")
+		frappe.throw(
+			"build_dashboard_payload requires an explicit scope_user (a user ID, or None for aggregate)."
+		)
 
 	try:
 		if not company:
@@ -646,20 +669,44 @@ def build_dashboard_payload(settings, company, from_date=None, to_date=None, sco
 				scope_filter[dt] = None
 
 		brn_counts, brn_bf = _status_counts(
-			"BRN", company, APPROVAL_TARGET_KEYS, settings, from_date, to_date,
-			extra_filters=scope_filter.get("BRN"), scope_context=scope_context.get("BRN"),
+			"BRN",
+			company,
+			APPROVAL_TARGET_KEYS,
+			settings,
+			from_date,
+			to_date,
+			extra_filters=scope_filter.get("BRN"),
+			scope_context=scope_context.get("BRN"),
 		)
 		po_counts, po_bf = _status_counts(
-			"Payment Order", company, PAYMENT_TARGET_KEYS, settings, from_date, to_date,
-			extra_filters=scope_filter.get("Payment Order"), scope_context=scope_context.get("Payment Order"),
+			"Payment Order",
+			company,
+			PAYMENT_TARGET_KEYS,
+			settings,
+			from_date,
+			to_date,
+			extra_filters=scope_filter.get("Payment Order"),
+			scope_context=scope_context.get("Payment Order"),
 		)
 		puo_counts, puo_bf = _status_counts(
-			"Purchase Order", company, APPROVAL_TARGET_KEYS, settings, from_date, to_date,
-			extra_filters=scope_filter.get("Purchase Order"), scope_context=scope_context.get("Purchase Order"),
+			"Purchase Order",
+			company,
+			APPROVAL_TARGET_KEYS,
+			settings,
+			from_date,
+			to_date,
+			extra_filters=scope_filter.get("Purchase Order"),
+			scope_context=scope_context.get("Purchase Order"),
 		)
 		pi_counts, pi_bf = _status_counts(
-			"Purchase Invoice", company, APPROVAL_TARGET_KEYS, settings, from_date, to_date,
-			extra_filters=scope_filter.get("Purchase Invoice"), scope_context=scope_context.get("Purchase Invoice"),
+			"Purchase Invoice",
+			company,
+			APPROVAL_TARGET_KEYS,
+			settings,
+			from_date,
+			to_date,
+			extra_filters=scope_filter.get("Purchase Invoice"),
+			scope_context=scope_context.get("Purchase Invoice"),
 		)
 		msme_counts, msme_bf = _msme_ageing(
 			company, settings, from_date, to_date, extra_filters=scope_filter.get("Purchase Invoice")
@@ -670,8 +717,14 @@ def build_dashboard_payload(settings, company, from_date=None, to_date=None, sco
 		if enable_related_party:
 			rp_extra = {**(scope_filter.get("Purchase Invoice") or {}), "is_related_party_transaction": 1}
 			rp_counts, rp_bf = _status_counts(
-				"Purchase Invoice", company, APPROVAL_TARGET_KEYS, settings, from_date, to_date,
-				extra_filters=rp_extra, scope_context=scope_context.get("Purchase Invoice"),
+				"Purchase Invoice",
+				company,
+				APPROVAL_TARGET_KEYS,
+				settings,
+				from_date,
+				to_date,
+				extra_filters=rp_extra,
+				scope_context=scope_context.get("Purchase Invoice"),
 			)
 
 		payload = {
@@ -702,8 +755,11 @@ def build_dashboard_payload(settings, company, from_date=None, to_date=None, sco
 		all_zero = all(
 			all(v == 0 for v in section_data["counts"].values())
 			for section_data in (
-				payload["brn"], payload["payment_order"], payload["purchase_order"],
-				payload["purchase_invoice"], payload["msme"],
+				payload["brn"],
+				payload["payment_order"],
+				payload["purchase_order"],
+				payload["purchase_invoice"],
+				payload["msme"],
 			)
 		)
 		if all_zero:
@@ -749,7 +805,9 @@ def build_debug_raw_counts(settings, doctype, company=None, from_date=None, to_d
 	filters = {}
 	if company and _has_field(doctype, "company"):
 		filters["company"] = company
-	filters.update(_date_range_filter(from_date, to_date, fieldname=DOCTYPE_DATE_FIELD.get(doctype, "creation")))
+	filters.update(
+		_date_range_filter(from_date, to_date, fieldname=DOCTYPE_DATE_FIELD.get(doctype, "creation"))
+	)
 	filters.update(_scope_context_filter(_my_scope_context(doctype, frappe.session.user)))
 
 	has_wf_field, wf_active, use_mapping, mapping = _workflow_mode(doctype, settings)
@@ -760,12 +818,16 @@ def build_debug_raw_counts(settings, doctype, company=None, from_date=None, to_d
 
 	group_by = f"{state_field}, docstatus" if state_field else "docstatus"
 	fields = ([f"{state_field} as state"] if state_field else []) + ["docstatus", {"COUNT": "name"}]
-	rows = frappe.db.get_list(doctype, filters=filters, group_by=group_by, fields=fields, ignore_permissions=True)
+	rows = frappe.db.get_list(
+		doctype, filters=filters, group_by=group_by, fields=fields, ignore_permissions=True
+	)
 
 	no_state_label = "(no workflow_state field on this doctype)"
 	raw_counts = []
 	for r in rows:
-		bucket, source = _resolve_bucket(doctype, r.get("state"), r.docstatus, target_keys, mapping, use_mapping)
+		bucket, source = _resolve_bucket(
+			doctype, r.get("state"), r.docstatus, target_keys, mapping, use_mapping
+		)
 		raw_counts.append(
 			{
 				"workflow_state": r.get("state") or ("(blank)" if state_field else no_state_label),
@@ -816,7 +878,9 @@ def build_debug_line_items(settings, doctype, company=None, from_date=None, to_d
 	filters = {}
 	if company and _has_field(doctype, "company"):
 		filters["company"] = company
-	filters.update(_date_range_filter(from_date, to_date, fieldname=DOCTYPE_DATE_FIELD.get(doctype, "creation")))
+	filters.update(
+		_date_range_filter(from_date, to_date, fieldname=DOCTYPE_DATE_FIELD.get(doctype, "creation"))
+	)
 	filters.update(_scope_context_filter(_my_scope_context(doctype, frappe.session.user)))
 
 	has_wf_field, wf_active, use_mapping, mapping = _workflow_mode(doctype, settings)
@@ -833,7 +897,11 @@ def build_debug_line_items(settings, doctype, company=None, from_date=None, to_d
 	_log("PCD: build_debug_line_items query", f"filters={filters}\nfields={fields}\nlimit={limit}")
 
 	rows = frappe.db.get_list(
-		doctype, filters=filters, fields=fields, order_by="creation desc", limit_page_length=limit,
+		doctype,
+		filters=filters,
+		fields=fields,
+		order_by="creation desc",
+		limit_page_length=limit,
 		ignore_permissions=True,
 	)
 	_log("PCD: build_debug_line_items raw row count", f"row_count={len(rows)}")
@@ -900,7 +968,9 @@ def build_error_logs(doctype=None, from_date=None, to_date=None, limit=100):
 		out.append(
 			{
 				"name": r["name"],
-				"creation": get_datetime(r["creation"]).strftime("%Y-%m-%d %H:%M:%S") if r.get("creation") else "",
+				"creation": get_datetime(r["creation"]).strftime("%Y-%m-%d %H:%M:%S")
+				if r.get("creation")
+				else "",
 				"method": r.get("method") or "",
 				"summary": summary[:300],
 				"line_count": len(lines),
