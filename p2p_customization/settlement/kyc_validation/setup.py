@@ -22,11 +22,7 @@ never hardcode secrets in code.
 
 import frappe
 
-
-VENDOR_DATA = [
-	"FRSLab",
-	"SurePass"
-]
+VENDOR_DATA = ["FRSLab", "SurePass"]
 
 CHECK_TYPES = [
 	"GSTIN",
@@ -41,7 +37,8 @@ CHECK_TYPES = [
 ]
 
 
-def create_vendor_name():
+def create_vendor_name() -> None:
+	"""Seed the Vendor Name master records from VENDOR_DATA, skipping any that already exist."""
 	for vendor_name in VENDOR_DATA:
 		if frappe.db.exists("Vendor Name", vendor_name):
 			continue
@@ -49,7 +46,8 @@ def create_vendor_name():
 	frappe.db.commit()
 
 
-def _seed_check_types():
+def _seed_check_types() -> None:
+	"""Seed the KYC Type master records from CHECK_TYPES, skipping any that already exist."""
 	for type_name in CHECK_TYPES:
 		if frappe.db.exists("KYC Type", type_name):
 			continue
@@ -57,11 +55,20 @@ def _seed_check_types():
 	frappe.db.commit()
 
 
-def _seed_credentials(settings):
+def _seed_credentials(settings) -> dict:
+	"""Append any missing sandbox/prod credential rows to JFS Settings
+	(left inactive with no token), and return {credential_label: name}
+	for every credential row now present, including ones already there."""
 	credentials = {
-		"SurePass Sandbox": dict(provider="SurePass", base_url="https://sandbox.surepass.io", auth_type="Bearer"),
-		"SurePass KYC API": dict(provider="SurePass", base_url="https://kyc-api.surepass.app", auth_type="Bearer"),
-		"FRSLab Prod": dict(provider="FRSLab", base_url="https://api.atlaskyc.com/v2/prod", auth_type="Basic"),
+		"SurePass Sandbox": dict(
+			provider="SurePass", base_url="https://sandbox.surepass.io", auth_type="Bearer"
+		),
+		"SurePass KYC API": dict(
+			provider="SurePass", base_url="https://kyc-api.surepass.app", auth_type="Bearer"
+		),
+		"FRSLab Prod": dict(
+			provider="FRSLab", base_url="https://api.atlaskyc.com/v2/prod", auth_type="Basic"
+		),
 	}
 
 	existing_labels = {row.credential_label for row in settings.credentials}
@@ -90,7 +97,9 @@ def _seed_credentials(settings):
 	return {row.credential_label: row.name for row in settings.credentials}
 
 
-def _seed_vendors(cred_by_label):
+def _seed_vendors(cred_by_label: dict) -> None:
+	"""Seed the sample KYC Vendor configs (left disabled), skipping any
+	kyc_type/vendor combination that already exists."""
 	vendors = [
 		dict(
 			vendor_name="GSTIN Verification - SurePass",
@@ -102,7 +111,14 @@ def _seed_vendors(cred_by_label):
 			endpoint_path="/api/v1/corporate/gstin",
 			request_body_template='{"id_number": "{{gstin}}"}',
 			success_path="data.gstin",
-			field_map=[dict(supplier_fieldname="gstin", placeholder_key="gstin", is_mandatory=1, sample_value="08AKWPJ1234H1ZN")],
+			field_map=[
+				dict(
+					supplier_fieldname="gstin",
+					placeholder_key="gstin",
+					is_mandatory=1,
+					sample_value="08AKWPJ1234H1ZN",
+				)
+			],
 		),
 		dict(
 			vendor_name="PAN Comprehensive - SurePass",
@@ -114,7 +130,11 @@ def _seed_vendors(cred_by_label):
 			endpoint_path="/api/v1/pan/pan-comprehensive",
 			request_body_template='{"id_number": "{{pan}}"}',
 			success_path="data.pan_number",
-			field_map=[dict(supplier_fieldname="pan", placeholder_key="pan", is_mandatory=1, sample_value="EKRPR1234F")],
+			field_map=[
+				dict(
+					supplier_fieldname="pan", placeholder_key="pan", is_mandatory=1, sample_value="EKRPR1234F"
+				)
+			],
 		),
 		dict(
 			vendor_name="MSME/Udyam Verification - SurePass",
@@ -145,7 +165,14 @@ def _seed_vendors(cred_by_label):
 			endpoint_path="/api/v1/corporate/company-details",
 			request_body_template='{"id_number": "{{cin}}"}',
 			success_path="data.company_name",
-			field_map=[dict(supplier_fieldname="cin", placeholder_key="cin", is_mandatory=1, sample_value="U65999MH1995PLC123456")],
+			field_map=[
+				dict(
+					supplier_fieldname="cin",
+					placeholder_key="cin",
+					is_mandatory=1,
+					sample_value="U65999MH1995PLC123456",
+				)
+			],
 		),
 		dict(
 			vendor_name="PAN Verify - FRSLab",
@@ -157,7 +184,11 @@ def _seed_vendors(cred_by_label):
 			endpoint_path="/verify/pan?pan_number={{pan}}",
 			request_body_template="",
 			success_path="data",
-			field_map=[dict(supplier_fieldname="pan", placeholder_key="pan", is_mandatory=1, sample_value="FXVPP8239P")],
+			field_map=[
+				dict(
+					supplier_fieldname="pan", placeholder_key="pan", is_mandatory=1, sample_value="FXVPP8239P"
+				)
+			],
 		),
 		dict(
 			vendor_name="GSTIN Verify - FRSLab",
@@ -169,7 +200,14 @@ def _seed_vendors(cred_by_label):
 			endpoint_path="/verify/gstin?gst_number={{gstin}}",
 			request_body_template="",
 			success_path="data",
-			field_map=[dict(supplier_fieldname="gstin", placeholder_key="gstin", is_mandatory=1, sample_value="27AABCR1466K1Z7")],
+			field_map=[
+				dict(
+					supplier_fieldname="gstin",
+					placeholder_key="gstin",
+					is_mandatory=1,
+					sample_value="27AABCR1466K1Z7",
+				)
+			],
 		),
 		dict(
 			vendor_name="PAN to Aadhaar Link Check - FRSLab",
@@ -181,7 +219,14 @@ def _seed_vendors(cred_by_label):
 			endpoint_path="/verify/pantoadr",
 			request_body_template='{"pan_no": "{{pan_no}}"}',
 			success_path="data",
-			field_map=[dict(supplier_fieldname="pan", placeholder_key="pan_no", is_mandatory=1, sample_value="FXVPP8239P")],
+			field_map=[
+				dict(
+					supplier_fieldname="pan",
+					placeholder_key="pan_no",
+					is_mandatory=1,
+					sample_value="FXVPP8239P",
+				)
+			],
 		),
 		dict(
 			vendor_name="MSME Verify - FRSLab",

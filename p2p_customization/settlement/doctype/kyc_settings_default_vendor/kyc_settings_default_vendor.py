@@ -6,4 +6,5 @@ from frappe.model.document import Document
 
 
 class KYCSettingsDefaultVendor(Document):
-	pass
+	"""JFS Settings child table row: a KYC Vendor pre-checked by default in
+	the Supplier KYC dialog (see kyc_validation/api.py's get_kyc_vendor_options)."""

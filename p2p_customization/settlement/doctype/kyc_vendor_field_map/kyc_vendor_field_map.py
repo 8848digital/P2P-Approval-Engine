@@ -4,7 +4,12 @@ from frappe.model.document import Document
 
 
 class KYCVendorFieldMap(Document):
-	def validate(self):
+	"""KYC Vendor child table row: maps one Supplier field to one request
+	template placeholder key."""
+
+	def validate(self) -> None:
+		"""Require supplier_fieldname/placeholder_key, and that
+		supplier_fieldname is a real field on Supplier."""
 		if not self.supplier_fieldname:
 			frappe.throw(frappe._("Row #{0}: Supplier Fieldname is required").format(self.idx))
 		if not self.placeholder_key:

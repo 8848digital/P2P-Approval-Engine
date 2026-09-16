@@ -1,7 +1,21 @@
 # Copyright (c) 2026, p2p_customization
 import frappe
+from pypika import Order
 
-def evaluate_supplier_hold(supplier_name):
+
+def evaluate_supplier_hold(supplier_name: str) -> None:
+	"""
+	Put a Supplier on/off hold based on whether every KYC check type
+	configured in JFS Settings' "Block Supplier On Failure Types" currently
+	has a Success status -- called from KYCValidationRun.on_update() after
+	every validation run.
+
+	Parameters:
+		supplier_name (str, required): The Supplier document name.
+
+	Returns:
+		None
+	"""
 	settings = frappe.get_single("JFS Settings")
 
 	if not settings.auto_hold_supplier_on_kyc_failure:
@@ -10,10 +24,9 @@ def evaluate_supplier_hold(supplier_name):
 	required_types = [d.kyc_check_type for d in (settings.block_supplier_on_failure_types or [])]
 	if not required_types:
 		return  # nothing configured to enforce
-	frappe.log_error("required_types",required_types)
 
-	unverified = [t for t in required_types if get_latest_status_for_type(supplier_name, t) != "Success"]
-	frappe.log_error("unverified",unverified)
+	latest_statuses = get_latest_statuses_for_types(supplier_name, required_types)
+	unverified = [t for t in required_types if latest_statuses.get(t) != "Success"]
 
 	supplier = frappe.get_doc("Supplier", supplier_name)
 
@@ -23,25 +36,48 @@ def evaluate_supplier_hold(supplier_name):
 		_release_hold_if_ours(supplier)
 
 
-def get_latest_status_for_type(supplier_name, kyc_type):
+def get_latest_statuses_for_types(supplier_name: str, kyc_types: list) -> dict:
+	"""
+	Batch-fetch the latest non-Error status per kyc_type across this
+	Supplier's KYC Validation Runs, in a single query -- one call covers
+	every required type instead of one query per type.
 
-	rows = frappe.db.sql(
-		"""
-		SELECT l.status
-		FROM `tabKYC Validation Log` l
-		INNER JOIN `tabKYC Validation Run` r ON r.name = l.parent
-		WHERE r.supplier = %s AND l.kyc_type = %s AND l.status != 'Error'
-		ORDER BY l.checked_on DESC
-		LIMIT 1
-		""",
-		(supplier_name, kyc_type),
-		as_dict=True,
-	)
-	frappe.log_error("rows",rows)
-	return rows[0].status if rows else None
+	Parameters:
+		supplier_name (str, required): The Supplier document name.
+		kyc_types (list, required): The KYC check types to look up.
+
+	Returns:
+		dict: {kyc_type: latest_status}. A kyc_type with no non-Error log
+			row is simply absent.
+	"""
+	if not kyc_types:
+		return {}
+
+	Log = frappe.qb.DocType("KYC Validation Log")
+	Run = frappe.qb.DocType("KYC Validation Run")
+
+	rows = (
+		frappe.qb.from_(Log)
+		.inner_join(Run)
+		.on(Run.name == Log.parent)
+		.select(Log.kyc_type, Log.status, Log.checked_on)
+		.where(Run.supplier == supplier_name)
+		.where(Log.kyc_type.isin(kyc_types))
+		.where(Log.status != "Error")
+		.orderby(Log.checked_on, order=Order.desc)
+	).run(as_dict=True)
+
+	# Rows are already ordered newest-first, so the first row seen per
+	# kyc_type is its latest status.
+	latest = {}
+	for row in rows:
+		latest.setdefault(row.kyc_type, row.status)
+	return latest
 
 
-def _set_on_hold(supplier, unverified_types, hold_type):
+def _set_on_hold(supplier, unverified_types: list, hold_type: str) -> None:
+	"""Put supplier on hold and record which KYC check types are still
+	unverified, then notify the desk in real time."""
 	updates = {
 		"on_hold": 1,
 		"hold_type": hold_type,
