@@ -12,7 +12,12 @@ frappe.ui.form.on("KYC Vendor", {
 				callback: (r) => {
 					if (!r.message) return;
 					const m = r.message;
-					const color = m.status === "Success" ? "green" : m.status === "Failed" ? "red" : "orange";
+					const color =
+						m.status === "Success"
+							? "green"
+							: m.status === "Failed"
+							? "red"
+							: "orange";
 					frappe.msgprint({
 						title: __("Test Result — {0}", [m.status]),
 						indicator: color,
@@ -20,8 +25,12 @@ frappe.ui.form.on("KYC Vendor", {
 							<p><b>${__("Status")}:</b> <span class="indicator-pill ${color}">${m.status}</span></p>
 							<p><b>${__("HTTP Code")}:</b> ${m.http_status_code ?? "-"}</p>
 							<p><b>${__("Message")}:</b> ${frappe.utils.escape_html(m.message || "")}</p>
-							<details><summary>${__("Request")}</summary><pre>${frappe.utils.escape_html(m.request || "")}</pre></details>
-							<details><summary>${__("Response")}</summary><pre>${frappe.utils.escape_html(m.response || "")}</pre></details>
+							<details><summary>${__("Request")}</summary><pre>${frappe.utils.escape_html(
+							m.request || ""
+						)}</pre></details>
+							<details><summary>${__("Response")}</summary><pre>${frappe.utils.escape_html(
+							m.response || ""
+						)}</pre></details>
 						`,
 					});
 				},

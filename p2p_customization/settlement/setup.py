@@ -17,7 +17,8 @@ def create_custom_fields():
 	print("Creating/Updating Settlement Custom Fields....")
 	path = os.path.join(os.path.dirname(__file__), "custom_fields")
 	for file in os.listdir(path):
-		with open(os.path.join(path, file), "r") as f:
+		# `file` comes from os.listdir(path) itself, not from user input, so it can't escape `path`.
+		with open(os.path.join(path, file)) as f:  # nosemgrep: frappe-security-file-traversal
 			CUSTOM_FIELDS.update(json.load(f))
 
 	from frappe.custom.doctype.custom_field.custom_field import create_custom_fields as _create_custom_fields

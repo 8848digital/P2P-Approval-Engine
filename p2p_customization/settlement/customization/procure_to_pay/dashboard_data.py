@@ -647,7 +647,7 @@ def build_dashboard_payload(settings, company, from_date=None, to_date=None, sco
 
 	if scope_user is False:
 		frappe.throw(
-			"build_dashboard_payload requires an explicit scope_user (a user ID, or None for aggregate)."
+			_("build_dashboard_payload requires an explicit scope_user (a user ID, or None for aggregate).")
 		)
 
 	try:

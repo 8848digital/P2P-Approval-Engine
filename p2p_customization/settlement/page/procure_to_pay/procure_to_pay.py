@@ -16,14 +16,14 @@ import frappe
 from p2p_customization.settlement.customization.procure_to_pay.dashboard_data import (
 	_get_settings,
 	build_dashboard_payload,
-	build_debug_raw_counts,
 	build_debug_line_items,
+	build_debug_raw_counts,
 	build_error_logs,
 )
 
 
 @frappe.whitelist()
-def get_dashboard_data(company=None, from_date=None, to_date=None):
+def get_dashboard_data(company: str | None = None, from_date: str | None = None, to_date: str | None = None):
 	settings = _get_settings()
 	# Always personal, forced to the logged-in user -- this open dashboard
 	# has no company-wide/aggregate mode (that's the management dashboard's
@@ -37,17 +37,30 @@ def check_access():
 
 
 @frappe.whitelist()
-def debug_raw_counts(doctype=None, company=None, from_date=None, to_date=None):
+def debug_raw_counts(
+	doctype: str | None = None,
+	company: str | None = None,
+	from_date: str | None = None,
+	to_date: str | None = None,
+):
 	settings = _get_settings()
 	return build_debug_raw_counts(settings, doctype, company, from_date, to_date)
 
 
 @frappe.whitelist()
-def debug_line_items(doctype=None, company=None, from_date=None, to_date=None, limit=200):
+def debug_line_items(
+	doctype: str | None = None,
+	company: str | None = None,
+	from_date: str | None = None,
+	to_date: str | None = None,
+	limit: int = 200,
+):
 	settings = _get_settings()
 	return build_debug_line_items(settings, doctype, company, from_date, to_date, limit)
 
 
 @frappe.whitelist()
-def get_error_logs(doctype=None, from_date=None, to_date=None, limit=100):
+def get_error_logs(
+	doctype: str | None = None, from_date: str | None = None, to_date: str | None = None, limit: int = 100
+):
 	return build_error_logs(doctype, from_date, to_date, limit)

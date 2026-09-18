@@ -43,10 +43,10 @@ def get_context(context) -> None:
 
 @frappe.whitelist()
 def make_purchase_invoice_from_brn(
-	brn_name,
-	items,
-	supplier_invoice_no=None,
-	supplier_invoice_date=None,
+	brn_name: str,
+	items: str,
+	supplier_invoice_no: str | None = None,
+	supplier_invoice_date: str | None = None,
 ):
 	"""
 	Create and insert a Purchase Invoice mapped from a submitted BRN, from

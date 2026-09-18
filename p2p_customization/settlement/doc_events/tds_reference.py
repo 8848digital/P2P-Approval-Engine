@@ -76,7 +76,7 @@ SUPPLIER_TYPE_TO_ENTITY = {"Individual": "Individual", "Hindu Undivided Family":
 
 
 @frappe.whitelist()
-def get_tax_withholding_category(nature_of_service, supplier=None):
+def get_tax_withholding_category(nature_of_service: str, supplier: str | None = None):
 	"""Called from Purchase Order/Invoice Item's nature_of_service handler.
 
 	Picks the Tax Withholding Category auto-created for this TDS Reference
@@ -89,7 +89,7 @@ def get_tax_withholding_category(nature_of_service, supplier=None):
 
 
 @frappe.whitelist()
-def get_tax_withholding_categories(nature_of_services, supplier=None):
+def get_tax_withholding_categories(nature_of_services: str | list, supplier: str | None = None):
 	"""Batched counterpart of get_tax_withholding_category - resolves every
 	nature_of_service value against one supplier in a single call, so a
 	Purchase Order/Invoice with many line items doesn't fire one round-trip

@@ -17,17 +17,22 @@ import frappe
 from frappe import _
 
 from p2p_customization.settlement.customization.procure_to_pay.dashboard_data import (
-	_get_settings,
 	_check_permission,
+	_get_settings,
 	build_dashboard_payload,
-	build_debug_raw_counts,
 	build_debug_line_items,
+	build_debug_raw_counts,
 	build_error_logs,
 )
 
 
 @frappe.whitelist()
-def get_dashboard_data(company=None, from_date=None, to_date=None, for_user=None):
+def get_dashboard_data(
+	company: str | None = None,
+	from_date: str | None = None,
+	to_date: str | None = None,
+	for_user: str | None = None,
+):
 	settings = _get_settings()
 	_check_permission(settings)
 	# No "User" filter selected -> company-wide aggregate (scope_user=None).
@@ -45,21 +50,34 @@ def check_access():
 
 
 @frappe.whitelist()
-def debug_raw_counts(doctype=None, company=None, from_date=None, to_date=None):
+def debug_raw_counts(
+	doctype: str | None = None,
+	company: str | None = None,
+	from_date: str | None = None,
+	to_date: str | None = None,
+):
 	settings = _get_settings()
 	_check_permission(settings)
 	return build_debug_raw_counts(settings, doctype, company, from_date, to_date)
 
 
 @frappe.whitelist()
-def debug_line_items(doctype=None, company=None, from_date=None, to_date=None, limit=200):
+def debug_line_items(
+	doctype: str | None = None,
+	company: str | None = None,
+	from_date: str | None = None,
+	to_date: str | None = None,
+	limit: int = 200,
+):
 	settings = _get_settings()
 	_check_permission(settings)
 	return build_debug_line_items(settings, doctype, company, from_date, to_date, limit)
 
 
 @frappe.whitelist()
-def get_error_logs(doctype=None, from_date=None, to_date=None, limit=100):
+def get_error_logs(
+	doctype: str | None = None, from_date: str | None = None, to_date: str | None = None, limit: int = 100
+):
 	settings = _get_settings()
 	_check_permission(settings)
 	return build_error_logs(doctype, from_date, to_date, limit)
@@ -92,7 +110,7 @@ def can_view_period_closing():
 
 
 @frappe.whitelist()
-def update_accounts_frozen_till_date(accounts_frozen_till_date):
+def update_accounts_frozen_till_date(accounts_frozen_till_date: str):
 	"""Set Company.accounts_frozen_till_date to `accounts_frozen_till_date`
 	on every Company. Gated independently from the dashboard's own
 	allowed_roles -- see _check_period_closing_permission / Payments
@@ -133,17 +151,19 @@ def update_accounts_frozen_till_date(accounts_frozen_till_date):
 				reference_doctype="Company",
 				reference_name=company,
 			)
-			failed.append({
-				"company": company,
-				# A clean, single message for the user (what frappe.throw()
-				# actually said, HTML tags like frappe.bold() stripped) --
-				# NOT the raw traceback, which is developer-facing noise
-				# (file paths, line numbers) that means nothing to whoever
-				# clicked "Update Account Closing". The full traceback is
-				# still captured above in the Error Log for follow-up.
-				"error": frappe.utils.strip_html(str(e)) or _("An unexpected error occurred."),
-				"error_log": error_log.name if error_log else None,
-			})
+			failed.append(
+				{
+					"company": company,
+					# A clean, single message for the user (what frappe.throw()
+					# actually said, HTML tags like frappe.bold() stripped) --
+					# NOT the raw traceback, which is developer-facing noise
+					# (file paths, line numbers) that means nothing to whoever
+					# clicked "Update Account Closing". The full traceback is
+					# still captured above in the Error Log for follow-up.
+					"error": frappe.utils.strip_html(str(e)) or _("An unexpected error occurred."),
+					"error_log": error_log.name if error_log else None,
+				}
+			)
 
 	return {
 		"accounts_frozen_till_date": accounts_frozen_till_date,

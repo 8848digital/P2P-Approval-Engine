@@ -5,7 +5,9 @@ frappe.ui.form.on("KYC Validation Run", {
 
 		if (!frm.doc.__islocal) {
 			frm.add_custom_button(__("Revalidate All Failed"), () => {
-				const failed = (frm.doc.logs || []).filter((r) => r.status !== "Success").map((r) => r.kyc_vendor);
+				const failed = (frm.doc.logs || [])
+					.filter((r) => r.status !== "Success")
+					.map((r) => r.kyc_vendor);
 				if (!failed.length) {
 					frappe.msgprint(__("Nothing to revalidate — everything already succeeded."));
 					return;
@@ -75,7 +77,9 @@ function style_status_column(frm) {
 				Pending: "blue",
 			};
 			const color = map[value] || "gray";
-			return `<span class="indicator-pill ${color}" style="font-weight:600;">${__(value || "Pending")}</span>`;
+			return `<span class="indicator-pill ${color}" style="font-weight:600;">${__(
+				value || "Pending"
+			)}</span>`;
 		};
 	}
 	grid.refresh();

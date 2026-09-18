@@ -27,9 +27,22 @@
 
 	const SECTIONS = [
 		{ key: "brn", container: "ptpm-chart-brn", title: __("BRN Approval Status") },
-		{ key: "payment_order", container: "ptpm-chart-payment-order", title: __("Payment Release Status") },
-		{ key: "purchase_order", container: "ptpm-chart-purchase-order", title: __("Purchase Order Approval Status") },
-		{ key: "msme", container: "ptpm-chart-msme", title: __("MSME Payment Ageing"), is_bucket: true },
+		{
+			key: "payment_order",
+			container: "ptpm-chart-payment-order",
+			title: __("Payment Release Status"),
+		},
+		{
+			key: "purchase_order",
+			container: "ptpm-chart-purchase-order",
+			title: __("Purchase Order Approval Status"),
+		},
+		{
+			key: "msme",
+			container: "ptpm-chart-msme",
+			title: __("MSME Payment Ageing"),
+			is_bucket: true,
+		},
 		{
 			key: "purchase_invoice",
 			container: "ptpm-chart-purchase-invoice",
@@ -155,7 +168,8 @@
 			const company = frappe.utils.get_url_arg("company") || this.get_default_company();
 
 			const to_date = frappe.utils.get_url_arg("to_date") || frappe.datetime.get_today();
-			const from_date = frappe.utils.get_url_arg("from_date") || frappe.datetime.add_months(to_date, -1);
+			const from_date =
+				frappe.utils.get_url_arg("from_date") || frappe.datetime.add_months(to_date, -1);
 			// No default for "user" -- blank means aggregate, which IS the
 			// intended default for this dashboard (unlike company/dates).
 			const user = frappe.utils.get_url_arg("user");
@@ -242,7 +256,9 @@
 						const missing = this.get_missing_filters();
 						if (missing.length) {
 							frappe.show_alert({
-								message: __("Please set {0} before refreshing.", [missing.join(", ")]),
+								message: __("Please set {0} before refreshing.", [
+									missing.join(", "),
+								]),
 								indicator: "orange",
 							});
 						}
@@ -298,16 +314,23 @@
 						fieldname: "accounts_frozen_till_date",
 						label: __("Accounts Frozen Till Date"),
 						reqd: 1,
-						description: __("Accounting entries will be frozen up to this date for every Company."),
+						description: __(
+							"Accounting entries will be frozen up to this date for every Company."
+						),
 					},
 				],
 				primary_action_label: __("Update"),
 				primary_action: (values) => {
 					frappe.confirm(
-						__("This will update Accounts Frozen Till Date to {0} for ALL companies. Continue?", [
-							frappe.datetime.str_to_user(values.accounts_frozen_till_date),
-						]),
-						() => this.run_account_closing_update(dialog, values.accounts_frozen_till_date)
+						__(
+							"This will update Accounts Frozen Till Date to {0} for ALL companies. Continue?",
+							[frappe.datetime.str_to_user(values.accounts_frozen_till_date)]
+						),
+						() =>
+							this.run_account_closing_update(
+								dialog,
+								values.accounts_frozen_till_date
+							)
 					);
 				},
 			});
@@ -329,7 +352,9 @@
 					frappe.msgprint({
 						title: __("Couldn't update Account Closing"),
 						indicator: "red",
-						message: (r && r.exc) || __("Check the browser console and Error Log for details."),
+						message:
+							(r && r.exc) ||
+							__("Check the browser console and Error Log for details."),
 					});
 				},
 			});
@@ -347,7 +372,9 @@
 			const updated = data.updated || [];
 			const failed = data.failed || [];
 			const failed_by_company = new Map(failed.map((f) => [f.company, f]));
-			const companies = [...updated, ...failed.map((f) => f.company)].sort((a, b) => a.localeCompare(b));
+			const companies = [...updated, ...failed.map((f) => f.company)].sort((a, b) =>
+				a.localeCompare(b)
+			);
 
 			const rows = companies
 				.map((company) => {
@@ -363,7 +390,11 @@
 
 					const reason = failure.error || __("An unexpected error occurred.");
 					const error_log_link = failure.error_log
-						? `<a href="/app/error-log/${encodeURIComponent(failure.error_log)}" target="_blank" style="white-space: nowrap; margin-left: 8px;">${__("Details")}</a>`
+						? `<a href="/app/error-log/${encodeURIComponent(
+								failure.error_log
+						  )}" target="_blank" style="white-space: nowrap; margin-left: 8px;">${__(
+								"Details"
+						  )}</a>`
 						: "";
 
 					return `
@@ -386,7 +417,10 @@
 
 			const dialog = new frappe.ui.Dialog({
 				title: failed.length
-					? __("Account Closing: {0} of {1} companies failed", [failed.length, data.total])
+					? __("Account Closing: {0} of {1} companies failed", [
+							failed.length,
+							data.total,
+					  ])
 					: __("Account Closing: all {0} companies updated", [data.total]),
 				size: "extra-large",
 				fields: [
@@ -421,7 +455,9 @@
 					${frappe.avatar(frappe.session.user, "avatar-medium")}
 					<div class="ptpm-user-banner-text">
 						<div class="ptpm-user-banner-name">${frappe.utils.escape_html(fullname)}</div>
-						<div class="ptpm-user-banner-hint">${__("Showing items you created or that are pending your approval")}</div>
+						<div class="ptpm-user-banner-hint">${__(
+							"Showing items you created or that are pending your approval"
+						)}</div>
 					</div>
 				</div>
 			`).appendTo(this.page.body);
@@ -435,9 +471,9 @@
 					</div>`
 			).join("");
 
-			this.$layout = $(`<div class="ptpm-dashboard"><div class="ptpm-grid">${cards_html}</div></div>`).appendTo(
-				this.page.body
-			);
+			this.$layout = $(
+				`<div class="ptpm-dashboard"><div class="ptpm-grid">${cards_html}</div></div>`
+			).appendTo(this.page.body);
 
 			$("<style>")
 				.text(
@@ -504,7 +540,9 @@
 			this.$placeholder = $(`
 				<div class="text-muted text-center" style="padding: 60px 0;">
 					<h4>${__("Select Filters")}</h4>
-					<p>${__("Choose a Company, From Date and To Date above to load the compliance dashboard. All three are required.")}</p>
+					<p>${__(
+						"Choose a Company, From Date and To Date above to load the compliance dashboard. All three are required."
+					)}</p>
 				</div>
 			`).appendTo(this.page.body);
 		}
@@ -531,7 +569,15 @@
 		// because only the server knows, per bucket, whether it was built from
 		// workflow_state values or a plain docstatus -- the frontend can't
 		// reconstruct that filter on its own.
-		render_chart(container_id, labels, values, chart_type, is_bucket, doctype, bucket_filters) {
+		render_chart(
+			container_id,
+			labels,
+			values,
+			chart_type,
+			is_bucket,
+			doctype,
+			bucket_filters
+		) {
 			const data = { labels, datasets: [{ values }] };
 			const type = CHART_TYPE_MAP[chart_type] || "bar";
 			const colors = this.colors_for(labels, is_bucket);
@@ -579,7 +625,9 @@
 			// even if "data-select" isn't fired for some reason.
 			$(`#${container_id}`)
 				.off("click", "[data-point-index]")
-				.on("click", "[data-point-index]", (e) => open(labels[$(e.currentTarget).attr("data-point-index")]));
+				.on("click", "[data-point-index]", (e) =>
+					open(labels[$(e.currentTarget).attr("data-point-index")])
+				);
 
 			this.render_legend(container_id, labels, values, colors, open);
 		}
@@ -614,7 +662,9 @@
 			$legend.html(rows);
 			$legend
 				.off("click", ".ptpm-legend-item")
-				.on("click", ".ptpm-legend-item", (e) => open($(e.currentTarget).attr("data-label")))
+				.on("click", ".ptpm-legend-item", (e) =>
+					open($(e.currentTarget).attr("data-label"))
+				)
 				.off("keydown", ".ptpm-legend-item")
 				.on("keydown", ".ptpm-legend-item", (e) => {
 					if (e.key === "Enter" || e.key === " ") {
@@ -627,7 +677,10 @@
 		open_bucket_list(doctype, label, count, filters) {
 			if (!doctype) return;
 			if (!count) {
-				frappe.show_alert({ message: __("No records in {0}.", [label]), indicator: "orange" });
+				frappe.show_alert({
+					message: __("No records in {0}.", [label]),
+					indicator: "orange",
+				});
 				return;
 			}
 			frappe.route_options = filters || {};
@@ -640,7 +693,9 @@
 			}
 			$(`#${container_id}`).off("data-select").off("click", "[data-point-index]");
 			$(`#${container_id}`).empty();
-			$(`#${container_id}-legend`).off("click", ".ptpm-legend-item").off("keydown", ".ptpm-legend-item");
+			$(`#${container_id}-legend`)
+				.off("click", ".ptpm-legend-item")
+				.off("keydown", ".ptpm-legend-item");
 			$(`#${container_id}-legend`).empty();
 		}
 
@@ -671,7 +726,9 @@
 					frappe.msgprint({
 						title: __("Couldn't load dashboard data"),
 						indicator: "red",
-						message: (r && r.exc) || __("Check the browser console and Error Log for details."),
+						message:
+							(r && r.exc) ||
+							__("Check the browser console and Error Log for details."),
 					});
 				},
 			});
@@ -686,7 +743,8 @@
 
 			SECTIONS.forEach((s) => {
 				if (s.togglable) {
-					const enabled = s.key === "related_party" ? d.enable_related_party_chart : true;
+					const enabled =
+						s.key === "related_party" ? d.enable_related_party_chart : true;
 					$(`#${s.container}`).closest(".chart-card").toggle(!!enabled);
 					if (!enabled) return;
 				}
@@ -713,19 +771,29 @@
 		update_user_banner(d) {
 			if (d.is_aggregate_view) {
 				this.$user_banner.find(".ptpm-user-banner-name").text(__("All Users"));
-				this.$user_banner.find(".ptpm-user-banner-hint").text(
-					__("Showing combined data for every user -- set the User filter to see one person's view")
-				);
+				this.$user_banner
+					.find(".ptpm-user-banner-hint")
+					.text(
+						__(
+							"Showing combined data for every user -- set the User filter to see one person's view"
+						)
+					);
 				return;
 			}
 			const current = d.current_user || {};
 			const is_self = current.name === frappe.session.user;
-			this.$user_banner.find(".ptpm-user-banner-name").text(current.fullname || current.name || "");
-			this.$user_banner.find(".ptpm-user-banner-hint").text(
-				is_self
-					? __("Showing items you created or that are pending your approval")
-					: __("Showing items this user created, or that are pending/already approved by them")
-			);
+			this.$user_banner
+				.find(".ptpm-user-banner-name")
+				.text(current.fullname || current.name || "");
+			this.$user_banner
+				.find(".ptpm-user-banner-hint")
+				.text(
+					is_self
+						? __("Showing items you created or that are pending your approval")
+						: __(
+								"Showing items this user created, or that are pending/already approved by them"
+						  )
+				);
 		}
 
 		setup_auto_refresh(seconds) {
@@ -794,7 +862,9 @@
 					<button class="ptpm-tab-btn" data-tab="lines">${__("Line Items")}</button>
 					<button class="ptpm-tab-btn" data-tab="logs">${__("Error Log")}</button>
 				</div>
-				<div class="ptpm-debug-pane active" data-pane="raw"><p class="text-muted">${__("Click Run to load.")}</p></div>
+				<div class="ptpm-debug-pane active" data-pane="raw"><p class="text-muted">${__(
+					"Click Run to load."
+				)}</p></div>
 				<div class="ptpm-debug-pane" data-pane="lines"></div>
 				<div class="ptpm-debug-pane" data-pane="logs"></div>
 			`);
@@ -861,7 +931,11 @@
 
 			frappe.call({
 				method: `${API_MODULE}.get_error_logs`,
-				args: { doctype: values.doctype, from_date: values.from_date, to_date: values.to_date },
+				args: {
+					doctype: values.doctype,
+					from_date: values.from_date,
+					to_date: values.to_date,
+				},
 				callback: (r) => this.render_error_logs(dialog, r.message),
 				error: (r) => this.render_call_error(dialog, "logs", r),
 			});
@@ -870,15 +944,28 @@
 		render_call_error(dialog, pane, r) {
 			dialog.$wrapper
 				.find(`.ptpm-debug-pane[data-pane="${pane}"]`)
-				.html(`<p class="text-danger">${frappe.utils.escape_html((r && r.exc) || __("Request failed."))}</p>`);
+				.html(
+					`<p class="text-danger">${frappe.utils.escape_html(
+						(r && r.exc) || __("Request failed.")
+					)}</p>`
+				);
 		}
 
 		badge_for_source(source) {
-			if (source === "mapping") return `<span class="ptpm-badge-mapping">${__("mapped")}</span>`;
-			if (source === "unmapped_fallback_to_docstatus") return `<span class="ptpm-badge-fallback">${__("unmapped -> docstatus")}</span>`;
-			if (source === "status_field") return `<span class="ptpm-badge-mapping">${__("native status field")}</span>`;
-			if (source === "cancelled_override") return `<span class="ptpm-badge-fallback">${__("cancelled overrides status")}</span>`;
-			if (source === "unrecognised_status_fallback_to_docstatus") return `<span class="ptpm-badge-fallback">${__("unrecognised status -> docstatus")}</span>`;
+			if (source === "mapping")
+				return `<span class="ptpm-badge-mapping">${__("mapped")}</span>`;
+			if (source === "unmapped_fallback_to_docstatus")
+				return `<span class="ptpm-badge-fallback">${__("unmapped -> docstatus")}</span>`;
+			if (source === "status_field")
+				return `<span class="ptpm-badge-mapping">${__("native status field")}</span>`;
+			if (source === "cancelled_override")
+				return `<span class="ptpm-badge-fallback">${__(
+					"cancelled overrides status"
+				)}</span>`;
+			if (source === "unrecognised_status_fallback_to_docstatus")
+				return `<span class="ptpm-badge-fallback">${__(
+					"unrecognised status -> docstatus"
+				)}</span>`;
 			return `<span class="ptpm-badge-docstatus">${__("docstatus only")}</span>`;
 		}
 
@@ -899,19 +986,38 @@
 
 			dialog.$wrapper.find('.ptpm-debug-pane[data-pane="raw"]').html(`
 				<div style="margin-top: 8px;">
-					<p><b>${__("Filters applied")}:</b> <code>${frappe.utils.escape_html(JSON.stringify(data.filters_applied))}</code></p>
+					<p><b>${__("Filters applied")}:</b> <code>${frappe.utils.escape_html(
+				JSON.stringify(data.filters_applied)
+			)}</code></p>
 					<p>
 						<b>${__("Has workflow_state field")}:</b> ${data.has_workflow_state_field ? __("Yes") : __("No")}
 						&nbsp;|&nbsp; <b>${__("Active Workflow")}:</b> ${data.workflow_active ? __("Yes") : __("No")}
 						&nbsp;|&nbsp; <b>${__("Mapping rows for this doctype")}:</b> ${data.mapping_rows_for_doctype}
-						&nbsp;|&nbsp; <b>${__("Using mapping")}:</b> ${data.using_mapping ? __("Yes") : __("No, using plain docstatus")}
-						${data.using_native_status_field ? `&nbsp;|&nbsp; <b>${__("Using native status field")}:</b> ${__("Yes")}` : ""}
+						&nbsp;|&nbsp; <b>${__("Using mapping")}:</b> ${
+				data.using_mapping ? __("Yes") : __("No, using plain docstatus")
+			}
+						${
+							data.using_native_status_field
+								? `&nbsp;|&nbsp; <b>${__("Using native status field")}:</b> ${__(
+										"Yes"
+								  )}`
+								: ""
+						}
 					</p>
 					<p><b>${__("Total matching documents")}:</b> ${data.total_matching_documents}</p>
-					<p class="text-muted">${__("If 'resolved_bucket' doesn't match what you expect, check 'bucket_source' -- an 'unmapped -> docstatus' badge means this workflow_state needs a row in Payments Compliance Settings > Workflow State Mapping.")}</p>
+					<p class="text-muted">${__(
+						"If 'resolved_bucket' doesn't match what you expect, check 'bucket_source' -- an 'unmapped -> docstatus' badge means this workflow_state needs a row in Payments Compliance Settings > Workflow State Mapping."
+					)}</p>
 					<table class="table table-bordered" style="margin-top: 10px;">
-						<thead><tr><th>${__("Workflow State")}</th><th>${__("Docstatus")}</th><th>${__("Count")}</th><th>${__("Resolved Bucket")}</th><th>${__("Source")}</th></tr></thead>
-						<tbody>${rows || `<tr><td colspan="5" class="text-muted text-center">${__("No matching documents")}</td></tr>`}</tbody>
+						<thead><tr><th>${__("Workflow State")}</th><th>${__("Docstatus")}</th><th>${__(
+				"Count"
+			)}</th><th>${__("Resolved Bucket")}</th><th>${__("Source")}</th></tr></thead>
+						<tbody>${
+							rows ||
+							`<tr><td colspan="5" class="text-muted text-center">${__(
+								"No matching documents"
+							)}</td></tr>`
+						}</tbody>
 					</table>
 				</div>
 			`);
@@ -926,7 +1032,9 @@
 					(r) => `
 					<tr>
 						<td>
-							<a href="/app/${frappe.router.slug(data.doctype)}/${encodeURIComponent(r.name)}" target="_blank">${frappe.utils.escape_html(r.name)}</a>
+							<a href="/app/${frappe.router.slug(data.doctype)}/${encodeURIComponent(
+						r.name
+					)}" target="_blank">${frappe.utils.escape_html(r.name)}</a>
 							${r.pending_on_me ? ` <span class="ptpm-badge-fallback">${__("pending on me")}</span>` : ""}
 						</td>
 						${has_wf ? `<td>${frappe.utils.escape_html(String(r.workflow_state || "(blank)"))}</td>` : ""}
@@ -942,9 +1050,23 @@
 			dialog.$wrapper.find('.ptpm-debug-pane[data-pane="lines"]').html(`
 				<div style="margin-top: 8px;">
 					<p>
-						<b>${__("Rows returned")}:</b> ${data.row_count}${data.hit_limit ? ` <span class="text-warning">(${__("limit reached, narrow the date range")})</span>` : ""}
-						&nbsp;|&nbsp; <b>${__("Using mapping")}:</b> ${data.using_mapping ? __("Yes") : __("No, using plain docstatus")}
-						${data.using_native_status_field ? `&nbsp;|&nbsp; <b>${__("Using native status field")}:</b> ${__("Yes")}` : ""}
+						<b>${__("Rows returned")}:</b> ${data.row_count}${
+				data.hit_limit
+					? ` <span class="text-warning">(${__(
+							"limit reached, narrow the date range"
+					  )})</span>`
+					: ""
+			}
+						&nbsp;|&nbsp; <b>${__("Using mapping")}:</b> ${
+				data.using_mapping ? __("Yes") : __("No, using plain docstatus")
+			}
+						${
+							data.using_native_status_field
+								? `&nbsp;|&nbsp; <b>${__("Using native status field")}:</b> ${__(
+										"Yes"
+								  )}`
+								: ""
+						}
 					</p>
 					<div class="ptpm-debug-scroll">
 						<table class="table table-bordered">
@@ -959,7 +1081,12 @@
 									<th>${__("Modified By")}</th>
 								</tr>
 							</thead>
-							<tbody>${rows || `<tr><td colspan="7" class="text-muted text-center">${__("No matching documents in this range")}</td></tr>`}</tbody>
+							<tbody>${
+								rows ||
+								`<tr><td colspan="7" class="text-muted text-center">${__(
+									"No matching documents in this range"
+								)}</td></tr>`
+							}</tbody>
 						</table>
 					</div>
 				</div>
@@ -988,11 +1115,24 @@
 
 			dialog.$wrapper.find('.ptpm-debug-pane[data-pane="logs"]').html(`
 				<div style="margin-top: 8px;">
-					<p><b>${__("Log entries found")}:</b> ${data.row_count}${data.hit_limit ? ` <span class="text-warning">(${__("limit reached, narrow the date range")})</span>` : ""}</p>
+					<p><b>${__("Log entries found")}:</b> ${data.row_count}${
+				data.hit_limit
+					? ` <span class="text-warning">(${__(
+							"limit reached, narrow the date range"
+					  )})</span>`
+					: ""
+			}</p>
 					<div class="ptpm-debug-scroll">
 						<table class="table table-bordered">
-							<thead><tr><th>${__("Time")}</th><th>${__("Method")}</th><th>${__("Summary (last line)")}</th><th>${__("# Lines")}</th></tr></thead>
-							<tbody>${rows || `<tr><td colspan="4" class="text-muted text-center">${__("No error log entries in this range")}</td></tr>`}</tbody>
+							<thead><tr><th>${__("Time")}</th><th>${__("Method")}</th><th>${__(
+				"Summary (last line)"
+			)}</th><th>${__("# Lines")}</th></tr></thead>
+							<tbody>${
+								rows ||
+								`<tr><td colspan="4" class="text-muted text-center">${__(
+									"No error log entries in this range"
+								)}</td></tr>`
+							}</tbody>
 						</table>
 					</div>
 				</div>
@@ -1038,7 +1178,9 @@
 			const on_move = (ev) => {
 				offset_x = ev.clientX - start_x;
 				offset_y = ev.clientY - start_y;
-				$wrapper.find(".modal-dialog").css("transform", `translate(${offset_x}px, ${offset_y}px)`);
+				$wrapper
+					.find(".modal-dialog")
+					.css("transform", `translate(${offset_x}px, ${offset_y}px)`);
 			};
 			const on_up = () => {
 				$(document).off("mousemove", on_move).off("mouseup", on_up);

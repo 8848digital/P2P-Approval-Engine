@@ -16,7 +16,8 @@ from p2p_customization.settlement.vendor_portal_auth import (
 from p2p_customization.settlement.vendor_portal_auth import authenticate_vendor_login as _authenticate
 
 
-@frappe.whitelist(allow_guest=True, methods=["POST"])
+# This IS the login endpoint -- no session exists yet, so it must allow Guest.
+@frappe.whitelist(allow_guest=True, methods=["POST"])  # nosemgrep: guest-whitelisted-method
 def vendor_login(usr: str, pwd: str):
 	"""
 		Custom login endpoint for the vendor portal.

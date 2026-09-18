@@ -111,4 +111,4 @@ def seed_default_settings() -> None:
 	for row in DEFAULT_DOCTYPES:
 		settings.append("doctypes", row)
 	settings.save(ignore_permissions=True)
-	frappe.db.commit()
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit - defensive: seeded defaults survive even if a later step in this same request/hook call fails

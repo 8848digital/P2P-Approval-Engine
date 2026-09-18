@@ -1,5 +1,5 @@
 import frappe
-from frappe.utils import getdate, nowdate, flt
+from frappe.utils import flt, getdate, nowdate
 
 
 def auto_close_purchase_orders():
@@ -22,11 +22,15 @@ def auto_close_purchase_orders():
 				title=f"Auto Close PO (scheduler) failed: {po_name}",
 				message=frappe.get_traceback(),
 			)
-	frappe.db.commit()
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit - scheduled job, not a web request; no auto-commit at the end
 	frappe.logger().info(f"Auto Close PO (scheduler): closed {closed_count} of {len(pos)} eligible POs")
 
+
 def on_purchase_invoice_submit(doc, method=None):
-	from p2p_customization.settlement.doctype.brn.brn_auto_close import on_purchase_invoice_submit as brn_purchase_invoice_submit
+	from p2p_customization.settlement.doctype.brn.brn_auto_close import (
+		on_purchase_invoice_submit as brn_purchase_invoice_submit,
+	)
+
 	po_names = {row.purchase_order for row in doc.items if row.purchase_order}
 
 	for po_name in po_names:
@@ -40,8 +44,8 @@ def on_purchase_invoice_submit(doc, method=None):
 
 	brn_purchase_invoice_submit(doc)
 
-def check_and_close_po(po_name, reference_date):
 
+def check_and_close_po(po_name, reference_date):
 	po = frappe.db.get_value(
 		"Purchase Order",
 		po_name,
@@ -54,6 +58,7 @@ def check_and_close_po(po_name, reference_date):
 		_close_po(po.name)
 		return True
 	return False
+
 
 def _should_close(po, reference_date):
 	if po.validity_end_date and getdate(po.validity_end_date) < getdate(reference_date):
@@ -69,6 +74,7 @@ def _should_close(po, reference_date):
 			"skipping invoicing check."
 		)
 		return False
+
 
 def _material_fully_invoiced(po_name):
 	doc = frappe.get_doc("Purchase Order", po_name)
@@ -97,6 +103,7 @@ def _material_fully_invoiced(po_name):
 			return False
 	return True
 
+
 def _service_fully_invoiced(po_name):
 	doc = frappe.get_doc("Purchase Order", po_name)
 	for item in doc.items:
@@ -121,6 +128,7 @@ def _service_fully_invoiced(po_name):
 		if billed_amount < ordered_amount:
 			return False
 	return True
+
 
 def _close_po(po_name):
 	"""Set PO status to Closed, with a comment recording the reason."""

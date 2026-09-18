@@ -1,7 +1,13 @@
 frappe.provide("p2p_customization.vendor");
 
 p2p_customization.vendor = {
-	send_vendor_invitation_mail(doctype, docname = null, default_email = null, default_vendor_name = null, default_company = null) {
+	send_vendor_invitation_mail(
+		doctype,
+		docname = null,
+		default_email = null,
+		default_vendor_name = null,
+		default_company = null
+	) {
 		frappe.dom.unfreeze();
 
 		return new Promise((resolve, reject) => {
@@ -54,11 +60,11 @@ p2p_customization.vendor = {
 						const email_pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 						if (!email_pattern.test(values.email)) {
-							frappe.msgprint("Please enter a valid email for Email 1");
+							frappe.msgprint(__("Please enter a valid email for Email 1"));
 							return;
 						}
 						if (values.email_2 && !email_pattern.test(values.email_2)) {
-							frappe.msgprint("Please enter a valid email for Email 2");
+							frappe.msgprint(__("Please enter a valid email for Email 2"));
 							return;
 						}
 
@@ -108,7 +114,8 @@ p2p_customization.vendor = {
 				return;
 			}
 
-			frappe.db.get_value(doctype, docname, "new_vendor")
+			frappe.db
+				.get_value(doctype, docname, "new_vendor")
 				.then((r) => {
 					const vendor_name = r.message?.new_vendor || "";
 					show_prompt(vendor_name, vendor_name ? 1 : 0);

@@ -1,24 +1,24 @@
-frappe.ui.form.on('BRN', {
-	setup: function(frm) {
-		frm.set_query("item_code", "items", function() {
-			let filters = {"disabled": 0};
+frappe.ui.form.on("BRN", {
+	setup: function (frm) {
+		frm.set_query("item_code", "items", function () {
+			let filters = { disabled: 0 };
 			if (frm.doc.requisition_type === "Fixed Asset") {
 				filters.is_fixed_asset = 1;
 			}
 			return { filters: filters };
 		});
-		frm.set_query("expense_gl", "items", function(){
+		frm.set_query("expense_gl", "items", function () {
 			return {
 				filters: {
 					company: frm.doc.company,
 					disabled: 0,
-					is_group: 0
-				}
-			}
-		})
+					is_group: 0,
+				},
+			};
+		});
 	},
 
-	refresh: function(frm){
+	refresh: function (frm) {
 		add_onboard_vendor_button(frm);
 		create_purchase_order_button(frm);
 		// frm.trigger("is_new_vendor");
@@ -52,38 +52,36 @@ frappe.ui.form.on('BRN', {
 	// 	}
 	// },
 
-	requisition_type: function(frm){
+	requisition_type: function (frm) {
 		if (frm.doc.requisition_type != "Service") {
 			frm.fields_dict.items.grid.toggle_reqd("qty", true);
 			frm.fields_dict.items.grid.toggle_reqd("uom", true);
-		}
-		else {
+		} else {
 			frm.fields_dict.items.grid.toggle_reqd("qty", false);
 			frm.fields_dict.items.grid.toggle_reqd("uom", false);
 		}
 	},
 
-	duration_of_service_months: function(frm){
-		get_expiry_date(frm)
+	duration_of_service_months: function (frm) {
+		get_expiry_date(frm);
 	},
 
-	service_start_date: function(frm){
-		get_expiry_date(frm)
+	service_start_date: function (frm) {
+		get_expiry_date(frm);
 	},
 
-	multi: function(frm){
-		frm.set_value("comparision", [])
-		if(frm.doc.multi){
-			frm.set_value("rpt",1)
+	multi: function (frm) {
+		frm.set_value("comparision", []);
+		if (frm.doc.multi) {
+			frm.set_value("rpt", 1);
+		} else {
+			frm.set_value("rpt", 0);
 		}
-		else{
-			frm.set_value("rpt",0)
-		}
 	},
 
-	single: function(frm){
-		frm.set_value("comparision", [])
-	}
+	single: function (frm) {
+		frm.set_value("comparision", []);
+	},
 });
 
 // function msa_agreement(frm) {
@@ -101,13 +99,13 @@ frappe.ui.form.on('BRN', {
 // 	});
 // }
 
-frappe.ui.form.on('BRN Item', {
-	qty: function(frm, cdt, cdn) {
+frappe.ui.form.on("BRN Item", {
+	qty: function (frm, cdt, cdn) {
 		calculate_amount(frm, cdt, cdn);
 	},
-	rate: function(frm, cdt, cdn) {
+	rate: function (frm, cdt, cdn) {
 		calculate_amount(frm, cdt, cdn);
-	}
+	},
 });
 
 // 🔹 Add "On Board Vendor" button
@@ -116,12 +114,9 @@ function add_onboard_vendor_button(frm) {
 
 	const preferred_row = get_preferred_comparison_row(frm) || {};
 	if (frm.doc.docstatus == 1 && preferred_row.is_new_vendor) {
-		frm.add_custom_button(
-			__("On Board Vendor"),
-			function () {
-				send_onboard_invitation(frm);
-			}
-		);
+		frm.add_custom_button(__("On Board Vendor"), function () {
+			send_onboard_invitation(frm);
+		});
 	}
 }
 
@@ -151,7 +146,9 @@ function create_purchase_order_button(frm) {
 		frm.add_custom_button(
 			__("Purchase Order"),
 			function () {
-				pick_vendor_and_create(vendor_rows, (vendor) => create_purchase_order(frm, vendor));
+				pick_vendor_and_create(vendor_rows, (vendor) =>
+					create_purchase_order(frm, vendor)
+				);
 			},
 			__("Create")
 		);
@@ -162,7 +159,9 @@ function create_purchase_order_button(frm) {
 		frm.add_custom_button(
 			__("Purchase Invoice"),
 			function () {
-				pick_vendor_and_create(vendor_rows, (vendor) => create_purchase_invoice(frm, vendor));
+				pick_vendor_and_create(vendor_rows, (vendor) =>
+					create_purchase_invoice(frm, vendor)
+				);
 			},
 			__("Create")
 		);
@@ -209,7 +208,6 @@ function pick_vendor_and_create(vendor_rows, on_vendor_chosen) {
 	dialog.show();
 }
 
-
 function send_onboard_invitation(frm) {
 	const preferred_row = get_preferred_comparison_row(frm) || {};
 	p2p_customization.vendor.send_vendor_invitation_mail(
@@ -225,7 +223,7 @@ function send_onboard_invitation(frm) {
 function calculate_amount(frm, cdt, cdn) {
 	let row = locals[cdt][cdn];
 	row.amount = (row.qty || 0) * (row.rate || 0);
-	frm.refresh_field('items');
+	frm.refresh_field("items");
 }
 
 // 🔹 Create Purchase Order from BRN
@@ -234,7 +232,7 @@ function create_purchase_order(frm, vendor) {
 		method: "p2p_customization.settlement.api.v1.brn.create_purchase_order_from_brn",
 		frm: frm,
 		args: { vendor: vendor },
-		run_link_triggers: true
+		run_link_triggers: true,
 	});
 }
 
@@ -244,52 +242,42 @@ function create_purchase_invoice(frm, vendor) {
 		method: "p2p_customization.settlement.api.v1.brn.create_purchase_invoice_from_brn",
 		frm: frm,
 		args: { vendor: vendor },
-		run_link_triggers: true
+		run_link_triggers: true,
 	});
 }
 
-function get_expiry_date(frm){
-	if(frm.doc.duration_of_service_months && frm.doc.service_start_date){
+function get_expiry_date(frm) {
+	if (frm.doc.duration_of_service_months && frm.doc.service_start_date) {
 		frappe.call({
 			method: "p2p_customization.settlement.api.v1.brn.get_expiry_date",
-			args:{
+			args: {
 				date: frm.doc.service_start_date,
-				months: frm.doc.duration_of_service_months
+				months: frm.doc.duration_of_service_months,
 			},
-			callback: function(r){
-				if (r && r.message){
-					frm.set_value("expiry_date", r.message)
+			callback: function (r) {
+				if (r && r.message) {
+					frm.set_value("expiry_date", r.message);
 				}
-			}
-		})
-	}
-	else{
-		frm.set_value("expiry_date", "")
+			},
+		});
+	} else {
+		frm.set_value("expiry_date", "");
 	}
 }
 
 frappe.ui.form.on("BRN Comparision", {
-    existing_vendor(frm, cdt, cdn) {
-        const row = locals[cdt][cdn];
+	existing_vendor(frm, cdt, cdn) {
+		const row = locals[cdt][cdn];
 
-        if (!row.existing_vendor) {
-            frappe.model.set_value(cdt, cdn, "msa_agreement", 0);
-            return;
-        }
+		if (!row.existing_vendor) {
+			frappe.model.set_value(cdt, cdn, "msa_agreement", 0);
+			return;
+		}
 
-        frappe.db.get_value(
-            "Supplier",
-            row.existing_vendor,
-            "custom_msa_agreement"
-        ).then((r) => {
-            const value = r.message?.custom_msa_agreement;
+		frappe.db.get_value("Supplier", row.existing_vendor, "custom_msa_agreement").then((r) => {
+			const value = r.message?.custom_msa_agreement;
 
-            frappe.model.set_value(
-                cdt,
-                cdn,
-                "msa_agreement",
-                value === "Yes" ? 1 : 0
-            );
-        });
-    }
+			frappe.model.set_value(cdt, cdn, "msa_agreement", value === "Yes" ? 1 : 0);
+		});
+	},
 });

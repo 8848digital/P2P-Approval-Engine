@@ -2,12 +2,11 @@
 # License: GNU General Public License v3. See license.txt
 
 import frappe
-from frappe import _
-
 from erpnext.accounts.doctype.payment_request.payment_request import (
 	ALLOWED_DOCTYPES_FOR_PAYMENT_REQUEST,
 	get_amount,
 )
+from frappe import _
 
 
 def get_context(context):
@@ -23,10 +22,7 @@ def get_context(context):
 		"Payment Request", {"reference_name": frappe.form_dict.name}, "name"
 	)
 
-	context.attachments = get_attachments(
-		context.doc.doctype,
-		context.doc.name
-	)
+	context.attachments = get_attachments(context.doc.doctype, context.doc.name)
 
 	default_print_format = frappe.db.get_value(
 		"Property Setter",

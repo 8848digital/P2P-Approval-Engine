@@ -177,10 +177,7 @@ doc_events = {
 		"before_validate": "p2p_customization.settlement.doc_events.payment_request.msa_agreement_validation",
 	},
 	"Purchase Order": {
-		"validate": [
-			"p2p_customization.settlement.tax_withholding.update_tds_rate_for_po",
-			"p2p_customization.settlement.customization.purchase_order.purchase_order.validate",
-		],
+		"validate": "p2p_customization.settlement.customization.purchase_order.purchase_order.validate",
 		"before_save": "p2p_customization.settlement.customization.purchase_order.purchase_order.before_save",
 	},
 	"Purchase Invoice": {
@@ -193,14 +190,12 @@ doc_events = {
 		"validate": [
 			"p2p_customization.settlement.tax_withholding.apply_supplier_allowance_limit",
 			"p2p_customization.settlement.tax_withholding.apply_return_tds_reversal",
-			"p2p_customization.settlement.tax_withholding.update_tds_rate",
 			"p2p_customization.settlement.customization.purchase_invoice.purchase_invoice.validate",
 		],
 		"after_insert": [
 			"p2p_customization.settlement.doc_events.purchase_invoice_itc_reversal.set_itc_status",
 		],
 		"on_submit": [
-			"p2p_customization.settlement.tax_withholding.update_tds_rate",
 			"p2p_customization.settlement.tax_withholding.update_supplier_allowance_consumed",
 			"p2p_customization.settlement.doc_events.validate_po_status.on_purchase_invoice_submit",
 			"p2p_customization.settlement.doc_events.purchase_invoice_itc_reversal.handle_itc_reversal_on_submit",

@@ -29,4 +29,5 @@ class PortalInvoiceLog(Document):
 			queue="short",
 			timeout=300,
 			log_name=self.name,
+			enqueue_after_commit=True,
 		)

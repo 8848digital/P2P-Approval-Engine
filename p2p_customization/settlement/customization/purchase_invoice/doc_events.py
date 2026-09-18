@@ -1,6 +1,6 @@
 import frappe
 
-from .utils import validate_item_qty_with_brn, validate_item_qty_with_po
+from .brn_po_validation import validate_item_qty_with_brn, validate_item_qty_with_po
 
 
 def validate_rate_and_qty(self, method: str | None = None) -> None:
