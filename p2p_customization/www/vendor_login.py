@@ -37,7 +37,7 @@ def get_context(context: frappe._dict) -> frappe._dict:
 
 		# signed in, but not a vendor -> drop that session and show the vendor login
 		frappe.local.login_manager.logout()
-		frappe.db.commit()
+		frappe.db.commit()  # nosemgrep: frappe-manual-commit - session teardown must be durable immediately on logout
 
 		frappe.local.flags.redirect_location = build_login_url(redirect_to)
 		raise frappe.Redirect(302)

@@ -20,6 +20,7 @@ def resolve_website_path(path):
 	"""
 	if not path and frappe.session.user != "Guest" and _is_vendor(frappe.session.user):
 		from p2p_customization.vendor_portal.utils import get_vendor_landing_route
+
 		frappe.flags.redirect_location = get_vendor_landing_route()
 		raise frappe.Redirect(302)
 
@@ -32,6 +33,7 @@ def resolve_website_path(path):
 
 def _is_vendor(user):
 	from p2p_customization.settlement.vendor_auth_hooks import is_vendor
+
 	return is_vendor(user)
 
 

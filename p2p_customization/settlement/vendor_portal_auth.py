@@ -83,7 +83,7 @@ def authenticate_vendor_login(usr: str, pwd: str) -> dict:
 			"error": _("This account does not have vendor portal access"),
 		}
 
-	frappe.db.commit()
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit - session state must be durable immediately after login, independent of later request processing
 
 	return {
 		"success": True,
@@ -109,7 +109,7 @@ def logout_vendor_user() -> None:
 	was_vendor = is_vendor(user)
 
 	frappe.local.login_manager.logout()
-	frappe.db.commit()
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit - session teardown must be durable immediately on logout
 
 	frappe.local.response["type"] = "redirect"
 	frappe.local.response["location"] = "/vendor-login" if was_vendor else "/login"
@@ -198,6 +198,6 @@ def attach_vendor_invoice_copy(route: str, docname: str) -> dict:
 		docname,
 		is_private=0,
 	)
-	frappe.db.commit()
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit - durably persist the uploaded attachment immediately after save_file
 
 	return {"file_name": saved.file_name, "file_url": saved.file_url}

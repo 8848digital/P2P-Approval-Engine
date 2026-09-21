@@ -18,12 +18,26 @@ p2p_customization.dashboard.COLOR_MAP = {
 
 // 5th color is only used by MSME Ageing's "Overdue" bucket (worse than
 // the 31-45 Days bucket, hence a darker red than #dc3545).
-p2p_customization.dashboard.BUCKET_COLORS = ["#28a745", "#ffc107", "#fd7e14", "#dc3545", "#8b0000"];
+p2p_customization.dashboard.BUCKET_COLORS = [
+	"#28a745",
+	"#ffc107",
+	"#fd7e14",
+	"#dc3545",
+	"#8b0000",
+];
 
 p2p_customization.dashboard.SECTIONS = [
 	{ key: "brn", container: "chart-brn", title: __("BRN Approval Status") },
-	{ key: "payment_order", container: "chart-payment-order", title: __("Payment Release Status") },
-	{ key: "purchase_order", container: "chart-purchase-order", title: __("Purchase Order Approval Status") },
+	{
+		key: "payment_order",
+		container: "chart-payment-order",
+		title: __("Payment Release Status"),
+	},
+	{
+		key: "purchase_order",
+		container: "chart-purchase-order",
+		title: __("Purchase Order Approval Status"),
+	},
 	{ key: "msme", container: "chart-msme", title: __("MSME Payment Ageing"), is_bucket: true },
 	{
 		key: "purchase_invoice",
@@ -135,7 +149,8 @@ class PaymentsComplianceDashboard {
 		const company = frappe.utils.get_url_arg("company") || this.get_default_company();
 
 		const to_date = frappe.utils.get_url_arg("to_date") || frappe.datetime.get_today();
-		const from_date = frappe.utils.get_url_arg("from_date") || frappe.datetime.add_months(to_date, -1);
+		const from_date =
+			frappe.utils.get_url_arg("from_date") || frappe.datetime.add_months(to_date, -1);
 
 		if (company) this.company_field.set_value(company);
 		if (from_date) this.from_date_field.set_value(from_date);
@@ -247,7 +262,9 @@ class PaymentsComplianceDashboard {
 				${frappe.avatar(frappe.session.user, "avatar-medium")}
 				<div class="pc-user-banner-text">
 					<div class="pc-user-banner-name">${frappe.utils.escape_html(fullname)}</div>
-					<div class="pc-user-banner-hint">${__("Showing items you created or that are pending your approval")}</div>
+					<div class="pc-user-banner-hint">${__(
+						"Showing items you created or that are pending your approval"
+					)}</div>
 				</div>
 			</div>
 		`).appendTo(this.page.body);
@@ -261,9 +278,9 @@ class PaymentsComplianceDashboard {
 				</div>`
 		).join("");
 
-		this.$layout = $(`<div class="pc-dashboard"><div class="pc-grid">${cards_html}</div></div>`).appendTo(
-			this.page.body
-		);
+		this.$layout = $(
+			`<div class="pc-dashboard"><div class="pc-grid">${cards_html}</div></div>`
+		).appendTo(this.page.body);
 
 		$("<style>")
 			.text(
@@ -330,7 +347,9 @@ class PaymentsComplianceDashboard {
 		this.$placeholder = $(`
 			<div class="text-muted text-center" style="padding: 60px 0;">
 				<h4>${__("Select Filters")}</h4>
-				<p>${__("Choose a Company, From Date and To Date above to load the compliance dashboard. All three are required.")}</p>
+				<p>${__(
+					"Choose a Company, From Date and To Date above to load the compliance dashboard. All three are required."
+				)}</p>
 			</div>
 		`).appendTo(this.page.body);
 	}
@@ -405,7 +424,9 @@ class PaymentsComplianceDashboard {
 		// even if "data-select" isn't fired for some reason.
 		$(`#${container_id}`)
 			.off("click", "[data-point-index]")
-			.on("click", "[data-point-index]", (e) => open(labels[$(e.currentTarget).attr("data-point-index")]));
+			.on("click", "[data-point-index]", (e) =>
+				open(labels[$(e.currentTarget).attr("data-point-index")])
+			);
 
 		this.render_legend(container_id, labels, values, colors, open);
 	}
@@ -466,7 +487,9 @@ class PaymentsComplianceDashboard {
 		}
 		$(`#${container_id}`).off("data-select").off("click", "[data-point-index]");
 		$(`#${container_id}`).empty();
-		$(`#${container_id}-legend`).off("click", ".pc-legend-item").off("keydown", ".pc-legend-item");
+		$(`#${container_id}-legend`)
+			.off("click", ".pc-legend-item")
+			.off("keydown", ".pc-legend-item");
 		$(`#${container_id}-legend`).empty();
 	}
 
@@ -496,7 +519,8 @@ class PaymentsComplianceDashboard {
 				frappe.msgprint({
 					title: __("Couldn't load dashboard data"),
 					indicator: "red",
-					message: (r && r.exc) || __("Check the browser console and Error Log for details."),
+					message:
+						(r && r.exc) || __("Check the browser console and Error Log for details."),
 				});
 			},
 		});
@@ -596,7 +620,9 @@ class PaymentsComplianceDashboard {
 				<button class="pc-tab-btn" data-tab="lines">${__("Line Items")}</button>
 				<button class="pc-tab-btn" data-tab="logs">${__("Error Log")}</button>
 			</div>
-			<div class="pc-debug-pane active" data-pane="raw"><p class="text-muted">${__("Click Run to load.")}</p></div>
+			<div class="pc-debug-pane active" data-pane="raw"><p class="text-muted">${__(
+				"Click Run to load."
+			)}</p></div>
 			<div class="pc-debug-pane" data-pane="lines"></div>
 			<div class="pc-debug-pane" data-pane="logs"></div>
 		`);
@@ -663,7 +689,11 @@ class PaymentsComplianceDashboard {
 
 		frappe.call({
 			method: `${API_MODULE}.get_error_logs`,
-			args: { doctype: values.doctype, from_date: values.from_date, to_date: values.to_date },
+			args: {
+				doctype: values.doctype,
+				from_date: values.from_date,
+				to_date: values.to_date,
+			},
 			callback: (r) => this.render_error_logs(dialog, r.message),
 			error: (r) => this.render_call_error(dialog, "logs", r),
 		});
@@ -672,15 +702,25 @@ class PaymentsComplianceDashboard {
 	render_call_error(dialog, pane, r) {
 		dialog.$wrapper
 			.find(`.pc-debug-pane[data-pane="${pane}"]`)
-			.html(`<p class="text-danger">${frappe.utils.escape_html((r && r.exc) || __("Request failed."))}</p>`);
+			.html(
+				`<p class="text-danger">${frappe.utils.escape_html(
+					(r && r.exc) || __("Request failed.")
+				)}</p>`
+			);
 	}
 
 	badge_for_source(source) {
 		if (source === "mapping") return `<span class="pc-badge-mapping">${__("mapped")}</span>`;
-		if (source === "unmapped_fallback_to_docstatus") return `<span class="pc-badge-fallback">${__("unmapped -> docstatus")}</span>`;
-		if (source === "status_field") return `<span class="pc-badge-mapping">${__("native status field")}</span>`;
-		if (source === "cancelled_override") return `<span class="pc-badge-fallback">${__("cancelled overrides status")}</span>`;
-		if (source === "unrecognised_status_fallback_to_docstatus") return `<span class="pc-badge-fallback">${__("unrecognised status -> docstatus")}</span>`;
+		if (source === "unmapped_fallback_to_docstatus")
+			return `<span class="pc-badge-fallback">${__("unmapped -> docstatus")}</span>`;
+		if (source === "status_field")
+			return `<span class="pc-badge-mapping">${__("native status field")}</span>`;
+		if (source === "cancelled_override")
+			return `<span class="pc-badge-fallback">${__("cancelled overrides status")}</span>`;
+		if (source === "unrecognised_status_fallback_to_docstatus")
+			return `<span class="pc-badge-fallback">${__(
+				"unrecognised status -> docstatus"
+			)}</span>`;
 		return `<span class="pc-badge-docstatus">${__("docstatus only")}</span>`;
 	}
 
@@ -701,19 +741,38 @@ class PaymentsComplianceDashboard {
 
 		dialog.$wrapper.find('.pc-debug-pane[data-pane="raw"]').html(`
 			<div style="margin-top: 8px;">
-				<p><b>${__("Filters applied")}:</b> <code>${frappe.utils.escape_html(JSON.stringify(data.filters_applied))}</code></p>
+				<p><b>${__("Filters applied")}:</b> <code>${frappe.utils.escape_html(
+			JSON.stringify(data.filters_applied)
+		)}</code></p>
 				<p>
 					<b>${__("Has workflow_state field")}:</b> ${data.has_workflow_state_field ? __("Yes") : __("No")}
 					&nbsp;|&nbsp; <b>${__("Active Workflow")}:</b> ${data.workflow_active ? __("Yes") : __("No")}
 					&nbsp;|&nbsp; <b>${__("Mapping rows for this doctype")}:</b> ${data.mapping_rows_for_doctype}
-					&nbsp;|&nbsp; <b>${__("Using mapping")}:</b> ${data.using_mapping ? __("Yes") : __("No, using plain docstatus")}
-					${data.using_native_status_field ? `&nbsp;|&nbsp; <b>${__("Using native status field")}:</b> ${__("Yes")}` : ""}
+					&nbsp;|&nbsp; <b>${__("Using mapping")}:</b> ${
+			data.using_mapping ? __("Yes") : __("No, using plain docstatus")
+		}
+					${
+						data.using_native_status_field
+							? `&nbsp;|&nbsp; <b>${__("Using native status field")}:</b> ${__(
+									"Yes"
+							  )}`
+							: ""
+					}
 				</p>
 				<p><b>${__("Total matching documents")}:</b> ${data.total_matching_documents}</p>
-				<p class="text-muted">${__("If 'resolved_bucket' doesn't match what you expect, check 'bucket_source' -- an 'unmapped -> docstatus' badge means this workflow_state needs a row in Payments Compliance Settings > Workflow State Mapping.")}</p>
+				<p class="text-muted">${__(
+					"If 'resolved_bucket' doesn't match what you expect, check 'bucket_source' -- an 'unmapped -> docstatus' badge means this workflow_state needs a row in Payments Compliance Settings > Workflow State Mapping."
+				)}</p>
 				<table class="table table-bordered" style="margin-top: 10px;">
-					<thead><tr><th>${__("Workflow State")}</th><th>${__("Docstatus")}</th><th>${__("Count")}</th><th>${__("Resolved Bucket")}</th><th>${__("Source")}</th></tr></thead>
-					<tbody>${rows || `<tr><td colspan="5" class="text-muted text-center">${__("No matching documents")}</td></tr>`}</tbody>
+					<thead><tr><th>${__("Workflow State")}</th><th>${__("Docstatus")}</th><th>${__(
+			"Count"
+		)}</th><th>${__("Resolved Bucket")}</th><th>${__("Source")}</th></tr></thead>
+					<tbody>${
+						rows ||
+						`<tr><td colspan="5" class="text-muted text-center">${__(
+							"No matching documents"
+						)}</td></tr>`
+					}</tbody>
 				</table>
 			</div>
 		`);
@@ -728,7 +787,9 @@ class PaymentsComplianceDashboard {
 				(r) => `
 				<tr>
 					<td>
-						<a href="/app/${frappe.router.slug(data.doctype)}/${encodeURIComponent(r.name)}" target="_blank">${frappe.utils.escape_html(r.name)}</a>
+						<a href="/app/${frappe.router.slug(data.doctype)}/${encodeURIComponent(
+					r.name
+				)}" target="_blank">${frappe.utils.escape_html(r.name)}</a>
 						${r.pending_on_me ? ` <span class="pc-badge-fallback">${__("pending on me")}</span>` : ""}
 					</td>
 					${has_wf ? `<td>${frappe.utils.escape_html(String(r.workflow_state || "(blank)"))}</td>` : ""}
@@ -744,9 +805,23 @@ class PaymentsComplianceDashboard {
 		dialog.$wrapper.find('.pc-debug-pane[data-pane="lines"]').html(`
 			<div style="margin-top: 8px;">
 				<p>
-					<b>${__("Rows returned")}:</b> ${data.row_count}${data.hit_limit ? ` <span class="text-warning">(${__("limit reached, narrow the date range")})</span>` : ""}
-					&nbsp;|&nbsp; <b>${__("Using mapping")}:</b> ${data.using_mapping ? __("Yes") : __("No, using plain docstatus")}
-					${data.using_native_status_field ? `&nbsp;|&nbsp; <b>${__("Using native status field")}:</b> ${__("Yes")}` : ""}
+					<b>${__("Rows returned")}:</b> ${data.row_count}${
+			data.hit_limit
+				? ` <span class="text-warning">(${__(
+						"limit reached, narrow the date range"
+				  )})</span>`
+				: ""
+		}
+					&nbsp;|&nbsp; <b>${__("Using mapping")}:</b> ${
+			data.using_mapping ? __("Yes") : __("No, using plain docstatus")
+		}
+					${
+						data.using_native_status_field
+							? `&nbsp;|&nbsp; <b>${__("Using native status field")}:</b> ${__(
+									"Yes"
+							  )}`
+							: ""
+					}
 				</p>
 				<div class="pc-debug-scroll">
 					<table class="table table-bordered">
@@ -761,7 +836,12 @@ class PaymentsComplianceDashboard {
 								<th>${__("Modified By")}</th>
 							</tr>
 						</thead>
-						<tbody>${rows || `<tr><td colspan="7" class="text-muted text-center">${__("No matching documents in this range")}</td></tr>`}</tbody>
+						<tbody>${
+							rows ||
+							`<tr><td colspan="7" class="text-muted text-center">${__(
+								"No matching documents in this range"
+							)}</td></tr>`
+						}</tbody>
 					</table>
 				</div>
 			</div>
@@ -790,11 +870,24 @@ class PaymentsComplianceDashboard {
 
 		dialog.$wrapper.find('.pc-debug-pane[data-pane="logs"]').html(`
 			<div style="margin-top: 8px;">
-				<p><b>${__("Log entries found")}:</b> ${data.row_count}${data.hit_limit ? ` <span class="text-warning">(${__("limit reached, narrow the date range")})</span>` : ""}</p>
+				<p><b>${__("Log entries found")}:</b> ${data.row_count}${
+			data.hit_limit
+				? ` <span class="text-warning">(${__(
+						"limit reached, narrow the date range"
+				  )})</span>`
+				: ""
+		}</p>
 				<div class="pc-debug-scroll">
 					<table class="table table-bordered">
-						<thead><tr><th>${__("Time")}</th><th>${__("Method")}</th><th>${__("Summary (last line)")}</th><th>${__("# Lines")}</th></tr></thead>
-						<tbody>${rows || `<tr><td colspan="4" class="text-muted text-center">${__("No error log entries in this range")}</td></tr>`}</tbody>
+						<thead><tr><th>${__("Time")}</th><th>${__("Method")}</th><th>${__(
+			"Summary (last line)"
+		)}</th><th>${__("# Lines")}</th></tr></thead>
+						<tbody>${
+							rows ||
+							`<tr><td colspan="4" class="text-muted text-center">${__(
+								"No error log entries in this range"
+							)}</td></tr>`
+						}</tbody>
 					</table>
 				</div>
 			</div>

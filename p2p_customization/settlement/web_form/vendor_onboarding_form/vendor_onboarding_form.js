@@ -1,4 +1,4 @@
-frappe.ready(function() {
+frappe.ready(function () {
 	frappe.web_form.set_value("is_created_from_webform", 1);
 	const urlParams = new URLSearchParams(window.location.search);
 	const email = urlParams.get("email_id");
@@ -15,9 +15,9 @@ frappe.ready(function() {
 		frappe.call({
 			method: "p2p_customization.settlement.doctype.brn.utils.decode_email",
 			args: { encoded_email: email },
-			callback: function(r) {
+			callback: function (r) {
 				frappe.web_form.set_value("email_id", r.message);
-			}
+			},
 		});
 	}
 	get_supplier_workflow_state();
@@ -27,9 +27,7 @@ function get_supplier_workflow_state() {
 	let pathParts = window.location.pathname.split("/").filter(Boolean);
 
 	let isEdit = pathParts[pathParts.length - 1] === "edit";
-	let supplier = isEdit
-		? pathParts[pathParts.length - 2]
-		: pathParts[pathParts.length - 1];
+	let supplier = isEdit ? pathParts[pathParts.length - 2] : pathParts[pathParts.length - 1];
 
 	if (supplier && supplier !== "new") {
 		frappe.call({
@@ -37,9 +35,9 @@ function get_supplier_workflow_state() {
 			args: {
 				doctype: "Supplier",
 				filters: { name: supplier },
-				fieldname: "workflow_state"
+				fieldname: "workflow_state",
 			},
-			callback: function(r) {
+			callback: function (r) {
 				if (r && r.message) {
 					let editBtn = document.querySelector(".web-form-actions .edit-button");
 
@@ -57,7 +55,7 @@ function get_supplier_workflow_state() {
 						}
 					}
 				}
-			}
+			},
 		});
 	}
 }
@@ -66,7 +64,7 @@ function lock_fields_dynamically() {
 	const ALWAYS_EDITABLE_FIELDS = ["custom_msa_agreement", "custom_msa_agreement_attachment"];
 	const LAYOUT_FIELDTYPES = ["Section Break", "Column Break", "Page Break", "HTML", "Heading"];
 
-	frappe.web_form.fields.forEach(function(field) {
+	frappe.web_form.fields.forEach(function (field) {
 		if (!field.fieldname) return;
 		if (LAYOUT_FIELDTYPES.includes(field.fieldtype)) return;
 		if (ALWAYS_EDITABLE_FIELDS.includes(field.fieldname)) return;

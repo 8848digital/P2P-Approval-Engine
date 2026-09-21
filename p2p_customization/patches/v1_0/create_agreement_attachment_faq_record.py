@@ -29,34 +29,36 @@ QUESTION_LABEL = "Agreement / PO / Engagement Letter Copy"
 
 
 def execute():
-    if frappe.db.exists("FAQ Master", QUESTION_CODE):
-        return
-    if not frappe.db.exists("FAQ Master", TRIGGER_QUESTION_CODE):
-        return
+	if frappe.db.exists("FAQ Master", QUESTION_CODE):
+		return
+	if not frappe.db.exists("FAQ Master", TRIGGER_QUESTION_CODE):
+		return
 
-    trigger_sort_order = frappe.db.get_value("FAQ Master", TRIGGER_QUESTION_CODE, "sort_order")
+	trigger_sort_order = frappe.db.get_value("FAQ Master", TRIGGER_QUESTION_CODE, "sort_order")
 
-    later_rows = frappe.get_all(
-        "FAQ Master",
-        filters={"sort_order": [">", trigger_sort_order]},
-        fields=["name", "sort_order"],
-    )
-    for row in later_rows:
-        frappe.db.set_value("FAQ Master", row.name, "sort_order", row.sort_order + 1, update_modified=False)
+	later_rows = frappe.get_all(
+		"FAQ Master",
+		filters={"sort_order": [">", trigger_sort_order]},
+		fields=["name", "sort_order"],
+	)
+	for row in later_rows:
+		frappe.db.set_value("FAQ Master", row.name, "sort_order", row.sort_order + 1, update_modified=False)
 
-    doc = frappe.get_doc({
-        "doctype": "FAQ Master",
-        "question_code": QUESTION_CODE,
-        "question_label": QUESTION_LABEL,
-        "field_type": "Attach",
-        "options": "",
-        "reqd_on_supplier": 0,
-        "is_active": 1,
-        "description": "Attachment for Agreement/PO/Engagement Letter, required when the corresponding question is answered Yes.",
-        "depends_on_question": TRIGGER_QUESTION_CODE,
-    }).insert(ignore_permissions=True)
+	doc = frappe.get_doc(
+		{
+			"doctype": "FAQ Master",
+			"question_code": QUESTION_CODE,
+			"question_label": QUESTION_LABEL,
+			"field_type": "Attach",
+			"options": "",
+			"reqd_on_supplier": 0,
+			"is_active": 1,
+			"description": "Attachment for Agreement/PO/Engagement Letter, required when the corresponding question is answered Yes.",
+			"depends_on_question": TRIGGER_QUESTION_CODE,
+		}
+	).insert(ignore_permissions=True)
 
-    doc.sort_order = trigger_sort_order + 1
-    doc.save(ignore_permissions=True)
+	doc.sort_order = trigger_sort_order + 1
+	doc.save(ignore_permissions=True)
 
-    frappe.db.commit()
+	frappe.db.commit()

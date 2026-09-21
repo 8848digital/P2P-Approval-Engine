@@ -1,5 +1,6 @@
 import frappe
-from frappe.utils import getdate, add_months, get_first_day, get_last_day
+from frappe.utils import add_months, get_first_day, get_last_day, getdate
+
 
 def __delete_linked_files(supplier):
 	get_linked_files = frappe.db.get_all(
@@ -7,39 +8,33 @@ def __delete_linked_files(supplier):
 		filters={
 			"attached_to_doctype": "Supplier",
 			"attached_to_name": supplier,
-			"attached_to_field": ["in", ["gstin_attachment", "pan_attachment"]]
+			"attached_to_field": ["in", ["gstin_attachment", "pan_attachment"]],
 		},
-		pluck="name"
+		pluck="name",
 	)
 
 	if get_linked_files:
 		for file_name in get_linked_files:
 			frappe.delete_doc("File", file_name, force=True)
 
+
 def __update_supplier(supplier):
-	frappe.db.set_value("Supplier", supplier,
-		{
-			"gstin": "",
-			"pan": "",
-			"pan_attachment": "",
-			"gstin_attachment": ""
-		},
-		update_modified=False
+	frappe.db.set_value(
+		"Supplier",
+		supplier,
+		{"gstin": "", "pan": "", "pan_attachment": "", "gstin_attachment": ""},
+		update_modified=False,
 	)
+
 
 def _send_supplier_status_mail(supplier, reason, action):
 	"""Send email to supplier for Reject or Comment workflow actions."""
 	# __delete_linked_files(supplier)
 	# __update_supplier(supplier)
 
-	vendor_email, supplier_name = frappe.db.get_value(
-		"Supplier", supplier, ["email_id", "supplier_name"]
-	)
+	vendor_email, supplier_name = frappe.db.get_value("Supplier", supplier, ["email_id", "supplier_name"])
 
-	frappe.get_doc("Supplier", supplier).add_comment(
-		"Comment",
-		f"{action}: {reason}"
-	)
+	frappe.get_doc("Supplier", supplier).add_comment("Comment", f"{action}: {reason}")
 
 	if not vendor_email:
 		return "no_email"
@@ -95,14 +90,10 @@ def _send_supplier_status_mail(supplier, reason, action):
 
 		"""
 
-	frappe.sendmail(
-		recipients=[vendor_email],
-		subject=subject,
-		message=message,
-		delayed = False
-	)
+	frappe.sendmail(recipients=[vendor_email], subject=subject, message=message, delayed=False)
 
 	return "sent"
+
 
 def approval_mail(supplier_name, email_id):
 	if email_id:
@@ -129,7 +120,7 @@ def approval_mail(supplier_name, email_id):
 			recipients=email_id,
 			subject="Welcome Aboard! Your Supplier Registration Has Been Approved",
 			message=message,
-			delayed = False
+			delayed=False,
 		)
 		return "sent"
 	return "no_email"

@@ -2,12 +2,14 @@ import json
 from datetime import timedelta
 
 import frappe
+from erpnext.accounts.utils import get_fiscal_year
 from frappe import _
 from frappe.utils import add_months, getdate
-from erpnext.accounts.utils import get_fiscal_year
 
 
-def get_rate_comparison_rows(supplier, nature_of_services, company, transaction_date, brn=None, exclude_po=None):
+def get_rate_comparison_rows(
+	supplier, nature_of_services, company, transaction_date, brn=None, exclude_po=None
+):
 	"""Cross-company vendor rate comparison for Purchase Order.
 
 	For each (company, nature_of_service) pair with at least one matching
@@ -22,8 +24,11 @@ def get_rate_comparison_rows(supplier, nature_of_services, company, transaction_
 		nature_of_services = json.loads(nature_of_services)
 	nature_of_services = [nos for nos in (nature_of_services or []) if nos]
 	empty_meta = {
-		"period_type": None, "period_months": None, "brn_based": False,
-		"current_period_label": None, "previous_period_label": None,
+		"period_type": None,
+		"period_months": None,
+		"brn_based": False,
+		"current_period_label": None,
+		"previous_period_label": None,
 	}
 	if not supplier or not nature_of_services or not transaction_date:
 		return {"rows": [], "meta": empty_meta}
@@ -50,17 +55,19 @@ def get_rate_comparison_rows(supplier, nature_of_services, company, transaction_
 			if cur and prev and prev.rate:
 				variance = round(((cur.rate - prev.rate) / prev.rate) * 100, 2)
 
-			rows.append({
-				"company": comp,
-				"nature_of_service": nos,
-				"current_period_label": cur_label,
-				"current_period_rate": cur.rate if cur else None,
-				"current_period_po": cur.po_name if cur else None,
-				"previous_period_label": prev_label,
-				"previous_period_rate": prev.rate if prev else None,
-				"previous_period_po": prev.po_name if prev else None,
-				"variance_percent": variance,
-			})
+			rows.append(
+				{
+					"company": comp,
+					"nature_of_service": nos,
+					"current_period_label": cur_label,
+					"current_period_rate": cur.rate if cur else None,
+					"current_period_po": cur.po_name if cur else None,
+					"previous_period_label": prev_label,
+					"previous_period_rate": prev.rate if prev else None,
+					"previous_period_po": prev.po_name if prev else None,
+					"variance_percent": variance,
+				}
+			)
 
 	period_type = {3: "Quarterly", 6: "Half-Yearly", 12: "Yearly"}[period_months]
 	meta = {
@@ -139,7 +146,8 @@ def _period_label(start, end, fiscal_year, period_months, idx):
 		prefix = ""
 
 	date_range = (
-		start.strftime("%b %Y") if start.month == end.month and start.year == end.year
+		start.strftime("%b %Y")
+		if start.month == end.month and start.year == end.year
 		else f"{start.strftime('%b')}-{end.strftime('%b %Y')}"
 	)
 	return f"{prefix}FY{fiscal_year} ({date_range})"
@@ -164,7 +172,9 @@ def _get_period_windows(transaction_date, period_months):
 
 	if current_idx > 0:
 		previous_start, previous_end = buckets[current_idx - 1]
-		previous_label = _period_label(previous_start, previous_end, fiscal_year, period_months, current_idx - 1)
+		previous_label = _period_label(
+			previous_start, previous_end, fiscal_year, period_months, current_idx - 1
+		)
 	else:
 		# Current period is the first bucket of this fiscal year -- the
 		# previous period is the last bucket of the prior fiscal year.
@@ -194,9 +204,13 @@ def _fetch_period_rates(supplier, nature_of_service, window_start, window_end, e
 	feature's entire purpose, which is cross-entity rate visibility for
 	users who may not have read access to every company's Purchase Orders.
 	"""
+	# exclude_clause is one of exactly two hardcoded literal strings (never
+	# derived from exclude_po's value); the actual value is bound through the
+	# %(exclude_po)s param below. Plain "+" concatenation (not an f-string or
+	# .format()) so the query text itself never carries interpolated data.
 	exclude_clause = "AND po.name != %(exclude_po)s" if exclude_po else ""
-	return frappe.db.sql(
-		f"""
+	query = (
+		"""
 		SELECT company, name AS po_name, rate FROM (
 			SELECT
 				po.company, po.name, po.transaction_date, poi.rate,
@@ -210,10 +224,15 @@ def _fetch_period_rates(supplier, nature_of_service, window_start, window_end, e
 			  AND poi.nature_of_service = %(nature_of_service)s
 			  AND po.docstatus != 2
 			  AND po.transaction_date BETWEEN %(start)s AND %(end)s
-			  {exclude_clause}
+			  """
+		+ exclude_clause
+		+ """
 		) ranked
 		WHERE rn = 1
-		""",
+		"""
+	)
+	return frappe.db.sql(
+		query,
 		{
 			"supplier": supplier,
 			"nature_of_service": nature_of_service,

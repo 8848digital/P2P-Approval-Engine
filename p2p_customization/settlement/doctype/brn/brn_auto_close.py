@@ -23,7 +23,7 @@ def auto_close_brns():
 				title=f"Auto Close BRN (scheduler) failed: {brn_name}",
 				message=frappe.get_traceback(),
 			)
-	frappe.db.commit()
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit - scheduled job, not a web request; no auto-commit at the end
 	frappe.logger().info(f"Auto Close BRN (scheduler): closed {closed_count} of {len(brns)} eligible BRNs")
 
 

@@ -22,16 +22,16 @@ Registered in patches.txt as:
 import frappe
 
 from p2p_customization.settlement.doc_events.tds_reference import (
-    create_tax_withholding_categories,
+	create_tax_withholding_categories,
 )
 from p2p_customization.settlement.setup import create_custom_fields
 
 
 def execute():
-    create_custom_fields()
+	create_custom_fields()
 
-    for name in frappe.get_all("TDS Reference", pluck="name"):
-        doc = frappe.get_doc("TDS Reference", name)
-        create_tax_withholding_categories(doc)
+	for name in frappe.get_all("TDS Reference", pluck="name"):
+		doc = frappe.get_doc("TDS Reference", name)
+		create_tax_withholding_categories(doc)
 
-    frappe.db.commit()
+	frappe.db.commit()

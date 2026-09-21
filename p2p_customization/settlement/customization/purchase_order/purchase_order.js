@@ -1,22 +1,22 @@
-frappe.ui.form.on('Purchase Order',  {
-	setup: function(frm){
-		frm.set_query("nature_of_service", "items", function() {
+frappe.ui.form.on("Purchase Order", {
+	setup: function (frm) {
+		frm.set_query("nature_of_service", "items", function () {
 			return {
 				query: "p2p_customization.settlement.api.v1.purchase_invoice.get_nature_of_service_query",
 				filters: {
-					supplier: frm.doc.supplier
-				}
+					supplier: frm.doc.supplier,
+				},
 			};
 		});
 	},
-	refresh(frm){
+	refresh(frm) {
 		if (!frm.is_new()) {
 			frm.trigger("send_po_to_vendor");
 		}
-		make_mandatory(frm)
+		make_mandatory(frm);
 		setup_vendor_rate_comparison(frm);
 	},
-	supplier(frm){
+	supplier(frm) {
 		// supplier's legal type (Individual/HUF/etc.) decides which Tax
 		// Withholding Category applies, so re-resolve it on any already
 		// selected item rows when the supplier changes. Batched into one
@@ -24,7 +24,7 @@ frappe.ui.form.on('Purchase Order',  {
 		refresh_all_tax_withholding_categories(frm);
 	},
 	send_po_to_vendor(frm) {
-		frm.add_custom_button(__('Send PO to Vendor'), function () {
+		frm.add_custom_button(__("Send PO to Vendor"), function () {
 			frappe.call({
 				method: "p2p_customization.settlement.api.v1.purchase_order.send_po_to_vendor",
 				args: {
@@ -34,27 +34,27 @@ frappe.ui.form.on('Purchase Order',  {
 					if (r.message) {
 						frappe.msgprint(__("Email sent to Vendor"));
 					}
-				}
+				},
 			});
 		});
 	},
-	validate: function(frm){
+	validate: function (frm) {
 		// validate_brn_dates(frm)
 	},
-	onload_post_render: function(frm){
-		apply_filters_based_on_requisition(frm)
+	onload_post_render: function (frm) {
+		apply_filters_based_on_requisition(frm);
 		maybe_auto_show_rate_comparison(frm);
 	},
-	requisition_type: function(frm){
-		make_mandatory(frm)
-		apply_filters_based_on_requisition(frm)
-	}
+	requisition_type: function (frm) {
+		make_mandatory(frm);
+		apply_filters_based_on_requisition(frm);
+	},
 });
 
 frappe.ui.form.on("Purchase Order Item", {
-	nature_of_service: function(frm, cdt, cdn) {
+	nature_of_service: function (frm, cdt, cdn) {
 		set_po_tax_withholding_category(frm, cdt, cdn);
-	}
+	},
 });
 
 function set_po_tax_withholding_category(frm, cdt, cdn) {
@@ -71,11 +71,11 @@ function set_po_tax_withholding_category(frm, cdt, cdn) {
 		method: "p2p_customization.settlement.doc_events.tds_reference.get_tax_withholding_category",
 		args: {
 			nature_of_service: row.nature_of_service,
-			supplier: frm.doc.supplier
+			supplier: frm.doc.supplier,
 		},
-		callback: function(r) {
+		callback: function (r) {
 			apply_po_tax_withholding_category(cdt, cdn, r.message);
-		}
+		},
 	});
 }
 
@@ -98,14 +98,18 @@ function refresh_all_tax_withholding_categories(frm) {
 		method: "p2p_customization.settlement.doc_events.tds_reference.get_tax_withholding_categories",
 		args: {
 			nature_of_services: nature_of_services,
-			supplier: frm.doc.supplier
+			supplier: frm.doc.supplier,
 		},
-		callback: function(r) {
+		callback: function (r) {
 			const categories = r.message || {};
 			rows.forEach((row) => {
-				apply_po_tax_withholding_category(row.doctype, row.name, categories[row.nature_of_service]);
+				apply_po_tax_withholding_category(
+					row.doctype,
+					row.name,
+					categories[row.nature_of_service]
+				);
 			});
-		}
+		},
 	});
 }
 
@@ -144,7 +148,7 @@ function fetch_rate_comparison_config() {
 		_rate_comparison_config_promise = new Promise((resolve) => {
 			frappe.call({
 				method: "p2p_customization.settlement.api.v1.purchase_order.get_vendor_rate_comparison_config",
-				callback: (r) => resolve(r.message || { permitted: false, trigger_mode: "Both" })
+				callback: (r) => resolve(r.message || { permitted: false, trigger_mode: "Both" }),
 			});
 		});
 	}
@@ -161,7 +165,9 @@ function setup_vendor_rate_comparison(frm) {
 	if (!can_show_rate_comparison(frm)) return;
 	fetch_rate_comparison_config().then((config) => {
 		if (!config.permitted || config.trigger_mode === "Auto Show on Load") return;
-		frm.add_custom_button(__('Vendor Rate Comparison'), () => show_rate_comparison_dialog(frm));
+		frm.add_custom_button(__("Vendor Rate Comparison"), () =>
+			show_rate_comparison_dialog(frm)
+		);
 	});
 }
 
@@ -176,9 +182,13 @@ function maybe_auto_show_rate_comparison(frm) {
 }
 
 function show_rate_comparison_dialog(frm, { silent_if_empty = false } = {}) {
-	const nature_of_services = [...new Set((frm.doc.items || [])
-		.filter((d) => d.nature_of_service)
-		.map((d) => d.nature_of_service))];
+	const nature_of_services = [
+		...new Set(
+			(frm.doc.items || [])
+				.filter((d) => d.nature_of_service)
+				.map((d) => d.nature_of_service)
+		),
+	];
 
 	frappe.call({
 		method: "p2p_customization.settlement.api.v1.purchase_order.get_vendor_rate_comparison",
@@ -188,7 +198,7 @@ function show_rate_comparison_dialog(frm, { silent_if_empty = false } = {}) {
 			company: frm.doc.company,
 			transaction_date: frm.doc.transaction_date,
 			brn: frm.doc.brn,
-			exclude_po: (!frm.is_new() && frm.doc.name) ? frm.doc.name : null
+			exclude_po: !frm.is_new() && frm.doc.name ? frm.doc.name : null,
 		},
 		freeze: !silent_if_empty,
 		freeze_message: __("Fetching rate comparison..."),
@@ -202,7 +212,7 @@ function show_rate_comparison_dialog(frm, { silent_if_empty = false } = {}) {
 				return;
 			}
 			render_rate_comparison_dialog(frm, rows, data.meta || {});
-		}
+		},
 	});
 }
 
@@ -216,24 +226,40 @@ function rate_comparison_match_note(meta, supplier) {
 
 	return `
 		<div class="rate-comparison-note">
-			<div class="rate-comparison-note-title">${frappe.utils.icon("info", "sm")} ${__("How this is matched")}</div>
+			<div class="rate-comparison-note-title">${frappe.utils.icon("info", "sm")} ${__(
+		"How this is matched"
+	)}</div>
 			<ul>
-				<li>${__("Rows are grouped by {0} and {1}, showing the most recent rate {2} charged in each period.",
-					[`<b>${__("Company")}</b>`, `<b>${__("Nature of Service")}</b>`, `<b>${frappe.utils.escape_html(supplier || "")}</b>`])}</li>
-				<li>${__("Current period: {0}. Previous period: {1}.",
-					[`<b>${frappe.utils.escape_html(meta.current_period_label || "-")}</b>`, `<b>${frappe.utils.escape_html(meta.previous_period_label || "-")}</b>`])}</li>
+				<li>${__(
+					"Rows are grouped by {0} and {1}, showing the most recent rate {2} charged in each period.",
+					[
+						`<b>${__("Company")}</b>`,
+						`<b>${__("Nature of Service")}</b>`,
+						`<b>${frappe.utils.escape_html(supplier || "")}</b>`,
+					]
+				)}</li>
+				<li>${__("Current period: {0}. Previous period: {1}.", [
+					`<b>${frappe.utils.escape_html(meta.current_period_label || "-")}</b>`,
+					`<b>${frappe.utils.escape_html(meta.previous_period_label || "-")}</b>`,
+				])}</li>
 				<li>${__("Periods are {0}, fiscal-year aligned (Apr–Mar); {1}.", [period_desc, brn_desc])}</li>
-				<li>${__("Cancelled Purchase Orders are excluded; companies with no matching PO in either window are omitted.")}</li>
+				<li>${__(
+					"Cancelled Purchase Orders are excluded; companies with no matching PO in either window are omitted."
+				)}</li>
 			</ul>
 		</div>
 	`;
 }
 
 function render_rate_comparison_dialog(frm, rows, meta) {
-	const format_rate = (v) => v != null ? format_currency(v) : "<span class=\"text-muted\">–</span>";
-	const format_po = (v) => v
-		? `<a href="/app/purchase-order/${encodeURIComponent(v)}" target="_blank">${frappe.utils.escape_html(v)}</a>`
-		: "<span class=\"text-muted\">–</span>";
+	const format_rate = (v) =>
+		v != null ? format_currency(v) : '<span class="text-muted">–</span>';
+	const format_po = (v) =>
+		v
+			? `<a href="/app/purchase-order/${encodeURIComponent(
+					v
+			  )}" target="_blank">${frappe.utils.escape_html(v)}</a>`
+			: '<span class="text-muted">–</span>';
 	const format_variance = (v) => {
 		if (v == null) return `<span class="text-muted">–</span>`;
 		if (v === 0) return `<span class="indicator-pill gray">0%</span>`;
@@ -242,7 +268,9 @@ function render_rate_comparison_dialog(frm, rows, meta) {
 		return `<span class="indicator-pill ${color}">${arrow} ${Math.abs(v)}%</span>`;
 	};
 
-	const body_rows = rows.map((row) => `
+	const body_rows = rows
+		.map(
+			(row) => `
 		<tr>
 			<td><b>${frappe.utils.escape_html(row.company || "")}</b></td>
 			<td>${frappe.utils.escape_html(row.nature_of_service || "")}</td>
@@ -258,7 +286,9 @@ function render_rate_comparison_dialog(frm, rows, meta) {
 			</td>
 			<td class="text-center">${format_variance(row.variance_percent)}</td>
 		</tr>
-	`).join("");
+	`
+		)
+		.join("");
 
 	const html = `
 		<style>
@@ -302,13 +332,13 @@ function render_rate_comparison_dialog(frm, rows, meta) {
 	const dialog = new frappe.ui.Dialog({
 		title: __("Vendor Rate Comparison"),
 		size: "extra-large",
-		fields: [{ fieldtype: "HTML", fieldname: "rate_comparison_html", options: html }]
+		fields: [{ fieldtype: "HTML", fieldname: "rate_comparison_html", options: html }],
 	});
 	dialog.show();
 }
 
-function apply_filters_based_on_requisition(frm){
-	frm.set_query("item_code", "items", function() {
+function apply_filters_based_on_requisition(frm) {
+	frm.set_query("item_code", "items", function () {
 		let filters = { supplier: frm.doc.supplier };
 
 		if (frm.doc.requisition_type === "Fixed Asset") {
@@ -328,27 +358,26 @@ function apply_filters_based_on_requisition(frm){
 
 		return {
 			query: "erpnext.controllers.queries.item_query",
-			filters: filters
+			filters: filters,
 		};
 	});
 }
 
-function make_mandatory(frm){
+function make_mandatory(frm) {
 	if (frm.doc.requisition_type == "Service") {
-			frm.fields_dict.items.grid.toggle_reqd("qty", false)
-			frm.fields_dict.items.grid.toggle_reqd("uom", false)
-			frm.fields_dict.items.grid.toggle_reqd("rate", true)
-			frm.fields_dict.items.grid.toggle_reqd("amount", true)
-		}
-	else{
-		frm.fields_dict.items.grid.toggle_reqd("qty", true)
-		frm.fields_dict.items.grid.toggle_reqd("uom", true)
-		frm.fields_dict.items.grid.toggle_reqd("rate", false)
-		frm.fields_dict.items.grid.toggle_reqd("amount", false)
+		frm.fields_dict.items.grid.toggle_reqd("qty", false);
+		frm.fields_dict.items.grid.toggle_reqd("uom", false);
+		frm.fields_dict.items.grid.toggle_reqd("rate", true);
+		frm.fields_dict.items.grid.toggle_reqd("amount", true);
+	} else {
+		frm.fields_dict.items.grid.toggle_reqd("qty", true);
+		frm.fields_dict.items.grid.toggle_reqd("uom", true);
+		frm.fields_dict.items.grid.toggle_reqd("rate", false);
+		frm.fields_dict.items.grid.toggle_reqd("amount", false);
 	}
 }
 
-function validate_brn_dates(frm){
+function validate_brn_dates(frm) {
 	if (frm.skip_brn_validation) {
 		frm.skip_brn_validation = false;
 		return;
@@ -360,13 +389,13 @@ function validate_brn_dates(frm){
 		method: "p2p_customization.settlement.api.v1.purchase_order.validate_transaction_date_with_brn_dates",
 		args: {
 			brn: frm.doc.brn,
-			transaction_date: frm.doc.transaction_date
+			transaction_date: frm.doc.transaction_date,
 		},
 		async: false,
-		callback: function(r) {
+		callback: function (r) {
 			if (!r.message) return;
 
-			let msg = '';
+			let msg = "";
 			if (r.message.status === "before_start") {
 				msg = `The BRN <b>${frm.doc.brn}</b> starts on <b>${r.message.start_date}</b>.<br>
 					Your transaction date <b>${frm.doc.transaction_date}</b> is before that.<br><br>
@@ -376,10 +405,11 @@ function validate_brn_dates(frm){
 					Your transaction date <b>${frm.doc.transaction_date}</b> is after expiry.<br><br>
 					Do you still want to continue?`;
 			}
-			if(frm.is_dirty()){
+			if (frm.is_dirty()) {
 				if (msg) {
 					frappe.validated = false;
-					frappe.confirm(msg,
+					frappe.confirm(
+						msg,
 						() => {
 							frm.skip_brn_validation = true;
 							frm.save();
@@ -390,33 +420,33 @@ function validate_brn_dates(frm){
 					);
 				}
 			}
-		}
+		},
 	});
 }
 
-frappe.ui.form.on('Purchase Order', {
-	onload_post_render: function(frm){
-		if(frm.is_new()){
-			frm.trigger("transaction_date")
+frappe.ui.form.on("Purchase Order", {
+	onload_post_render: function (frm) {
+		if (frm.is_new()) {
+			frm.trigger("transaction_date");
 		}
 	},
-	"transaction_date": function(frm){
-		if (frm.doc.transaction_date){
+	transaction_date: function (frm) {
+		if (frm.doc.transaction_date) {
 			frappe.call({
 				method: "p2p_customization.settlement.api.v1.purchase_order.get_fiscal_year_and_validity",
 				args: {
 					date: frm.doc.transaction_date,
-					brn: frm.doc.brn
+					brn: frm.doc.brn,
 				},
 				async: false,
-				callback: function(r){
-					if(r.message){
-						frm.set_value("custom_fiscal_year", r.message.fiscal_year)
-						frm.set_value("validity_start_date", r.message.validity_start_date)
-						frm.set_value("validity_end_date", r.message.validity_end_date)
+				callback: function (r) {
+					if (r.message) {
+						frm.set_value("custom_fiscal_year", r.message.fiscal_year);
+						frm.set_value("validity_start_date", r.message.validity_start_date);
+						frm.set_value("validity_end_date", r.message.validity_end_date);
 					}
-				}
-			})
+				},
+			});
 		}
-	}
+	},
 });

@@ -4,7 +4,9 @@
 frappe.ui.form.on("Supplier", {
 	refresh(frm) {
 		if (frm.doc.__islocal) return;
-		frm.add_custom_button(__("KYC Validation"), () => open_kyc_dialog(frm)).addClass("btn-primary");
+		frm.add_custom_button(__("KYC Validation"), () => open_kyc_dialog(frm)).addClass(
+			"btn-primary"
+		);
 		render_last_kyc_indicator(frm);
 	},
 });
@@ -27,7 +29,13 @@ function render_last_kyc_indicator(frm) {
 }
 
 function status_pill(status) {
-	const map = { Success: "green", Failed: "red", Error: "orange", Skipped: "gray", Pending: "blue" };
+	const map = {
+		Success: "green",
+		Failed: "red",
+		Error: "orange",
+		Skipped: "gray",
+		Pending: "blue",
+	};
 	return `<span class="indicator-pill ${map[status] || "gray"}">${__(status)}</span>`;
 }
 
@@ -49,7 +57,9 @@ class KYCDialog {
 		if (!vendors.length) {
 			frappe.msgprint({
 				title: __("No KYC Checks Available"),
-				message: __("Ask your System Manager to enable at least one KYC Vendor in JFS Settings."),
+				message: __(
+					"Ask your System Manager to enable at least one KYC Vendor in JFS Settings."
+				),
 				indicator: "orange",
 			});
 			return;
@@ -100,7 +110,9 @@ class KYCDialog {
 	}
 
 	load_existing_results() {
-		this.set_html(`<div class="text-muted kyc-loading">${__("Loading previous KYC results...")}</div>`);
+		this.set_html(
+			`<div class="text-muted kyc-loading">${__("Loading previous KYC results...")}</div>`
+		);
 
 		frappe.call({
 			method: "p2p_customization.settlement.api.v1.kyc_validation.get_last_kyc_run",
@@ -131,7 +143,8 @@ class KYCDialog {
 	// (vendor / kyc_vendor / vendor_name / etc). Normalize here so the rest
 	// of the dialog can always rely on row.vendor being set correctly.
 	normalize_row(row) {
-		const vendor = row.vendor || row.kyc_vendor || row.vendor_name || row.vendor_id || row.name;
+		const vendor =
+			row.vendor || row.kyc_vendor || row.vendor_name || row.vendor_id || row.name;
 		if (!vendor) {
 			console.warn("KYC row missing vendor identifier:", row);
 		}
@@ -175,7 +188,9 @@ class KYCDialog {
 				<b>${__("Run")}:</b>
 				<a href="/desk/kyc-validation-run/${data.run}" target="_blank">${data.run}</a>
 				&nbsp;·&nbsp; <b>${__("Result")}:</b> ${status_pill(data.overall_status)}
-				&nbsp;·&nbsp; <span class="text-muted">${data.success_count}/${data.total_checks} ${__("passed")}</span>
+				&nbsp;·&nbsp; <span class="text-muted">${data.success_count}/${data.total_checks} ${__(
+			"passed"
+		)}</span>
 			</div>`;
 		const cards = data.rows.map((row) => this.render_card(row)).join("");
 		this.set_html(`${preview_note}${summary}<div class="kyc-card-grid">${cards}</div>`);
@@ -192,16 +207,22 @@ class KYCDialog {
 				<span class="kyc-card-icon" style="color:${border};">${icon}</span>
 				<div class="kyc-card-title-wrap">
 					<div class="kyc-card-title">${frappe.utils.escape_html(row.vendor)}</div>
-					<div class="kyc-card-sub text-muted">${frappe.utils.escape_html(row.kyc_type || "")} · ${__("Attempt")} ${row.attempt_no}</div>
+					<div class="kyc-card-sub text-muted">${frappe.utils.escape_html(row.kyc_type || "")} · ${__(
+			"Attempt"
+		)} ${row.attempt_no}</div>
 				</div>
 				<div class="kyc-card-status">${status_pill(row.status)}</div>
 			</div>
 			<div class="kyc-card-message text-muted">${frappe.utils.escape_html(row.message || "")}</div>
 			<div class="kyc-card-actions">
-				<button class="btn btn-xs btn-default kyc-revalidate" data-vendor="${row.vendor}">${__("Revalidate")}</button>
+				<button class="btn btn-xs btn-default kyc-revalidate" data-vendor="${row.vendor}">${__(
+			"Revalidate"
+		)}</button>
 				${
 					!is_success
-						? `<button class="btn btn-xs btn-default kyc-fix" data-vendor="${row.vendor}">${__("Fix Details & Retry")}</button>`
+						? `<button class="btn btn-xs btn-default kyc-fix" data-vendor="${
+								row.vendor
+						  }">${__("Fix Details & Retry")}</button>`
 						: ""
 				}
 			</div>
@@ -215,7 +236,11 @@ class KYCDialog {
 		$wrap.on("click", ".kyc-revalidate", (e) => {
 			const vendor = $(e.currentTarget).data("vendor");
 			if (!vendor || vendor === "undefined") {
-				frappe.msgprint(__("Could not determine the KYC vendor for this row. Please run a fresh validation."));
+				frappe.msgprint(
+					__(
+						"Could not determine the KYC vendor for this row. Please run a fresh validation."
+					)
+				);
 				return;
 			}
 			this.revalidate([vendor]);
@@ -225,7 +250,11 @@ class KYCDialog {
 			const $card = $(e.currentTarget).closest(".kyc-card");
 			const vendor = $(e.currentTarget).data("vendor");
 			if (!vendor || vendor === "undefined") {
-				frappe.msgprint(__("Could not determine the KYC vendor for this row. Please run a fresh validation."));
+				frappe.msgprint(
+					__(
+						"Could not determine the KYC vendor for this row. Please run a fresh validation."
+					)
+				);
 				return;
 			}
 			const $form_area = $card.find(".kyc-fix-form");
@@ -241,7 +270,11 @@ class KYCDialog {
 			const $card = $(e.currentTarget).closest(".kyc-card");
 			const vendor = $(e.currentTarget).data("vendor");
 			if (!vendor || vendor === "undefined") {
-				frappe.msgprint(__("Could not determine the KYC vendor for this row. Please run a fresh validation."));
+				frappe.msgprint(
+					__(
+						"Could not determine the KYC vendor for this row. Please run a fresh validation."
+					)
+				);
 				return;
 			}
 			const updates = {};
@@ -281,14 +314,16 @@ class KYCDialog {
 					.join("");
 
 				$container
-					.html(`
+					.html(
+						`
 						<div class="kyc-fix-inner">
 							${rows}
 							<button class="btn btn-xs btn-primary kyc-save-and-retry" data-vendor="${vendor_name}">
 								${__("Save & Revalidate")}
 							</button>
 						</div>
-					`)
+					`
+					)
 					.slideDown();
 			},
 		});
@@ -303,15 +338,23 @@ class KYCDialog {
 		if (!this.run_name) {
 			// No run to attach to yet (shouldn't normally happen since the
 			// preview always sets this.run_name when a prior run exists).
-			frappe.msgprint(__("No KYC run found to revalidate against. Please run validation first."));
+			frappe.msgprint(
+				__("No KYC run found to revalidate against. Please run validation first.")
+			);
 			return;
 		}
 		const $wrap = this.dialog.$wrapper;
-		vendor_names.forEach((v) => $wrap.find(`.kyc-card[data-vendor="${v}"]`).css("opacity", 0.5));
+		vendor_names.forEach((v) =>
+			$wrap.find(`.kyc-card[data-vendor="${v}"]`).css("opacity", 0.5)
+		);
 
 		frappe.call({
 			method: "p2p_customization.settlement.api.v1.kyc_validation.revalidate_in_run",
-			args: { run_name: this.run_name, vendors: JSON.stringify(vendor_names), remarks: remarks || null },
+			args: {
+				run_name: this.run_name,
+				vendors: JSON.stringify(vendor_names),
+				remarks: remarks || null,
+			},
 			callback: (res) => {
 				frappe.show_alert({ message: __("Revalidation complete"), indicator: "green" });
 				vendor_names.forEach((vendor) => {

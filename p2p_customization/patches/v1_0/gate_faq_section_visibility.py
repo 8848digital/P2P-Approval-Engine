@@ -17,20 +17,20 @@ Registered in patches.txt as:
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 from p2p_customization.settlement.doc_events.faq_master import (
-    FAQ_SECTION_VISIBILITY_DEPENDS_ON,
+	FAQ_SECTION_VISIBILITY_DEPENDS_ON,
 )
 
 
 def execute():
-    custom_fields = {
-        "Supplier": [
-            {
-                "fieldname": "faq_section",
-                "fieldtype": "Tab Break",
-                "label": "Vendor FAQs",
-                "insert_after": "non_pan",
-                "depends_on": FAQ_SECTION_VISIBILITY_DEPENDS_ON,
-            },
-        ]
-    }
-    create_custom_fields(custom_fields, update=True)
+	custom_fields = {
+		"Supplier": [
+			{
+				"fieldname": "faq_section",
+				"fieldtype": "Tab Break",
+				"label": "Vendor FAQs",
+				"insert_after": "non_pan",
+				"depends_on": FAQ_SECTION_VISIBILITY_DEPENDS_ON,
+			},
+		]
+	}
+	create_custom_fields(custom_fields, update=True)

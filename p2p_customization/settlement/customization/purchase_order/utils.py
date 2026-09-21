@@ -4,7 +4,11 @@ import frappe
 from erpnext.buying.doctype.purchase_order.purchase_order import get_mapped_purchase_invoice
 from frappe import _
 from frappe.utils import get_link_to_form, get_url_to_form
-from pypika import functions as fn
+
+from p2p_customization.settlement.customization.purchase_order.brn_balance import (
+	POI_Fields,
+	_sum_other_po_items,
+)
 
 
 def make_purchase_invoice(purchase_order_name, items, supplier_invoice_no, supplier_invoice_date):
@@ -35,7 +39,7 @@ def make_purchase_invoice(purchase_order_name, items, supplier_invoice_no, suppl
 
 	create_portal_invoice_log(doc)
 
-	frappe.db.commit()
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit - durably persist the invoice immediately after this portal write
 
 	return doc.name
 
@@ -56,7 +60,7 @@ def create_portal_invoice_log(purchase_invoice):
 
 
 @frappe.whitelist()
-def send_po_mail_to_vendor(purchase_order):
+def send_po_mail_to_vendor(purchase_order: str):
 	"""Send Purchase Order email with PDF attachment to vendor"""
 	doc = frappe.get_doc("Purchase Order", purchase_order)
 
@@ -80,7 +84,7 @@ def send_po_mail_to_vendor(purchase_order):
 		supplier_email = frappe.db.get_value("Supplier", doc.supplier, "email_id")
 
 	if not supplier_email:
-		frappe.throw("Please set Vendor Email in Supplier or Address master")
+		frappe.throw(_("Please set Vendor Email in Supplier or Address master"))
 
 	# Email content
 	subject = f"Purchase Order {doc.name}"
@@ -210,42 +214,3 @@ def validate_item_rate_and_qty_with_brn(doc, method: str | None = None) -> None:
 				),
 				title=_("Amount Exceeded"),
 			)
-
-
-class POI_Fields:
-	"""Which Purchase Order Item aggregate _sum_other_po_items() computes."""
-
-	qty = "qty"
-	amount = "amount"
-
-
-def _sum_other_po_items(doc, item_code: str, field: str) -> float:
-	"""
-	Sum qty (or qty*rate as amount) for item_code across every other
-	non-cancelled Purchase Order linked to doc's BRN.
-
-	Parameters:
-		doc (Document, required): The Purchase Order being validated
-			(excluded from the sum by name).
-		item_code (str, required): The Item to sum.
-		field (str, required): POI_Fields.qty or POI_Fields.amount.
-
-	Returns:
-		float: The summed value, or 0 if no other PO has this item.
-	"""
-	POI = frappe.qb.DocType("Purchase Order Item")
-	PO = frappe.qb.DocType("Purchase Order")
-	measure = POI.qty if field == POI_Fields.qty else POI.qty * POI.rate
-
-	result = (
-		frappe.qb.from_(POI)
-		.join(PO)
-		.on(PO.name == POI.parent)
-		.select(fn.Coalesce(fn.Sum(measure), 0))
-		.where(PO.docstatus < 2)
-		.where(PO.brn == doc.brn)
-		.where(POI.item_code == item_code)
-		.where(PO.name != doc.name)
-	).run()
-
-	return result[0][0]
