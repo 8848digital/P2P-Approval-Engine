@@ -26,8 +26,8 @@ def set_total_amount(doc) -> None:
 def validate_comparision_rows(doc) -> None:
 	"""
 	Enforce the Comparision child table's row-count limits (1 for Single,
-	up to 3 for Multi), the minimum-3-quotes rule for RPT/Related Party
-	vendors, and the single-Preferred-row constraint.
+	exactly 3 required for Multi/RPT), the minimum-3-quotes rule for
+	RPT/Related Party vendors, and the single-Preferred-row constraint.
 
 	Parameters:
 		doc (Document, required): The BRN document being validated.
@@ -44,8 +44,25 @@ def validate_comparision_rows(doc) -> None:
 	if doc.get("multi") and row_count > 3:
 		frappe.throw(_("Maximum three rows can be added to the Comparision table when Multi is checked."))
 
+	validate_minimum_comparison_rows(doc, row_count)
 	validate_minimum_quotes(doc, rows)
 	validate_single_preferred_row(doc, rows)
+
+
+def validate_minimum_comparison_rows(doc, row_count) -> None:
+	"""Multi (and RPT, which drives Multi on the client) auto-populates 3
+	empty Comparision rows for the user to fill in -- if rows were removed
+	afterwards, block save instead of silently allowing fewer than the 3
+	vendors that Multi/RPT requires."""
+	if not (doc.get("multi") or doc.get("rpt")):
+		return
+
+	if row_count < 3:
+		frappe.throw(
+			_("3 rows are required in the Comparision table when Multi or RPT is checked, found {0}.").format(
+				row_count
+			)
+		)
 
 
 def validate_minimum_quotes(doc, rows) -> None:
