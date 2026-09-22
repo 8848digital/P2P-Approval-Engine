@@ -275,11 +275,27 @@ function create_purchase_invoice(frm, vendor) {
 // actually runs, always reading frm.doc fresh at that point.
 let _expiry_date_debounce_timer = null;
 
+/**
+ * Debounced entry point for the duration_of_service_months/service_start_date
+ * handlers below -- resets a shared timer so only the final field state
+ * within the debounce window actually triggers recompute_expiry_date.
+ *
+ * @param {object} frm - The BRN form instance.
+ * @returns {void}
+ */
 function get_expiry_date(frm) {
 	clearTimeout(_expiry_date_debounce_timer);
 	_expiry_date_debounce_timer = setTimeout(() => recompute_expiry_date(frm), 400);
 }
 
+/**
+ * Recompute and set expiry_date from the current duration_of_service_months
+ * and service_start_date, via the server-side date-math endpoint. Clears
+ * expiry_date instead if either input is currently empty.
+ *
+ * @param {object} frm - The BRN form instance.
+ * @returns {void}
+ */
 function recompute_expiry_date(frm) {
 	if (!frm.doc.duration_of_service_months || !frm.doc.service_start_date) {
 		frm.set_value("expiry_date", "");
