@@ -16,6 +16,8 @@ It can still be run manually too:
 import json
 import os
 
+import frappe
+
 
 def create_custom_fields():
 	CUSTOM_FIELDS = {}
@@ -26,6 +28,31 @@ def create_custom_fields():
 		with open(os.path.join(path, file)) as f:  # nosemgrep: frappe-security-file-traversal
 			CUSTOM_FIELDS.update(json.load(f))
 
+	CUSTOM_FIELDS = _drop_fields_for_missing_doctypes(CUSTOM_FIELDS)
+
 	from frappe.custom.doctype.custom_field.custom_field import create_custom_fields as _create_custom_fields
 
 	_create_custom_fields(CUSTOM_FIELDS)
+
+
+def _drop_fields_for_missing_doctypes(custom_fields: dict) -> dict:
+	"""
+	Skip custom-field entries whose target DocType isn't installed on this
+	site (e.g. "JFS Settings", owned by jfs_report_customization, which
+	isn't a required_apps dependency here) instead of letting the whole
+	batch insert fail with LinkValidationError.
+
+	Parameters:
+		custom_fields (dict, required): {doctype: [field_dict, ...]} as read
+			from settlement/custom_fields/*.json.
+
+	Returns:
+		dict: Same shape, with entries for missing DocTypes removed.
+	"""
+	available = {}
+	for doctype, fields in custom_fields.items():
+		if frappe.db.exists("DocType", doctype):
+			available[doctype] = fields
+		else:
+			print(f"Skipping custom fields for missing DocType: {doctype}")
+	return available
