@@ -7,5 +7,5 @@
 from frappe.model.document import Document
 
 
-class NatureOfServiceReference(Document):
+class NatureofServiceReference(Document):
 	"""Supplier child table row: one Nature Of Transaction value selected via the "Nature of Service" Table MultiSelect field."""

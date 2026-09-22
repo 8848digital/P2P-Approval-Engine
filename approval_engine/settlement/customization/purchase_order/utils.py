@@ -126,6 +126,12 @@ def backdated_po_validation(doc, method: str | None = None) -> None:
 	backdated: 7 days if the date falls outside the PO's own fiscal year,
 	30 days if it falls within it.
 
+	custom_fiscal_year is only ever populated by
+	validate_fiscal_year_and_brn_dates, which itself opts out whenever
+	JFS Settings isn't installed or the PO isn't BRN-linked -- so it's
+	routinely empty, not just on a data-entry mistake. Skip rather than
+	crash when there's no fiscal year to check against.
+
 	Parameters:
 		doc (Document, required): The Purchase Order document being saved.
 		method (str, optional): The hook event name passed by Frappe.
@@ -133,6 +139,9 @@ def backdated_po_validation(doc, method: str | None = None) -> None:
 	Returns:
 		None
 	"""
+	if not doc.custom_fiscal_year:
+		return
+
 	current_date = frappe.utils.getdate(frappe.utils.nowdate())
 	fiscal_year = frappe.db.get_value(
 		"Fiscal Year", doc.custom_fiscal_year, ["year_start_date", "year_end_date"], as_dict=True

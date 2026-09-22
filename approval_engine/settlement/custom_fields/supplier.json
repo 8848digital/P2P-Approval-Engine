@@ -25,6 +25,18 @@
         },
         {
             "dt": "Supplier",
+            "fieldname": "brn",
+            "fieldtype": "Data",
+            "insert_after": "is_created_from_webform",
+            "label": "BRN",
+            "read_only": 1,
+            "hidden": 1,
+            "no_copy": 1,
+            "description": "Prefilled from the onboarding invite link when this Supplier is created from the vendor onboarding webform -- see settlement/customization/supplier/doc_events.py:update_supplier_in_brn, which links this Supplier back to its originating BRN Comparision row.",
+            "module": "Settlement"
+        },
+        {
+            "dt": "Supplier",
             "fieldname": "custom_msa_agreement",
             "fieldtype": "Select",
             "insert_after": "is_aadhar_pan_linked",

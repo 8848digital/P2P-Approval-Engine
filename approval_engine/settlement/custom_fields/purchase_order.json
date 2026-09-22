@@ -38,6 +38,14 @@
             "depends_on": "eval:(doc.brn || doc.po_type=='PO Based')"
         },
         {
+            "fieldname": "custom_fiscal_year",
+            "fieldtype": "Link",
+            "insert_after": "validity_end_date",
+            "label": "Fiscal Year",
+            "options": "Fiscal Year",
+            "module": "Settlement"
+        },
+        {
             "default": "0",
             "fieldname": "apply_tds",
             "fieldtype": "Check",

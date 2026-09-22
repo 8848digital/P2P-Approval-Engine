@@ -116,7 +116,7 @@
   },
   {
    "depends_on": "eval:doc.existing_vendor;",
-   "fetch_from": "existing_vendor.related_party",
+   "fetch_from": "existing_vendor.related_partys",
    "fieldname": "related_party",
    "fieldtype": "Select",
    "label": "Related Party",

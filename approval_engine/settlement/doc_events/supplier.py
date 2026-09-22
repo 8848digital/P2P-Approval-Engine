@@ -124,8 +124,17 @@ def _validate_expected_answers(doc, faq_rows) -> None:
 def update_brn_msa_agreement(self, method) -> None:
 	"""
 	Supplier validate hook: propagate this Supplier's MSA Agreement value
-	onto every Supplier Quotation, BRN, and Purchase Invoice that
-	references it as either the existing or new vendor.
+	onto every Supplier Quotation that references it as either the
+	existing or new vendor.
+
+	This used to also propagate onto BRN and Purchase Invoice, back when
+	BRN carried its own flat existing_vendor/new_vendor/msa_agreement
+	fields. Those fields moved onto the BRN Comparision child table (one
+	row per vendor, msa_agreement set directly by the originator/business
+	per vendor -- see brn_comparision.json) and payment blocking now reads
+	that child table directly (see
+	settlement/doc_events/payment_entry.py:block_payment_without_msa_attachment),
+	so there is no longer a parent-BRN/PI field for this hook to write to.
 
 	Parameters:
 	    self (Document, required): The Supplier document being validated.
@@ -147,36 +156,3 @@ def update_brn_msa_agreement(self, method) -> None:
 
 	if filters:
 		frappe.db.set_value("Supplier Quotation", filters, "msa_agreement", msa_value)
-
-	brns = frappe.get_all(
-		"BRN", filters=[["BRN", "docstatus", "!=", 2]], fields=["name", "is_existing_vendor", "is_new_vendor"]
-	)
-
-	for brn in brns:
-		filters = {"name": brn.name}
-
-		if brn.is_existing_vendor:
-			filters["existing_vendor"] = self.name
-
-		elif brn.is_new_vendor:
-			filters["new_vendor"] = self.name
-
-		else:
-			continue
-
-		if frappe.db.exists("BRN", filters):
-			frappe.db.set_value(
-				"BRN",
-				brn.name,
-				"msa_agreement",
-				msa_value,
-			)
-		if frappe.db.exists(
-			"Purchase Invoice", {"brn": brn.name, "supplier": self.name, "docstatus": ["!=", 2]}
-		):
-			frappe.db.set_value(
-				"Purchase Invoice",
-				{"brn": brn.name, "supplier": self.name, "docstatus": ["!=", 2]},
-				"msa_agreement",
-				msa_value,
-			)
