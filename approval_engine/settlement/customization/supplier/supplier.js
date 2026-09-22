@@ -67,7 +67,7 @@ function send_supplier_message(frm, message, action) {
 			action: action,
 		},
 		callback: function (r) {
-			if (r.message?.data === "sent") {
+			if (r.data === "sent") {
 				frappe.msgprint(__("Message sent to supplier successfully."));
 			} else {
 				frappe.msgprint(__("Supplier email not found."));
@@ -84,7 +84,7 @@ function send_approval_mail(frm) {
 			email_id: frm.doc.email_id,
 		},
 		callback: function (r) {
-			if (r.message?.data === "sent") {
+			if (r.data === "sent") {
 				frappe.msgprint(__("Approval mail sent to supplier successfully."));
 			}
 		},

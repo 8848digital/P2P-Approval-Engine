@@ -84,7 +84,7 @@ approval_engine.vendor = {
 								company: values.company,
 							},
 							callback: function (r) {
-								const data = r.message?.data;
+								const data = r.data;
 								if (data) {
 									if (data.status === "success") {
 										frappe.msgprint(data.message);

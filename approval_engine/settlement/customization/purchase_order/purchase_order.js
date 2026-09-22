@@ -36,7 +36,7 @@ frappe.ui.form.on("Purchase Order", {
 					purchase_order: frm.doc.name,
 				},
 				callback: function (r) {
-					if (r.message?.data) {
+					if (r.data) {
 						frappe.msgprint(__("Email sent to Vendor"));
 					}
 				},
@@ -79,7 +79,7 @@ function set_po_tax_withholding_category(frm, cdt, cdn) {
 			supplier: frm.doc.supplier,
 		},
 		callback: function (r) {
-			apply_po_tax_withholding_category(cdt, cdn, r.message?.data);
+			apply_po_tax_withholding_category(cdt, cdn, r.data);
 		},
 	});
 }
@@ -106,7 +106,7 @@ function refresh_all_tax_withholding_categories(frm) {
 			supplier: frm.doc.supplier,
 		},
 		callback: function (r) {
-			const categories = r.message?.data || {};
+			const categories = r.data || {};
 			rows.forEach((row) => {
 				apply_po_tax_withholding_category(
 					row.doctype,
@@ -153,7 +153,7 @@ function fetch_rate_comparison_config() {
 		_rate_comparison_config_promise = new Promise((resolve) => {
 			frappe.call({
 				method: "approval_engine.settlement.api.v1.purchase_order.get_vendor_rate_comparison_config",
-				callback: (r) => resolve(r.message?.data || { permitted: false, trigger_mode: "Both" }),
+				callback: (r) => resolve(r.data || { permitted: false, trigger_mode: "Both" }),
 			});
 		});
 	}
@@ -208,7 +208,7 @@ function show_rate_comparison_dialog(frm, { silent_if_empty = false } = {}) {
 		freeze: !silent_if_empty,
 		freeze_message: __("Fetching rate comparison..."),
 		callback: (r) => {
-			const data = r.message?.data || {};
+			const data = r.data || {};
 			const rows = data.rows || [];
 			if (!rows.length) {
 				if (!silent_if_empty) {
@@ -398,7 +398,7 @@ function validate_brn_dates(frm) {
 		},
 		async: false,
 		callback: function (r) {
-			const data = r.message?.data;
+			const data = r.data;
 			if (!data) return;
 
 			let msg = "";
@@ -446,7 +446,7 @@ frappe.ui.form.on("Purchase Order", {
 				},
 				async: false,
 				callback: function (r) {
-					const data = r.message?.data;
+					const data = r.data;
 					if (data) {
 						frm.set_value("custom_fiscal_year", data.fiscal_year);
 						frm.set_value("validity_start_date", data.validity_start_date);

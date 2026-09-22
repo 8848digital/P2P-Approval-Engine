@@ -52,7 +52,7 @@ class KYCDialog {
 		frappe.call({
 			method: "approval_engine.settlement.api.v1.kyc_validation.get_kyc_vendor_options",
 			args: { supplier: this.frm.doc.name },
-			callback: (r) => this.build_dialog(r.message?.data || []),
+			callback: (r) => this.build_dialog(r.data || []),
 		});
 	}
 
@@ -121,7 +121,7 @@ class KYCDialog {
 			method: "approval_engine.settlement.api.v1.kyc_validation.get_last_kyc_run",
 			args: { supplier: this.frm.doc.name },
 			callback: (res) => {
-				const data = res.message?.data;
+				const data = res.data;
 				if (!data || !data.run) {
 					this.set_html(
 						`<div class="text-muted kyc-empty">${__(
@@ -164,7 +164,7 @@ class KYCDialog {
 			args: { supplier: this.frm.doc.name, vendors: JSON.stringify(vendor_names) },
 			callback: (res) => {
 				this.dialog.enable_primary_action();
-				const data = res.message?.data;
+				const data = res.data;
 				if (!data) return;
 				this.run_name = data.run;
 				const normalized = {
@@ -362,7 +362,7 @@ class KYCDialog {
 			},
 			callback: (res) => {
 				frappe.show_alert({ message: __("Revalidation complete"), indicator: "green" });
-				const rows = res.message?.data?.rows || [];
+				const rows = res.data?.rows || [];
 				vendor_names.forEach((vendor) => {
 					const updated_row = rows
 						.filter((r) => r.vendor === vendor)

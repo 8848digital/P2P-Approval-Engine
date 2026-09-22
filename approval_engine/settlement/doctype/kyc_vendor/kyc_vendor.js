@@ -13,7 +13,7 @@ frappe.ui.form.on("KYC Vendor", {
 				freeze: true,
 				freeze_message: __("Calling API with sample values..."),
 				callback: (r) => {
-					const m = r.message?.data;
+					const m = r.data;
 					if (!m) return;
 					const color =
 						m.status === "Success"

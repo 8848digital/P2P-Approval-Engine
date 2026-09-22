@@ -293,11 +293,14 @@ function recompute_expiry_date(frm) {
 			months: frm.doc.duration_of_service_months,
 		},
 		callback: function (r) {
-			// approval_engine's after_request envelope wraps every
-			// /api/method/approval_engine... response -- the actual
-			// payload is under r.message.data, not r.message itself.
-			// See .claude/skills/frappe-app-dev/references/api.md.
-			const expiry_date = r?.message?.data;
+			// approval_engine's after_request hook replaces the entire response
+			// body with its envelope -- for an endpoint that just returns a raw
+			// value (not api_response(...)), that envelope IS what frappe.call's
+			// callback receives as `r` (Frappe's own {"message": ...} wrapper
+			// gets consumed and replaced, not nested inside). The payload is
+			// r.data directly; r.message is the envelope's own human-readable
+			// string, not the payload.
+			const expiry_date = r?.data;
 			if (expiry_date) {
 				frm.set_value("expiry_date", expiry_date);
 			}
