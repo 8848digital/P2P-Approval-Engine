@@ -77,21 +77,31 @@ frappe.ui.form.on("BRN", {
 
 	multi: function (frm) {
 		frm.set_value("comparision", []);
+		if (frm.doc.multi) {
+			add_empty_comparision_rows(frm, 3);
+		}
 	},
 
 	rpt: function (frm) {
-		frm.set_value("comparision", []);
-		if (frm.doc.rpt) {
-			frm.set_value("multi", 1);
-		} else {
-			frm.set_value("multi", 0);
-		}
+		// Triggers the multi handler above (which clears/repopulates the
+		// Comparision table), since RPT drives Multi, not the other way round.
+		frm.set_value("multi", frm.doc.rpt ? 1 : 0);
 	},
 
 	single: function (frm) {
 		frm.set_value("comparision", []);
+		if (frm.doc.single) {
+			add_empty_comparision_rows(frm, 1);
+		}
 	},
 });
+
+function add_empty_comparision_rows(frm, count) {
+	for (let i = 0; i < count; i++) {
+		frm.add_child("comparision");
+	}
+	frm.refresh_field("comparision");
+}
 
 // function msa_agreement(frm) {
 // 	frappe.db.get_value(
