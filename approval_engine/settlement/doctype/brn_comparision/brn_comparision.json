@@ -1,0 +1,148 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-06-30 21:50:27.027352",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_zu0v",
+  "is_new_vendor",
+  "is_existing_vendor",
+  "existing_vendor",
+  "vendor_name",
+  "msa_agreement",
+  "rate",
+  "amount",
+  "preferred",
+  "email_id",
+  "country",
+  "supplier_type",
+  "related_party",
+  "justification"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_zu0v",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_new_vendor",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is New Vendor",
+   "read_only_depends_on": "eval:doc.is_existing_vendor",
+   "allow_on_submit": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_existing_vendor",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Existing Vendor",
+   "read_only_depends_on": "eval:doc.is_new_vendor",
+   "allow_on_submit": 1
+  },
+  {
+   "depends_on": "eval:doc.is_existing_vendor === 1 && doc.is_new_vendor === 0;",
+   "fieldname": "existing_vendor",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Vendor Code",
+   "mandatory_depends_on": "eval:doc.is_existing_vendor",
+   "options": "Supplier",
+   "allow_on_submit": 1
+  },
+  {
+   "fetch_from": "existing_vendor.supplier_name",
+   "fetch_if_empty": 1,
+   "fieldname": "vendor_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Vendor Name",
+   "mandatory_depends_on": "eval: doc.is_new_vendor",
+   "read_only_depends_on": "eval: doc.is_existing_vendor"
+  },
+  {
+   "fetch_from": "existing_vendor.country",
+   "fieldname": "country",
+   "fieldtype": "Link",
+   "label": "Country",
+   "options": "Country",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.existing_vendor;",
+   "fetch_from": "existing_vendor.related_party",
+   "fieldname": "related_party",
+   "fieldtype": "Select",
+   "label": "Related Party",
+   "options": "\nYes\nNo",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.existing_vendor;",
+   "fetch_from": "existing_vendor.supplier_type",
+   "fieldname": "supplier_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Supplier Type",
+   "options": "\nCompany\nIndividual\nFirm\nHindu Undivided Family\nTRUST\nBody of Individuals\nAssociation of Persons\nArtificial Juridical Person\nLocal Authority\nGovernment\nNon PAN",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rate",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Rate"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Amount"
+  },
+  {
+   "default": "0",
+   "fieldname": "preferred",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Preferred"
+  },
+  {
+   "depends_on": "eval:doc.preferred",
+   "fieldname": "email_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Email ID",
+   "mandatory_depends_on": "eval:doc.preferred"
+  },
+  {
+   "fieldname": "justification",
+   "fieldtype": "Long Text",
+   "label": "Justification"
+  },
+  {
+   "default": "0",
+   "fieldname": "msa_agreement",
+   "fieldtype": "Check",
+   "label": "MSA Agreement"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-09-09 13:27:42.803511",
+ "modified_by": "Administrator",
+ "module": "Settlement",
+ "name": "BRN Comparision",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

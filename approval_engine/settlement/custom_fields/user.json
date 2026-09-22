@@ -1,0 +1,15 @@
+{
+    "User": [
+        {
+            "dt": "User",
+            "fieldname": "vendor",
+            "fieldtype": "Check",
+            "insert_after": "enabled",
+            "label": "Vendor",
+            "module": "Settlement",
+            "read_only": 1,
+            "default": "0",
+            "reqd": 0
+        }
+    ]
+}

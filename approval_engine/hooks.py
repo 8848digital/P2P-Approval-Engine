@@ -12,7 +12,18 @@ app_license = "Proprietary"
 # Apps
 # ------------------
 
-# required_apps = []
+# settlement customizes Purchase Order / Purchase Invoice / Supplier /
+# Supplier Quotation, all owned by erpnext.
+required_apps = ["erpnext"]
+
+# jfs_report_customization owns the "JFS Settings" Single doctype that
+# settlement/kyc_validation and several doc_events read via
+# frappe.get_single("JFS Settings") -- not vendored into this app.
+# Commented out for now to avoid a migration failure on sites without
+# jfs_report_customization installed; code paths that touch
+# "JFS Settings" will still fail at runtime until it's available and
+# this is added back to required_apps above.
+# required_apps.append("jfs_report_customization")
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
@@ -29,7 +40,10 @@ app_license = "Proprietary"
 # ------------------
 
 # include js, css files in header of desk.html
-app_include_css = "workflow_activity.bundle.css"
+app_include_css = [
+	"workflow_activity.bundle.css",
+	"/assets/approval_engine/css/kyc_validation.css",
+]
 app_include_js = "workflow_activity.bundle.js"
 
 # include js, css files in header of web template
@@ -47,8 +61,24 @@ app_include_js = "workflow_activity.bundle.js"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
-# doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
+doctype_js = {
+	"Purchase Order": "settlement/customization/purchase_order/purchase_order.js",
+	"Purchase Invoice": "settlement/customization/purchase_invoice/purchase_invoice.js",
+	"Supplier": [
+		"settlement/customization/supplier/supplier.js",
+		"settlement/public/js/supplier_kyc.js",
+	],
+	"Supplier Quotation": "settlement/customization/supplier_quotation/supplier_quotation.js",
+	"BRN": "settlement/public/js/vendor_mail.js",
+}
+doctype_list_js = {
+	"Supplier": [
+		"settlement/customization/supplier/supplier_list.js",
+		"settlement/public/js/vendor_mail.js",
+	],
+	"Supplier Quotation": "settlement/customization/supplier_quotation/supplier_quotation_list.js",
+	"Purchase Invoice": "settlement/customization/purchase_invoice/purchase_invoice_list.js",
+}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
@@ -56,6 +86,16 @@ app_include_js = "workflow_activity.bundle.js"
 # ------------------
 # include app icons in desk
 # app_include_icons = "approval_engine/public/icons.svg"
+
+after_migrate = [
+	"approval_engine.settlement.setup.create_custom_fields",
+]
+
+extend_bootinfo = "approval_engine.settlement.boot.boot_session"
+
+update_website_context = [
+	"approval_engine.settlement.vendor_auth_hooks.update_website_context",
+]
 
 # Home Pages
 # ----------
@@ -136,13 +176,13 @@ after_install = "approval_engine.install.after_install"
 # -----------
 # Permissions evaluated in scripted ways
 
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
-#
-# has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
-# }
+permission_query_conditions = {
+	"FAQ Master": "approval_engine.settlement.permissions.faq_master.get_permission_query_conditions",
+}
+
+has_permission = {
+	"FAQ Master": "approval_engine.settlement.permissions.faq_master.has_permission",
+}
 
 # Document Events
 # ---------------
@@ -151,29 +191,72 @@ after_install = "approval_engine.install.after_install"
 doc_events = {
 	"*": {
 		"validate": "approval_engine.approval_core.runtime.target_validate",
-	}
+	},
+	"Payment Request": {
+		"before_validate": "approval_engine.settlement.doc_events.payment_request.msa_agreement_validation",
+	},
+	"Purchase Order": {
+		"validate": "approval_engine.settlement.customization.purchase_order.purchase_order.validate",
+		"before_save": "approval_engine.settlement.customization.purchase_order.purchase_order.before_save",
+	},
+	"Purchase Invoice": {
+		"before_validate": [
+			"approval_engine.settlement.tax_withholding.force_apply_tds_for_locked_allowance_rows",
+		],
+		"on_update": [
+			"approval_engine.settlement.doc_events.purchase_invoice_itc_reversal.set_itc_status",
+		],
+		"validate": [
+			"approval_engine.settlement.tax_withholding.apply_supplier_allowance_limit",
+			"approval_engine.settlement.tax_withholding.apply_return_tds_reversal",
+			"approval_engine.settlement.customization.purchase_invoice.purchase_invoice.validate",
+		],
+		"after_insert": [
+			"approval_engine.settlement.doc_events.purchase_invoice_itc_reversal.set_itc_status",
+		],
+		"on_submit": [
+			"approval_engine.settlement.tax_withholding.update_supplier_allowance_consumed",
+			"approval_engine.settlement.doc_events.validate_po_status.on_purchase_invoice_submit",
+			"approval_engine.settlement.doc_events.purchase_invoice_itc_reversal.handle_itc_reversal_on_submit",
+		],
+		"on_cancel": [
+			"approval_engine.settlement.tax_withholding.cancel_supplier_allowance_consumed",
+		],
+	},
+	"FAQ Master": {
+		"validate": "approval_engine.settlement.doc_events.faq_master.validate",
+		"after_insert": "approval_engine.settlement.doc_events.faq_master.sync_supplier_custom_field",
+		"on_update": "approval_engine.settlement.doc_events.faq_master.sync_supplier_custom_field",
+		"on_trash": "approval_engine.settlement.doc_events.faq_master.delete_supplier_custom_field",
+	},
+	"Supplier": {
+		"validate": [
+			"approval_engine.settlement.doc_events.supplier.validate_vendor_onboarding",
+			"approval_engine.settlement.doc_events.supplier.update_brn_msa_agreement",
+			"approval_engine.settlement.doc_events.supplier.sync_company_to_supplier",
+		],
+		"on_update": "approval_engine.settlement.customization.supplier.supplier.on_update",
+		"before_insert": "approval_engine.settlement.customization.supplier.supplier.before_insert",
+		"after_insert": "approval_engine.settlement.customization.supplier.supplier.after_insert",
+	},
+	"Supplier Quotation": {
+		"on_update_after_submit": "approval_engine.settlement.customization.supplier_quotation.supplier_quotation.on_update_after_submit",
+	},
 }
 
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"approval_engine.tasks.all"
-# 	],
-# 	"daily": [
-# 		"approval_engine.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"approval_engine.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"approval_engine.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"approval_engine.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+	"cron": {
+		"0 9 * * * *": [
+			"approval_engine.settlement.doctype.vendor_email.utils.send_reminder_for_non_registered_vendors",
+		],
+	},
+	"daily": [
+		"approval_engine.settlement.doc_events.purchase_invoice_itc_reversal.run_daily_itc_reversal_sweep",
+	],
+}
 
 # Testing
 # -------
@@ -256,6 +339,36 @@ after_request = [
 # auth_hooks = [
 # 	"approval_engine.auth.validate"
 # ]
+
+on_login = "approval_engine.settlement.vendor_auth_hooks.block_vendor_from_standard_login"
+
+website_route_rules = [
+	{"from_route": "/brn", "to_route": "BRN"},
+	{
+		"from_route": "/brn/<path:name>",
+		"to_route": "brn",
+		"defaults": {
+			"doctype": "BRN",
+			"parents": [{"label": "Approved Proposals", "route": "brn"}],
+		},
+	},
+]
+
+standard_portal_menu_items = [
+	{"title": "Approved Proposals", "route": "/brn", "reference_doctype": "BRN", "role": "Supplier"},
+]
+
+website_path_resolver = "approval_engine.website.resolve_website_path"
+
+website_context = {
+	"post_login": [
+		{"label": "My Account", "url": "/me"},
+		{
+			"label": "Log out",
+			"url": "/api/method/approval_engine.settlement.api.v1.vendor_portal.vendor_web_logout",
+		},
+	]
+}
 
 # Automatically update python controller files with type annotations for this app.
 # export_python_type_annotations = True

@@ -1,0 +1,304 @@
+{% extends "templates/web.html" %}
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+{% block title %}{{ _("My Profile") }}{% endblock %}
+
+{% block page_content %}
+{% include "templates/includes/vendor_portal/style.html" %}
+<style>
+	.vp-form-group { margin-bottom: 1rem; }
+	.vp-form-group label {
+		display: block;
+		font-size: var(--text-sm);
+		color: var(--text-light);
+		margin-bottom: 4px;
+	}
+	.vp-account-alert {
+		display: none;
+		padding: 0.6rem 1rem;
+		border-radius: var(--border-radius);
+		font-size: var(--text-sm);
+		margin-bottom: 1rem;
+	}
+	.vp-account-alert.vp-alert-success { background: rgba(16, 163, 74, 0.12); color: #10a34a; }
+	.vp-account-alert.vp-alert-error { background: rgba(224, 49, 49, 0.12); color: #e03131; }
+
+	.vp-password-field {
+		position: relative;
+	}
+	.vp-password-field input.form-control {
+		padding-right: 2.5rem;
+	}
+	.vp-password-toggle {
+		position: absolute;
+		top: 0;
+		right: 0;
+		height: 100%;
+		width: 2.5rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: none;
+		border: none;
+		padding: 0;
+		color: var(--text-light);
+		cursor: pointer;
+	}
+	.vp-password-toggle:hover {
+		color: var(--text-color);
+	}
+
+	.vp-modal-overlay {
+		display: none;
+		position: fixed;
+		inset: 0;
+		background: rgba(15, 15, 20, 0.5);
+		z-index: 999;
+		align-items: center;
+		justify-content: center;
+		padding: 1rem;
+	}
+	.vp-modal-overlay.vp-open {
+		display: flex;
+	}
+	.vp-modal {
+		background-color: var(--bg-color);
+		border-radius: 14px;
+		width: 100%;
+		max-width: 420px;
+		box-shadow: var(--shadow-lg);
+	}
+	.vp-modal-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 1.1rem 1.4rem;
+		border-bottom: 1px solid var(--border-color);
+	}
+	.vp-modal-title {
+		font-size: 1.05rem;
+		font-weight: 700;
+		color: var(--text-color);
+	}
+	.vp-modal-close {
+		background: none;
+		border: none;
+		cursor: pointer;
+		color: var(--text-light);
+		padding: 4px;
+		line-height: 0;
+	}
+	.vp-modal-close svg { width: 18px; height: 18px; stroke: currentColor; }
+	.vp-modal-body { padding: 1.4rem; }
+	.vp-modal-footer {
+		padding: 1rem 1.4rem;
+		border-top: 1px solid var(--border-color);
+		display: flex;
+		justify-content: flex-end;
+		gap: 0.6rem;
+	}
+	.vp-btn-secondary {
+		background: var(--bg-light-gray);
+		color: var(--text-color);
+	}
+	.vp-btn-secondary:hover { background: var(--border-color); color: var(--text-color); }
+</style>
+<div class="vp-app">
+	{% include "templates/includes/vendor_portal/nav.html" %}
+	<div class="vp-main">
+		<div class="vp-shell">
+			<div class="vp-page-header">
+				<div>
+					<div class="vp-page-title">{{ _("My Profile") }}</div>
+					<div class="vp-page-subtitle">{{ _("Your account details and password") }}</div>
+				</div>
+			</div>
+
+			<div class="vp-card" style="margin-bottom: 1.5rem;">
+				<div class="vp-detail-header">
+					<div style="display:flex; align-items:center; gap:1rem;">
+						<span class="vp-avatar">{{ (user_doc.full_name or user_doc.name)[0] | upper }}</span>
+						<div>
+							<div class="vp-detail-title">{{ user_doc.full_name }}</div>
+							<div class="vp-detail-sub">{{ user_doc.name }}</div>
+						</div>
+					</div>
+				</div>
+				<div class="vp-kv-grid">
+					<div>
+						<div class="vp-kv-label">{{ _("Email") }}</div>
+						<div class="vp-kv-value">{{ user_doc.email or user_doc.name }}</div>
+					</div>
+					{% if user_doc.mobile_no %}
+					<div>
+						<div class="vp-kv-label">{{ _("Mobile") }}</div>
+						<div class="vp-kv-value">{{ user_doc.mobile_no }}</div>
+					</div>
+					{% endif %}
+					{% if user_doc.last_login %}
+					<div>
+						<div class="vp-kv-label">{{ _("Last Login") }}</div>
+						<div class="vp-kv-value">{{ frappe.utils.format_datetime(user_doc.last_login) }}</div>
+					</div>
+					{% endif %}
+				</div>
+			</div>
+
+			<div class="vp-card">
+				<div class="vp-detail-header">
+					<div class="vp-detail-title" style="font-size: 1.1rem;">{{ _("Password") }}</div>
+				</div>
+				<div style="padding: 1.5rem 1.75rem;">
+					<p class="vp-list-sub" style="margin-bottom: 1rem;">{{ _("Change the password used to sign in to the vendor portal.") }}</p>
+					<button type="button" class="vp-btn" id="vp-open-password-modal">{{ _("Update Password") }}</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="vp-modal-overlay" id="vp-password-modal-overlay">
+	<div class="vp-modal">
+		<div class="vp-modal-header">
+			<div class="vp-modal-title">{{ _("Change Password") }}</div>
+			<button type="button" class="vp-modal-close" id="vp-close-password-modal">
+				<svg><use href="#icon-close"></use></svg>
+			</button>
+		</div>
+		<div class="vp-modal-body">
+			<div id="vp-account-alert" class="vp-account-alert"></div>
+			<form id="vp-password-form" novalidate>
+				<div class="vp-form-group">
+					<label for="vp-old-password">{{ _("Current Password") }}</label>
+					<div class="vp-password-field">
+						<input type="password" class="form-control" id="vp-old-password" required>
+						<button type="button" class="vp-password-toggle" data-target="vp-old-password" aria-label="{{ _('Show password') }}">
+							<svg width="17" height="17"><use href="#icon-eye"></use></svg>
+						</button>
+					</div>
+				</div>
+				<div class="vp-form-group">
+					<label for="vp-new-password">{{ _("New Password") }}</label>
+					<div class="vp-password-field">
+						<input type="password" class="form-control" id="vp-new-password" required>
+						<button type="button" class="vp-password-toggle" data-target="vp-new-password" aria-label="{{ _('Show password') }}">
+							<svg width="17" height="17"><use href="#icon-eye"></use></svg>
+						</button>
+					</div>
+				</div>
+				<div class="vp-form-group" style="margin-bottom: 0;">
+					<label for="vp-confirm-password">{{ _("Confirm New Password") }}</label>
+					<div class="vp-password-field">
+						<input type="password" class="form-control" id="vp-confirm-password" required>
+						<button type="button" class="vp-password-toggle" data-target="vp-confirm-password" aria-label="{{ _('Show password') }}">
+							<svg width="17" height="17"><use href="#icon-eye"></use></svg>
+						</button>
+					</div>
+				</div>
+			</form>
+		</div>
+		<div class="vp-modal-footer">
+			<button type="button" class="vp-btn vp-btn-secondary" id="vp-cancel-password-modal">{{ _("Cancel") }}</button>
+			<button type="submit" form="vp-password-form" class="vp-btn" id="vp-password-submit">{{ _("Update Password") }}</button>
+		</div>
+	</div>
+</div>
+
+<script>
+(function () {
+	document.querySelectorAll(".vp-password-toggle").forEach(function (btn) {
+		btn.addEventListener("click", function () {
+			var input = document.getElementById(btn.getAttribute("data-target"));
+			var showing = input.type === "text";
+			input.type = showing ? "password" : "text";
+			btn.querySelector("use").setAttribute("href", showing ? "#icon-eye" : "#icon-eye-off");
+			btn.setAttribute("aria-label", showing ? "{{ _('Show password') }}" : "{{ _('Hide password') }}");
+		});
+	});
+
+	var overlay = document.getElementById("vp-password-modal-overlay");
+	var form = document.getElementById("vp-password-form");
+	var alertBox = document.getElementById("vp-account-alert");
+	var submitBtn = document.getElementById("vp-password-submit");
+
+	function resetModal() {
+		form.reset();
+		alertBox.style.display = "none";
+		submitBtn.disabled = false;
+		submitBtn.innerText = "{{ _('Update Password') }}";
+
+		// form.reset() only restores values, not the type attribute --
+		// put every field back to hidden text and reset its eye icon so
+		// a previous open/close/reopen can't leave one showing in plain
+		// text.
+		document.querySelectorAll(".vp-password-field input").forEach(function (input) {
+			input.type = "password";
+		});
+		document.querySelectorAll(".vp-password-toggle").forEach(function (btn) {
+			btn.querySelector("use").setAttribute("href", "#icon-eye");
+			btn.setAttribute("aria-label", "{{ _('Show password') }}");
+		});
+	}
+
+	function openModal() {
+		resetModal();
+		overlay.classList.add("vp-open");
+		document.getElementById("vp-old-password").focus();
+	}
+
+	function closeModal() {
+		overlay.classList.remove("vp-open");
+	}
+
+	document.getElementById("vp-open-password-modal").addEventListener("click", openModal);
+	document.getElementById("vp-close-password-modal").addEventListener("click", closeModal);
+	document.getElementById("vp-cancel-password-modal").addEventListener("click", closeModal);
+	overlay.addEventListener("click", function (e) {
+		if (e.target === overlay) closeModal();
+	});
+
+	function showAlert(message, isError) {
+		alertBox.className = "vp-account-alert " + (isError ? "vp-alert-error" : "vp-alert-success");
+		alertBox.innerText = message;
+		alertBox.style.display = "block";
+	}
+
+	form.addEventListener("submit", function (e) {
+		e.preventDefault();
+
+		var oldPwd = document.getElementById("vp-old-password").value;
+		var newPwd = document.getElementById("vp-new-password").value;
+		var confirmPwd = document.getElementById("vp-confirm-password").value;
+
+		if (newPwd !== confirmPwd) {
+			showAlert("{{ _('New password and confirmation do not match') }}", true);
+			return;
+		}
+		if (oldPwd === newPwd) {
+			showAlert("{{ _('New password cannot be the same as the current password') }}", true);
+			return;
+		}
+
+		submitBtn.disabled = true;
+		submitBtn.innerText = "{{ _('Updating...') }}";
+
+		frappe.call({
+			method: "approval_engine.settlement.api.v1.vendor_portal.vendor_update_password",
+			args: { old_password: oldPwd, new_password: newPwd },
+			callback: function () {
+				showAlert("{{ _('Password updated successfully') }}", false);
+				submitBtn.disabled = false;
+				submitBtn.innerText = "{{ _('Update Password') }}";
+				setTimeout(closeModal, 1200);
+			},
+			error: function (r) {
+				var msg = (r && r.message) || "{{ _('Could not update password. Please check your current password and try again.') }}";
+				showAlert(msg, true);
+				submitBtn.disabled = false;
+				submitBtn.innerText = "{{ _('Update Password') }}";
+			}
+		});
+	});
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,222 @@
+{% extends "templates/web.html" %}
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+{% block title %}{{ title_value }}{% endblock %}
+
+{% block page_content %}
+{% include "templates/includes/vendor_portal/style.html" %}
+<div class="vp-app">
+	{% include "templates/includes/vendor_portal/nav.html" %}
+	<div class="vp-main">
+		<div class="vp-shell">
+			<a class="vp-back-link" href="/vendor-portal/{{ row_config.route }}">
+				<svg><use href="#icon-left"></use></svg>
+				{{ section_label }}
+			</a>
+
+			<div class="vp-card">
+				<div class="vp-detail-header">
+					<div>
+						<div class="vp-detail-title">{{ title_value }}</div>
+						{% if date_value %}
+						<div class="vp-detail-sub">{{ frappe.utils.formatdate(date_value) }}</div>
+						{% endif %}
+					</div>
+					<div style="display:flex; align-items:center; gap:0.75rem;">
+						{% if status_value %}
+						<span class="vp-pill vp-pill-{{ pill_color }}">{{ _(status_value) }}</span>
+						{% endif %}
+						{% if edit_web_form_name %}
+						<a class="vp-btn" href="/vendor-embed?web_form={{ edit_web_form_name }}&name={{ doc.name }}">
+							<svg><use href="#icon-file-text"></use></svg>
+							{{ _("View Details") }}
+						</a>
+						{% endif %}
+					</div>
+				</div>
+
+				{% if kv_fields %}
+				<div class="vp-kv-grid">
+					{% for f in kv_fields %}
+					<div>
+						<div class="vp-kv-label">{{ f.label }}</div>
+						<div class="vp-kv-value">{{ f.value }}</div>
+					</div>
+					{% endfor %}
+				</div>
+				{% endif %}
+
+				{% if item_rows %}
+				<div class="vp-table-wrap">
+					<table class="vp-table">
+						<thead>
+							<tr>
+								<th>{{ _("Item") }}</th>
+								{% for fieldname, label in item_columns %}
+								{% if fieldname == "item_code" %}
+								{# skip -- shown inline in the Item cell itself #}
+								{% elif fieldname in ("qty", "rate", "amount") %}
+								<th class="vp-num">{{ label }}</th>
+								{% else %}
+								<th>{{ label }}</th>
+								{% endif %}
+								{% endfor %}
+							</tr>
+						</thead>
+						<tbody>
+							{% for item in item_rows %}
+							<tr>
+								<td>
+									{{ item.item_name or item.item_code or "" }}
+									{% if item.description and item.description != item.item_name %}
+									<div class="vp-list-sub">{{ item.description | striptags }}</div>
+									{% endif %}
+								</td>
+								{% for fieldname, label in item_columns %}
+								{% if fieldname == "qty" %}
+								<td class="vp-num">{{ frappe.utils.fmt_money(item.qty, currency='') }} {{ item.uom or "" }}</td>
+								{% elif fieldname == "rate" %}
+								<td class="vp-num">{{ frappe.utils.fmt_money(item.rate, currency=currency_value) }}</td>
+								{% elif fieldname == "amount" %}
+								<td class="vp-num">{{ frappe.utils.fmt_money(item.amount, currency=currency_value) }}</td>
+								{% endif %}
+								{% endfor %}
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+				{% endif %}
+
+				{% if amount_value is not none %}
+				<div class="vp-totals">
+					<div class="vp-totals-box">
+						{% if doc.get("net_total") %}
+						<div class="vp-totals-row">
+							<span>{{ _("Net Total") }}</span>
+							<span>{{ frappe.utils.fmt_money(doc.net_total, currency=currency_value) }}</span>
+						</div>
+						{% endif %}
+						{% if doc.get("total_taxes_and_charges") %}
+						<div class="vp-totals-row">
+							<span>{{ _("Taxes & Charges") }}</span>
+							<span>{{ frappe.utils.fmt_money(doc.total_taxes_and_charges, currency=currency_value) }}</span>
+						</div>
+						{% endif %}
+						<div class="vp-totals-row vp-grand">
+							<span>{{ _("Total") }}</span>
+							<span>{{ frappe.utils.fmt_money(amount_value, currency=currency_value) }}</span>
+						</div>
+					</div>
+				</div>
+				{% endif %}
+
+				{% if linked_documents %}
+				<div class="vp-linked-documents">
+					<div class="vp-linked-documents-title">{{ linked_documents_label }}</div>
+					<div class="vp-list">
+						{% for d in linked_documents %}
+						<a class="vp-list-row" href="/vendor-portal/{{ d.route }}/{{ d.name }}">
+							<div class="vp-list-main">
+								<div class="vp-list-title">{{ d.title }}</div>
+								{% if d.status %}
+								<div class="vp-list-sub">
+									<span class="vp-pill vp-pill-{{ d.pill_color }}">{{ _(d.status) }}</span>
+								</div>
+								{% endif %}
+							</div>
+							{% if d.amount is not none %}
+							<div class="vp-list-amount">{{ frappe.utils.fmt_money(d.amount, currency=d.currency) }}</div>
+							{% endif %}
+							{% if d.date %}
+							<div class="vp-list-date">{{ frappe.utils.formatdate(d.date) }}</div>
+							{% endif %}
+							<span class="vp-list-chevron"><svg><use href="#icon-chevron-right"></use></svg></span>
+						</a>
+						{% endfor %}
+					</div>
+				</div>
+				{% endif %}
+
+				{% if row_config.allow_invoice_attach %}
+				<div class="vp-invoice-attach">
+					<div class="vp-invoice-attach-title">{{ _("Invoice Copy") }}</div>
+
+					{% if invoice_attachments %}
+					<div class="vp-invoice-attach-list">
+						{% for f in invoice_attachments %}
+						<a class="vp-invoice-attach-file" href="{{ f.file_url }}" target="_blank" rel="noopener">
+							<svg><use href="#icon-file-text"></use></svg>
+							<span>{{ f.file_name }}</span>
+						</a>
+						{% endfor %}
+					</div>
+					{% endif %}
+
+					{% if show_attach_invoice %}
+					<form id="vp-invoice-attach-form" class="vp-invoice-attach-form">
+						<input type="file" id="vp-invoice-attach-input" name="file" required>
+						<button type="submit" class="vp-btn" id="vp-invoice-attach-btn">
+							<svg><use href="#icon-upload"></use></svg>
+							{{ _("Upload Invoice Copy") }}
+						</button>
+						<div id="vp-invoice-attach-error" class="vp-invoice-attach-error" style="display:none;"></div>
+					</form>
+					{% elif not invoice_attachments %}
+					<div class="vp-invoice-attach-empty">{{ _("No invoice copy uploaded yet.") }}</div>
+					{% endif %}
+				</div>
+
+				<script>
+				(function () {
+					var form = document.getElementById("vp-invoice-attach-form");
+					if (!form) return;
+
+					form.addEventListener("submit", function (e) {
+						e.preventDefault();
+
+						var input = document.getElementById("vp-invoice-attach-input");
+						var btn = document.getElementById("vp-invoice-attach-btn");
+						var errorBox = document.getElementById("vp-invoice-attach-error");
+						if (!input.files.length) return;
+
+						errorBox.style.display = "none";
+						btn.disabled = true;
+
+						var fd = new FormData();
+						fd.append("file", input.files[0]);
+						fd.append("route", "{{ row_config.route }}");
+						fd.append("docname", "{{ doc.name }}");
+
+						fetch("/api/method/approval_engine.settlement.api.v1.vendor_portal.vendor_attach_invoice_copy", {
+							method: "POST",
+							headers: {
+								"X-Frappe-CSRF-Token": frappe.csrf_token || ""
+							},
+							body: fd
+						})
+							.then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+							.then(function (result) {
+								if (result.ok) {
+									window.location.reload();
+								} else {
+									var msg = (result.data && result.data._server_messages) || "{{ _('Upload failed. Please try again.') }}";
+									errorBox.innerText = msg;
+									errorBox.style.display = "block";
+									btn.disabled = false;
+								}
+							})
+							.catch(function () {
+								errorBox.innerText = "{{ _('Something went wrong. Please try again.') }}";
+								errorBox.style.display = "block";
+								btn.disabled = false;
+							});
+					});
+				})();
+				</script>
+				{% endif %}
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}
