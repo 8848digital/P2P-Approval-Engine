@@ -82,6 +82,11 @@ def validate_fiscal_year_and_brn_dates(doc, method: str | None = None) -> None:
 	Returns:
 		None
 	"""
+	# JFS Settings is owned by jfs_report_customization, which isn't a
+	# required_apps dependency here -- without it, this validation is
+	# treated as opted out, same as the toggle being off.
+	if not frappe.db.exists("DocType", "JFS Settings"):
+		return
 	if not frappe.db.get_single_value("JFS Settings", "validate_brn_service_dates_in_po_pi"):
 		return
 

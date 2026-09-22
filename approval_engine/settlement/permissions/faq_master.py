@@ -10,10 +10,17 @@ VENDOR_FAQ_MANAGER_ROLE = "Vendor FAQ Manager"  # fallback if JFS Settings.faq_m
 
 
 def _faq_manager_role():
+	if not frappe.db.exists("DocType", "JFS Settings"):
+		return VENDOR_FAQ_MANAGER_ROLE
 	return frappe.db.get_single_value("JFS Settings", "faq_manager_role") or VENDOR_FAQ_MANAGER_ROLE
 
 
 def _faq_section_enabled():
+	# JFS Settings is owned by jfs_report_customization, which isn't a
+	# required_apps dependency here -- without it, the FAQ section stays
+	# disabled (nothing visible) instead of every FAQ Master access crashing.
+	if not frappe.db.exists("DocType", "JFS Settings"):
+		return False
 	return bool(frappe.db.get_single_value("JFS Settings", "enable_faq_section"))
 
 

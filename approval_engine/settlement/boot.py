@@ -14,7 +14,17 @@ def boot_session(bootinfo):
 	them synchronously instead of making an extra server call. Toggling
 	either setting takes effect for a session on its next full page
 	load/login, same as any other boot value.
+
+	JFS Settings is owned by jfs_report_customization, which isn't a
+	required_apps dependency here -- on a site without it installed, the
+	FAQ section stays disabled (falls back to the same defaults used
+	elsewhere in this app) instead of failing every page load.
 	"""
+	if not frappe.db.exists("DocType", "JFS Settings"):
+		bootinfo.jfs_faq_section_enabled = 0
+		bootinfo.jfs_faq_manager_role = "Vendor FAQ Manager"
+		return
+
 	bootinfo.jfs_faq_section_enabled = frappe.db.get_single_value("JFS Settings", "enable_faq_section")
 	bootinfo.jfs_faq_manager_role = (
 		frappe.db.get_single_value("JFS Settings", "faq_manager_role") or "Vendor FAQ Manager"

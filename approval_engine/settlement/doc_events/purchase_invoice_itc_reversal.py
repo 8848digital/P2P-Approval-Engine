@@ -31,7 +31,12 @@ from approval_engine.settlement.doc_events.itc_reversal_jv import create_itc_rev
 
 
 def get_settings():
-	"""Return the cached JFS Settings document."""
+	"""Return the cached JFS Settings document, or None if JFS Settings
+	isn't installed (jfs_report_customization isn't a required_apps
+	dependency here) -- callers treat that the same as the feature being
+	disabled, rather than crashing every Purchase Invoice save/submit."""
+	if not frappe.db.exists("DocType", "JFS Settings"):
+		return None
 	return frappe.get_cached_doc("JFS Settings")
 
 
@@ -64,7 +69,7 @@ def set_itc_status(doc, method=None) -> None:
 		None
 	"""
 	settings = get_settings()
-	if not cint(settings.enable_itc_reversal):
+	if not settings or not cint(settings.enable_itc_reversal):
 		return
 	if not doc.bill_date:
 		return
@@ -123,7 +128,7 @@ def handle_itc_reversal_on_submit(doc, method=None) -> None:
 		None
 	"""
 	settings = get_settings()
-	if not cint(settings.enable_itc_reversal):
+	if not settings or not cint(settings.enable_itc_reversal):
 		return
 
 	log_name = frappe.db.get_value("ITC Reversal Log", {"purchase_invoice": doc.name})
@@ -158,7 +163,7 @@ def run_daily_itc_reversal_sweep() -> None:
 		None
 	"""
 	settings = get_settings()
-	if not cint(settings.enable_itc_reversal):
+	if not settings or not cint(settings.enable_itc_reversal):
 		return
 
 	current_fy = get_current_fiscal_year_doc()

@@ -103,6 +103,11 @@ def is_vendor_portal_enabled() -> bool:
 	Returns:
 		bool: True if the vendor portal is enabled (or unset), else False.
 	"""
+	# JFS Settings is owned by jfs_report_customization, which isn't a
+	# required_apps dependency here -- treated the same as the field being
+	# unset (see docstring): defaults to enabled.
+	if not frappe.db.exists("DocType", "JFS Settings"):
+		return True
 	value = frappe.db.get_single_value("JFS Settings", "enable_vendor_portal")
 	return True if value is None else bool(value)
 
