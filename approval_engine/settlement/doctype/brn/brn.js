@@ -285,6 +285,27 @@ function get_expiry_date(frm) {
 }
 
 frappe.ui.form.on("BRN Comparision", {
+	pan(frm, cdt, cdn) {
+		const row = locals[cdt][cdn];
+
+		if (!row.pan) {
+			return;
+		}
+
+		frappe.db.get_value("Supplier", { pan: row.pan }, "name").then((r) => {
+			const supplier = r.message?.name;
+
+			if (supplier) {
+				frappe.model.set_value(cdt, cdn, "is_existing_vendor", 1);
+				frappe.model.set_value(cdt, cdn, "is_new_vendor", 0);
+				frappe.model.set_value(cdt, cdn, "existing_vendor", supplier);
+			} else {
+				frappe.model.set_value(cdt, cdn, "is_new_vendor", 1);
+				frappe.model.set_value(cdt, cdn, "is_existing_vendor", 0);
+			}
+		});
+	},
+
 	existing_vendor(frm, cdt, cdn) {
 		const row = locals[cdt][cdn];
 

@@ -7,8 +7,9 @@
  "engine": "InnoDB",
  "field_order": [
   "section_break_zu0v",
-  "is_new_vendor",
+  "pan",
   "column_break_vendor_type",
+  "is_new_vendor",
   "is_existing_vendor",
   "existing_vendor",
   "vendor_name",
@@ -38,6 +39,17 @@
    "label": "Vendor"
   },
   {
+   "description": "Enter the vendor's PAN. If it matches an existing Supplier, that Supplier is fetched automatically as the Existing Vendor; otherwise this is treated as a New Vendor and the PAN is kept for reference.",
+   "fieldname": "pan",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "PAN"
+  },
+  {
+   "fieldname": "column_break_vendor_type",
+   "fieldtype": "Column Break"
+  },
+  {
    "default": "0",
    "fieldname": "is_new_vendor",
    "fieldtype": "Check",
@@ -45,10 +57,6 @@
    "label": "Is New Vendor",
    "read_only_depends_on": "eval:doc.is_existing_vendor",
    "allow_on_submit": 1
-  },
-  {
-   "fieldname": "column_break_vendor_type",
-   "fieldtype": "Column Break"
   },
   {
    "default": "0",
