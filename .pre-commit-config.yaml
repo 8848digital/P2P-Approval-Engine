@@ -16,6 +16,8 @@ repos:
       - id: check-toml
       - id: check-yaml
       - id: debug-statements
+      - id: no-commit-to-branch
+        args: ['--branch', 'develop', '--branch', 'version-16']
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.10
@@ -62,6 +64,13 @@ repos:
                 approval_engine/templates/includes/.*|
                 approval_engine/public/js/lib/.*
             )$
+  - repo: local
+    hooks:
+    - id: check-max-lines
+      name: Check Max Lines
+      entry: python scripts/check_max_lines.py
+      language: python
+      types: [python]
 
 ci:
     autoupdate_schedule: weekly

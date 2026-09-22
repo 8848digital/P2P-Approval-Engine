@@ -1,0 +1,46 @@
+# apps/p2p_customization/p2p_customization/settlement/permissions/faq_master.py
+import frappe
+
+VENDOR_FAQ_MANAGER_ROLE = "Vendor FAQ Manager"  # fallback if JFS Settings.faq_manager_role is unset
+
+
+def _faq_manager_role():
+	return frappe.db.get_single_value("JFS Settings", "faq_manager_role") or VENDOR_FAQ_MANAGER_ROLE
+
+
+def _faq_section_enabled():
+	return bool(frappe.db.get_single_value("JFS Settings", "enable_faq_section"))
+
+
+def has_permission(doc, ptype, user):
+	"""has_permission hook for FAQ Master (per-document checks: read/write/
+	create/delete on a specific doc). Mirrors the Supplier form's Vendor
+	FAQs tab gate (doc_events.faq_master.FAQ_SECTION_VISIBILITY_DEPENDS_ON):
+	the configured FAQ Manager Role only grants access while JFS
+	Settings.enable_faq_section is on, so "disabled" means nothing is
+	visible, not just that the Supplier tab is hidden. System Manager always
+	passes, matching the client-side check.
+	"""
+	if user == "Administrator" or "System Manager" in frappe.get_roles(user):
+		return True
+
+	if _faq_manager_role() not in frappe.get_roles(user):
+		return False
+
+	return _faq_section_enabled()
+
+
+def get_permission_query_conditions(user):
+	"""permission_query_conditions hook for FAQ Master: without this, list
+	view/report queries only go through DocPerm (not the per-doc
+	has_permission hook above), so a Vendor FAQ Manager would still see
+	every row while the section is disabled. Returns a condition matching
+	no rows in that case; System Manager is left unrestricted.
+	"""
+	if user == "Administrator" or "System Manager" in frappe.get_roles(user):
+		return ""
+
+	if not _faq_section_enabled():
+		return "1=0"
+
+	return ""

@@ -1,0 +1,287 @@
+{% extends "templates/web.html" %}
+{% from "erpnext/templates/includes/macros.html" import product_image %}
+
+{% block breadcrumbs %}
+	{% include "templates/includes/breadcrumbs.html" %}
+{% endblock %}
+
+{% block title %}
+	{{ doc.name }}
+{% endblock %}
+
+{% block header %}
+	<h3 class="m-0">{{ doc.name }}</h3>
+{% endblock %}
+
+{% block header_actions %}
+<div class="row">
+	<div class="dropdown">
+		<button class="btn btn-sm btn-secondary dropdown-toggle" data-toggle="dropdown">
+			<span class="font-md">{{ _('Actions') }}</span>
+		</button>
+
+		<ul class="dropdown-menu dropdown-menu-right">
+
+			{% if doc.doctype == 'Purchase Order' and show_make_pi_button %}
+				<a class="dropdown-item make-pi-action" href="javascript:void(0);">
+					{{ _("Make Purchase Invoice") }}
+				</a>
+			{% endif %}
+
+			{% if doc.doctype == "Purchase Invoice" %}
+				<input type="file" id="file-upload" style="display:none;" />
+				<a class="dropdown-item" id="add-attachment-btn" href="javascript:void(0);">
+					{{ _("Add Attachment") }}
+				</a>
+			{% endif %}
+
+			<a class="dropdown-item"
+				href='/printview?doctype={{ doc.doctype}}&name={{ doc.name }}&format={{ print_format }}'
+				target="_blank">
+				{{ _("Print") }}
+			</a>
+		</ul>
+	</div>
+
+	{% if show_pay_button %}
+	<div class="form-column col-sm-6">
+		<a href="/api/method/erpnext.accounts.doctype.payment_request.payment_request.make_payment_request?dn={{ doc.name }}&dt={{ doc.doctype }}"
+		   class="btn btn-primary btn-sm">
+			{{ _("Pay") }} {{ pay_amount }}
+		</a>
+	</div>
+	{% endif %}
+</div>
+{% endblock %}
+
+{% block page_content %}
+<div>
+
+	<div class="row mt-1">
+		<div class="col-6 text-muted small">
+			{{ frappe.utils.format_date(doc.transaction_date, 'medium') }}
+		</div>
+	</div>
+
+	<div class="row mt-2">
+		<div class="col-10">
+			<span class="indicator-pill {{ doc.indicator_color or (" blue" if doc.docstatus==1 else "darkgrey" ) }}">
+				{{ _(doc.status) or _("Submitted") }}
+			</span>
+		</div>
+		<div class="text-right col-2">
+			<b>{{ doc.supplier_name or doc.customer_name }}</b>
+		</div>
+	</div>
+
+	<div class="order-container mt-4">
+
+		<div class="row text-muted">
+			<span class="col-5">{{ _("Item") }}</span>
+			<span class="col-3">{{ _("Qty") }}</span>
+			<span class="col-2">{{ _("Rate") }}</span>
+			<span class="col-2 text-right">{{ _("Amount") }}</span>
+		</div>
+
+		{% for d in doc.items %}
+		<div class="row">
+			<div class="col-5">{{ d.item_code }}</div>
+			<div class="col-3">{{ d.get_formatted("qty") }}</div>
+			<div class="col-2">{{ d.get_formatted("rate") }}</div>
+			<div class="col-2 text-right">{{ d.get_formatted("amount") }}</div>
+		</div>
+		{% endfor %}
+
+	</div>
+</div>
+
+{% if attachments %}
+<div class="mt-3">
+	<h6>{{ _("Attachments") }}</h6>
+	{% for attachment in attachments %}
+		<p><a href="{{ attachment.file_url }}" target="_blank">{{ attachment.file_name }}</a></p>
+	{% endfor %}
+</div>
+{% endif %}
+
+<!-- MODAL -->
+<div class="modal fade" id="makePiModal">
+  <div class="modal-dialog modal-lg">
+	<div class="modal-content">
+
+	  <div class="modal-header">
+		<h5>{{ _("Make Purchase Invoice") }}</h5>
+		<button type="button" class="close" data-dismiss="modal">&times;</button>
+	  </div>
+
+	  <div class="modal-body">
+
+		<div class="row mb-3">
+			<div class="col-md-6">
+				<label>Supplier Invoice No</label>
+				<input class="form-control" id="supplier_invoice_no">
+			</div>
+			<div class="col-md-6">
+				<label>Supplier Invoice Date</label>
+				<input type="date" class="form-control" id="supplier_invoice_date">
+			</div>
+		</div>
+
+		<table class="table table-bordered">
+			<thead>
+				<tr>
+					<th>Item</th>
+					<th>Qty</th>
+					<th>Rate</th>
+				</tr>
+			</thead>
+			<tbody id="modal-item-list"></tbody>
+		</table>
+
+	  </div>
+
+	  <div class="modal-footer">
+		<button class="btn btn-primary" id="create-invoice">Create Invoice</button>
+	  </div>
+
+	</div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block script %}
+
+<script>
+frappe.ready(function() {
+
+	const items = [
+		{% for d in doc.items %}
+		{
+			item_code: "{{ d.item_code }}",
+			qty: {{ d.qty }},
+			rate: {{ d.rate }}
+		}{% if not loop.last %},{% endif %}
+		{% endfor %}
+	];
+
+	// OPEN MODAL
+	$('.make-pi-action').on('click', function() {
+		let tbody = $('#modal-item-list');
+		tbody.empty();
+
+		items.forEach(i => {
+			tbody.append(`
+				<tr>
+					<td>${i.item_code}</td>
+
+					<td>
+						<input
+							type="number"
+							class="form-control qty"
+							value="${i.qty}">
+					</td>
+
+					<td>
+						<input
+							type="number"
+							class="form-control rate"
+							value="${i.rate}">
+					</td>
+
+					<td class="text-center">
+						<button
+							type="button"
+							class="btn btn-sm btn-danger delete-row">
+							Delete
+						</button>
+					</td>
+				</tr>
+			`);
+		});
+
+		$('#makePiModal').modal('show');
+	});
+
+	$(document).on("click", ".delete-row", function() {
+		$(this).closest("tr").remove();
+	});
+
+	// CREATE PI
+	$('#create-invoice').on('click', function() {
+
+		let updated = [];
+
+		$('#modal-item-list tr').each(function() {
+			updated.push({
+				item_code: $(this).find('td:eq(0)').text().trim(),
+				qty: parseFloat($(this).find('.qty').val()),
+				rate: parseFloat($(this).find('.rate').val())
+			});
+		});
+
+		if (!updated.length) {
+			frappe.msgprint(__("Please keep at least one item."));
+			return;
+		}
+
+		frappe.call({
+			method: "p2p_customization.settlement.api.v1.purchase_order.make_purchase_invoice_from_portal",
+			args: {
+				purchase_order_name: "{{ doc.name }}",
+				items: updated,
+				supplier_invoice_no: $('#supplier_invoice_no').val(),
+				supplier_invoice_date: $('#supplier_invoice_date').val()
+			},
+			callback: function(r) {
+				if (r.message) {
+					frappe.msgprint("Created: " + r.message);
+					window.location.href = "/purchase-invoices/" + r.message;
+				}
+			}
+		});
+	});
+
+	// ATTACHMENT
+	const upload = document.getElementById("file-upload");
+	const btn = document.getElementById("add-attachment-btn");
+
+	if (btn && upload) {
+		btn.onclick = () => upload.click();
+
+		upload.onchange = async (e) => {
+			let file = e.target.files[0];
+			let fd = new FormData();
+			fd.append("file", file);
+			fd.append("doctype", "{{ doc.doctype }}");
+			fd.append("docname", "{{ doc.name }}");
+
+			let res = await fetch("/api/method/upload_file", {
+				method: "POST",
+				body: fd,
+				credentials: "include"
+			});
+
+			let r = await res.json();
+
+			if (r.message?.file_url) {
+				await frappe.call({
+					method: "p2p_customization.settlement.api.v1.purchase_invoice.upload_file_to_pi_from_portal",
+					args: {
+						doctype: "{{ doc.doctype }}",
+						name: "{{ doc.name }}",
+						fieldname: "custom_supplier_invoice_copy",
+						value: r.message.file_url
+					}
+				});
+
+				frappe.show_alert("File attached");
+				location.reload();
+			}
+		};
+	}
+
+});
+</script>
+
+{% endblock %}

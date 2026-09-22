@@ -1,0 +1,55 @@
+{% extends "templates/web.html" %}
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+{% block title %}{{ _("Vendor Portal") }}{% endblock %}
+
+{% block page_content %}
+{% include "templates/includes/vendor_portal/style.html" %}
+<style>
+	html, body { height: 100%; }
+	.vp-embed-frame {
+		width: 100%;
+		height: calc(100vh - 3rem);
+		border: none;
+		display: block;
+	}
+	.vp-embed-main {
+		padding: 1.5rem 2rem;
+	}
+</style>
+<div class="vp-app">
+	{% include "templates/includes/vendor_portal/nav.html" %}
+	<div class="vp-main">
+		<div class="vp-embed-main">
+			<div class="vp-card" style="overflow:hidden;">
+				<iframe class="vp-embed-frame" id="vp-embed-frame" src="{{ iframe_src }}"></iframe>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script>
+// The web form's own in_iframe() script hides .web-form-header (which
+// holds its Edit button) whenever it detects it's inside an iframe -- that
+// check exists for simple public embeds with no header/edit affordance at
+// all, but here we want the normal view-then-edit flow, just inside our
+// shell. Same-origin, so we can reach into the iframe and undo just that
+// one hide with an !important override once it's loaded.
+//
+// (The form's own width when embedded -- filling this iframe instead of
+// staying capped at its standalone reading width -- is handled by the web
+// form's own client_script instead of from here: that runs natively
+// inside the iframe's own document with no cross-document timing to get
+// wrong, unlike reaching in from this outer page.)
+document.getElementById("vp-embed-frame").addEventListener("load", function () {
+	try {
+		var doc = this.contentDocument;
+		var style = doc.createElement("style");
+		style.innerHTML = ".web-form-header { display: block !important; }";
+		doc.head.appendChild(style);
+	} catch (e) {
+		// cross-origin or not yet accessible -- nothing to do
+	}
+});
+</script>
+{% endblock %}

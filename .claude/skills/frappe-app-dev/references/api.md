@@ -439,49 +439,63 @@ Validation error:
 
 ### Helper — lives in `utils/api_handlers/`, not in `api/`
 
-This is a cross-cutting helper shared by every module's `api/vN/` files —
-define it once per app, at the app root, and import it wherever a
-whitelisted endpoint returns:
+> **Do not hand-write these helpers.** `utils/api_handlers/` is populated by
+> copying three canonical files **verbatim** from
+> [`project_base_template/api_handlers/`](https://github.com/8848digital/skills/tree/8848-skills/project_base_template/api_handlers)
+> in the skills repo:
+>
+> | File | What it holds |
+> | ---- | ------------- |
+> | `envelope.py` | The envelope builder + `api_response(...)` + `is_already_formatted(...)`. |
+> | `error_messages.py` | Exception → HTTP-status mapping and message-sanitisation helpers. |
+> | `response_formatter.py` | The `after_request` hook + success/error formatters; re-exports `api_response`. |
+>
+> After copying: replace the `<app_name>` token inside the files (the
+> `Wired in hooks.py:` docstring line and the `/api/method/<app_name>` path
+> check in `response_formatter.py`), then wire the hook in `hooks.py`. Full
+> step-by-step: `project_base_template/custom_app_setup.md` §4.9. This
+> section documents how the copied helpers behave — not code to retype.
+
+There are **two** ways a response gets into the standard envelope, and both
+ship in the copied files:
+
+**1. The global `after_request` formatter (primary).** Wiring this in
+`hooks.py` makes every `/api/method/<app_name>…` response — success *and*
+error, whether the endpoint returned a raw dict or called `api_response`
+itself — come out in the standard shape automatically:
 
 ````python
-# apps/<app_name>/<app_name>/utils/api_handlers/response_formatter.py
-
-def api_response(status: bool = True, code: int = 200, message: str = "", data=None, errors=None) -> dict:
-    """
-    Build the standard API response envelope used across all whitelisted
-    endpoints in this app, regardless of which module they belong to.
-
-    Parameters:
-        status (bool, optional): Success/failure flag. Default True.
-        code (int, optional): HTTP status code. Default 200.
-        message (str, optional): Human-readable message.
-        data (object/array/None, optional): Payload on success.
-        errors (object/array/None, optional): Error detail on failure.
-
-    Returns:
-        dict: A dict matching the standard response shape:
-        `{"status", "status_code", "message", "data", "errors"}`
-    """
-    return {
-        "status": status,
-        "status_code": code,
-        "message": message,
-        "data": data,
-        "errors": errors,
-    }
+# hooks.py
+after_request = ["<app_name>.utils.api_handlers.response_formatter.format_frappe_response_to_custom"]
 ````
 
-Import it into any module's endpoint file the same way, regardless of which
-`<module_name>` the endpoint lives under:
+Because of this hook, an endpoint may simply `return {...}` (raw payload)
+and still produce a compliant envelope. The formatter is idempotent
+(`is_already_formatted`), so wrapping twice is safe.
+
+> **Frontend note:** once the `after_request` hook is wired, the HTTP body
+> *is* the envelope (`{status, status_code, message, data, errors}`) — the
+> payload is under `data`, and `message` is the human string. Desk clients
+> should read `r.message.data` from `frappe.call` (or `res.data` from the
+> raw response); **`frappe.xcall` will resolve to the envelope's `message`
+> string, not the payload**, so use `frappe.call` and read `.data` for
+> endpoints that go through this formatter.
+
+**2. Calling `api_response(...)` explicitly (when you need a custom message
+or status).** Import it — re-exported from `response_formatter.py` — into any
+module's endpoint file, regardless of `<module_name>`:
 
 ````python
 # apps/<app_name>/<app_name>/<module_name>/api/v1/expense.py
 from <app_name>.utils.api_handlers.response_formatter import api_response
+
+# api_response(status=True, code=200, message="", data=None, errors=None)
+# -> {"status", "status_code", "message", "data", "errors"}
+return api_response(message="Expense approved", data={"expense": name})
 ````
 
-`error_messages.py` and `envelope.py` in the same
-`utils/api_handlers/` folder follow the same pattern — one shared
-implementation, imported by every module's `api/vN/` files, never
+All three files live only in `utils/api_handlers/` at the app root — one
+shared implementation, imported by every module's `api/vN/` files, never
 duplicated per module and never placed inside `api/` itself.
 
 ## Frontend API structure (versioned APIs)
