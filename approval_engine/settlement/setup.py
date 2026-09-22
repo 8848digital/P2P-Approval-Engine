@@ -20,6 +20,13 @@ import frappe
 
 
 def create_custom_fields():
+	# "nature_of_service" (Table MultiSelect on Supplier, below) points at
+	# this child doctype. On a from-scratch install frappe.model.sync.sync_all()
+	# doesn't reliably make a brand-new child doctype visible in time for
+	# this function's custom-field insert to pass check_table_multiselect_option
+	# -- a targeted reload_doc does, and is safe to call every time.
+	frappe.reload_doc("settlement", "doctype", "nature_of_service_reference")
+
 	CUSTOM_FIELDS = {}
 	print("Creating/Updating Settlement Custom Fields....")
 	path = os.path.join(os.path.dirname(__file__), "custom_fields")
