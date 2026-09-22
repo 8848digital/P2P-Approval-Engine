@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "naming_series:",
- "creation": "2025-09-09 09:33:42.198427",
+ "creation": "2026-09-22 17:09:17.657930",
  "default_view": "List",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -143,8 +143,7 @@
    "fieldname": "expiry_date",
    "fieldtype": "Date",
    "label": "Expiry Date",
-   "no_copy": 1,
-   "read_only": 1
+   "no_copy": 1
   },
   {
    "description": "Enter The Duration In Numbers",
@@ -292,7 +291,7 @@
    "link_fieldname": "brn"
   }
  ],
- "modified": "2026-09-09 15:16:06.302781",
+ "modified": "2026-09-22 18:35:24.745629",
  "modified_by": "Administrator",
  "module": "Settlement",
  "name": "BRN",

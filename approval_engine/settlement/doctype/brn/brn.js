@@ -265,28 +265,44 @@ function create_purchase_invoice(frm, vendor) {
 	});
 }
 
+// duration_of_service_months and service_start_date both trigger a recompute,
+// and the date picker widget can itself fire more than one change event per
+// user interaction (e.g. an intermediate/incomplete value while typing a
+// date manually). Without debouncing, an earlier trigger's async response --
+// or its synchronous "clear expiry_date" fallback below, when a field was
+// momentarily empty mid-interaction -- can land AFTER a later, correct one
+// and stomp it. Debounce so only the final state within a short window
+// actually runs, always reading frm.doc fresh at that point.
+let _expiry_date_debounce_timer = null;
+
 function get_expiry_date(frm) {
-	if (frm.doc.duration_of_service_months && frm.doc.service_start_date) {
-		frappe.call({
-			method: "approval_engine.settlement.api.v1.brn.get_expiry_date",
-			args: {
-				date: frm.doc.service_start_date,
-				months: frm.doc.duration_of_service_months,
-			},
-			callback: function (r) {
-				// approval_engine's after_request envelope wraps every
-				// /api/method/approval_engine... response -- the actual
-				// payload is under r.message.data, not r.message itself.
-				// See .claude/skills/frappe-app-dev/references/api.md.
-				const expiry_date = r?.message?.data;
-				if (expiry_date) {
-					frm.set_value("expiry_date", expiry_date);
-				}
-			},
-		});
-	} else {
+	clearTimeout(_expiry_date_debounce_timer);
+	_expiry_date_debounce_timer = setTimeout(() => recompute_expiry_date(frm), 400);
+}
+
+function recompute_expiry_date(frm) {
+	if (!frm.doc.duration_of_service_months || !frm.doc.service_start_date) {
 		frm.set_value("expiry_date", "");
+		return;
 	}
+
+	frappe.call({
+		method: "approval_engine.settlement.api.v1.brn.get_expiry_date",
+		args: {
+			date: frm.doc.service_start_date,
+			months: frm.doc.duration_of_service_months,
+		},
+		callback: function (r) {
+			// approval_engine's after_request envelope wraps every
+			// /api/method/approval_engine... response -- the actual
+			// payload is under r.message.data, not r.message itself.
+			// See .claude/skills/frappe-app-dev/references/api.md.
+			const expiry_date = r?.message?.data;
+			if (expiry_date) {
+				frm.set_value("expiry_date", expiry_date);
+			}
+		},
+	});
 }
 
 frappe.ui.form.on("BRN Comparision", {
