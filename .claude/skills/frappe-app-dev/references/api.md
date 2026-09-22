@@ -475,11 +475,14 @@ and still produce a compliant envelope. The formatter is idempotent
 
 > **Frontend note:** once the `after_request` hook is wired, the HTTP body
 > *is* the envelope (`{status, status_code, message, data, errors}`) — the
-> payload is under `data`, and `message` is the human string. Desk clients
-> should read `r.message.data` from `frappe.call` (or `res.data` from the
-> raw response); **`frappe.xcall` will resolve to the envelope's `message`
-> string, not the payload**, so use `frappe.call` and read `.data` for
-> endpoints that go through this formatter.
+> payload is under `data`, and `message` is the human string. This replaces
+> Frappe's own `{"message": ...}` wrapper entirely rather than nesting
+> inside it, so `frappe.call`'s callback receives the envelope directly as
+> `r`: read `r.data` (not `r.message.data` — `r.message` is the envelope's
+> human string, not an object, so `.data` off it is `undefined`).
+> **`frappe.xcall` will resolve to the envelope's `message` string, not the
+> payload**, so use `frappe.call` and read `.data` for endpoints that go
+> through this formatter.
 
 **2. Calling `api_response(...)` explicitly (when you need a custom message
 or status).** Import it — re-exported from `response_formatter.py` — into any

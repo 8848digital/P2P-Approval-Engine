@@ -143,7 +143,8 @@
    "fieldname": "expiry_date",
    "fieldtype": "Date",
    "label": "Expiry Date",
-   "no_copy": 1
+   "no_copy": 1,
+   "read_only": 1
   },
   {
    "description": "Enter The Duration In Numbers",
@@ -291,7 +292,7 @@
    "link_fieldname": "brn"
   }
  ],
- "modified": "2026-09-22 18:35:24.745629",
+ "modified": "2026-09-22 19:09:57.413811",
  "modified_by": "Administrator",
  "module": "Settlement",
  "name": "BRN",
