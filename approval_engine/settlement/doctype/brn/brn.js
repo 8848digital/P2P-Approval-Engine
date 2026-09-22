@@ -77,10 +77,14 @@ frappe.ui.form.on("BRN", {
 
 	multi: function (frm) {
 		frm.set_value("comparision", []);
-		if (frm.doc.multi) {
-			frm.set_value("rpt", 1);
+	},
+
+	rpt: function (frm) {
+		frm.set_value("comparision", []);
+		if (frm.doc.rpt) {
+			frm.set_value("multi", 1);
 		} else {
-			frm.set_value("rpt", 0);
+			frm.set_value("multi", 0);
 		}
 	},
 
