@@ -140,8 +140,8 @@ function call_create_brn(frm) {
 			freeze_message: __("Creating BRN..."),
 		})
 		.then((r) => {
-			if (r.message) {
-				const { name, is_new } = r.message;
+			if (r.message?.data) {
+				const { name, is_new } = r.message.data;
 
 				frappe.show_alert({
 					message: is_new

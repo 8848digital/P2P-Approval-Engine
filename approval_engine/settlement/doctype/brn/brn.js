@@ -274,8 +274,13 @@ function get_expiry_date(frm) {
 				months: frm.doc.duration_of_service_months,
 			},
 			callback: function (r) {
-				if (r && r.message) {
-					frm.set_value("expiry_date", r.message);
+				// approval_engine's after_request envelope wraps every
+				// /api/method/approval_engine... response -- the actual
+				// payload is under r.message.data, not r.message itself.
+				// See .claude/skills/frappe-app-dev/references/api.md.
+				const expiry_date = r?.message?.data;
+				if (expiry_date) {
+					frm.set_value("expiry_date", expiry_date);
 				}
 			},
 		});

@@ -52,7 +52,7 @@ class KYCDialog {
 		frappe.call({
 			method: "approval_engine.settlement.api.v1.kyc_validation.get_kyc_vendor_options",
 			args: { supplier: this.frm.doc.name },
-			callback: (r) => this.build_dialog(r.message || []),
+			callback: (r) => this.build_dialog(r.message?.data || []),
 		});
 	}
 
@@ -121,7 +121,8 @@ class KYCDialog {
 			method: "approval_engine.settlement.api.v1.kyc_validation.get_last_kyc_run",
 			args: { supplier: this.frm.doc.name },
 			callback: (res) => {
-				if (!res.message || !res.message.run) {
+				const data = res.message?.data;
+				if (!data || !data.run) {
 					this.set_html(
 						`<div class="text-muted kyc-empty">${__(
 							"No previous KYC validation found for this supplier. Select checks above and click Run Validation."
@@ -129,10 +130,10 @@ class KYCDialog {
 					);
 					return;
 				}
-				this.run_name = res.message.run;
+				this.run_name = data.run;
 				const normalized = {
-					...res.message,
-					rows: (res.message.rows || []).map((row) => this.normalize_row(row)),
+					...data,
+					rows: (data.rows || []).map((row) => this.normalize_row(row)),
 				};
 				this.render_results(normalized, true);
 			},
@@ -163,11 +164,12 @@ class KYCDialog {
 			args: { supplier: this.frm.doc.name, vendors: JSON.stringify(vendor_names) },
 			callback: (res) => {
 				this.dialog.enable_primary_action();
-				if (!res.message) return;
-				this.run_name = res.message.run;
+				const data = res.message?.data;
+				if (!data) return;
+				this.run_name = data.run;
 				const normalized = {
-					...res.message,
-					rows: (res.message.rows || []).map((row) => this.normalize_row(row)),
+					...data,
+					rows: (data.rows || []).map((row) => this.normalize_row(row)),
 				};
 				this.render_results(normalized, false);
 				this.frm.reload_doc();
@@ -360,8 +362,9 @@ class KYCDialog {
 			},
 			callback: (res) => {
 				frappe.show_alert({ message: __("Revalidation complete"), indicator: "green" });
+				const rows = res.message?.data?.rows || [];
 				vendor_names.forEach((vendor) => {
-					const updated_row = res.message.rows
+					const updated_row = rows
 						.filter((r) => r.vendor === vendor)
 						.sort((a, b) => b.attempt_no - a.attempt_no)[0];
 					if (updated_row) {

@@ -84,12 +84,13 @@ approval_engine.vendor = {
 								company: values.company,
 							},
 							callback: function (r) {
-								if (r.message) {
-									if (r.message.status === "success") {
-										frappe.msgprint(r.message.message);
+								const data = r.message?.data;
+								if (data) {
+									if (data.status === "success") {
+										frappe.msgprint(data.message);
 										resolve();
 									} else {
-										frappe.msgprint("Error: " + r.message.message);
+										frappe.msgprint("Error: " + data.message);
 										reject();
 									}
 								} else {

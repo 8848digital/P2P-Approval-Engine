@@ -34,7 +34,7 @@ frappe.ui.form.on("Purchase Invoice", {
 					purchase_invoice: frm.doc.name,
 				},
 				callback: function (r) {
-					if (r.message) {
+					if (r.message?.data) {
 						frappe.msgprint(__("Email sent to Vendor"));
 					}
 				},
@@ -63,7 +63,7 @@ function set_pi_tax_withholding_category(frm, cdt, cdn) {
 			supplier: frm.doc.supplier,
 		},
 		callback: function (r) {
-			apply_tax_withholding_category(cdt, cdn, r.message);
+			apply_tax_withholding_category(cdt, cdn, r.message?.data);
 		},
 	});
 }
@@ -90,7 +90,7 @@ function refresh_all_tax_withholding_categories(frm) {
 			supplier: frm.doc.supplier,
 		},
 		callback: function (r) {
-			const categories = r.message || {};
+			const categories = r.message?.data || {};
 			rows.forEach((row) => {
 				apply_tax_withholding_category(
 					row.doctype,
@@ -171,10 +171,11 @@ frappe.ui.form.on("Purchase Invoice", {
 				},
 				async: false,
 				callback: function (r) {
-					if (r.message) {
-						frm.set_value("custom_fiscal_year", r.message.fiscal_year);
-						frm.set_value("validity_start_date", r.message.validity_start_date);
-						frm.set_value("validity_end_date", r.message.validity_end_date);
+					const data = r.message?.data;
+					if (data) {
+						frm.set_value("custom_fiscal_year", data.fiscal_year);
+						frm.set_value("validity_start_date", data.validity_start_date);
+						frm.set_value("validity_end_date", data.validity_end_date);
 					}
 				},
 			});

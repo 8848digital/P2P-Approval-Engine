@@ -21,7 +21,7 @@ frappe.ready(function () {
 			method: "approval_engine.settlement.doctype.brn.utils.decode_email",
 			args: { encoded_email: email },
 			callback: function (r) {
-				frappe.web_form.set_value("email_id", r.message);
+				frappe.web_form.set_value("email_id", r.message?.data);
 			},
 		});
 	}
