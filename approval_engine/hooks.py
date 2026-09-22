@@ -242,6 +242,9 @@ doc_events = {
 	"Supplier Quotation": {
 		"on_update_after_submit": "approval_engine.settlement.customization.supplier_quotation.supplier_quotation.on_update_after_submit",
 	},
+	"Payment Entry": {
+		"before_submit": "approval_engine.settlement.doc_events.payment_entry.block_payment_without_msa_attachment",
+	},
 }
 
 # Scheduled Tasks

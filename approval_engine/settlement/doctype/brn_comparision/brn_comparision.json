@@ -8,23 +8,34 @@
  "field_order": [
   "section_break_zu0v",
   "is_new_vendor",
+  "column_break_vendor_type",
   "is_existing_vendor",
   "existing_vendor",
   "vendor_name",
-  "msa_agreement",
-  "rate",
-  "amount",
-  "preferred",
-  "email_id",
+  "vendor_info_section",
   "country",
+  "column_break_vendor_info",
   "supplier_type",
   "related_party",
-  "justification"
+  "commercial_section",
+  "rate",
+  "column_break_commercial",
+  "amount",
+  "preference_section",
+  "preferred",
+  "column_break_preference",
+  "email_id",
+  "justification",
+  "msa_section",
+  "msa_agreement",
+  "column_break_msa",
+  "msa_agreement_attachment"
  ],
  "fields": [
   {
    "fieldname": "section_break_zu0v",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Vendor"
   },
   {
    "default": "0",
@@ -34,6 +45,10 @@
    "label": "Is New Vendor",
    "read_only_depends_on": "eval:doc.is_existing_vendor",
    "allow_on_submit": 1
+  },
+  {
+   "fieldname": "column_break_vendor_type",
+   "fieldtype": "Column Break"
   },
   {
    "default": "0",
@@ -65,6 +80,11 @@
    "read_only_depends_on": "eval: doc.is_existing_vendor"
   },
   {
+   "fieldname": "vendor_info_section",
+   "fieldtype": "Section Break",
+   "label": "Vendor Information"
+  },
+  {
    "fetch_from": "existing_vendor.country",
    "fieldname": "country",
    "fieldtype": "Link",
@@ -73,13 +93,8 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:doc.existing_vendor;",
-   "fetch_from": "existing_vendor.related_party",
-   "fieldname": "related_party",
-   "fieldtype": "Select",
-   "label": "Related Party",
-   "options": "\nYes\nNo",
-   "read_only": 1
+   "fieldname": "column_break_vendor_info",
+   "fieldtype": "Column Break"
   },
   {
    "depends_on": "eval:doc.existing_vendor;",
@@ -92,10 +107,28 @@
    "read_only": 1
   },
   {
+   "depends_on": "eval:doc.existing_vendor;",
+   "fetch_from": "existing_vendor.related_party",
+   "fieldname": "related_party",
+   "fieldtype": "Select",
+   "label": "Related Party",
+   "options": "\nYes\nNo",
+   "read_only": 1
+  },
+  {
+   "fieldname": "commercial_section",
+   "fieldtype": "Section Break",
+   "label": "Commercial Details"
+  },
+  {
    "fieldname": "rate",
    "fieldtype": "Float",
    "in_list_view": 1,
    "label": "Rate"
+  },
+  {
+   "fieldname": "column_break_commercial",
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "amount",
@@ -104,11 +137,20 @@
    "label": "Amount"
   },
   {
+   "fieldname": "preference_section",
+   "fieldtype": "Section Break",
+   "label": "Preference"
+  },
+  {
    "default": "0",
    "fieldname": "preferred",
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Preferred"
+  },
+  {
+   "fieldname": "column_break_preference",
+   "fieldtype": "Column Break"
   },
   {
    "depends_on": "eval:doc.preferred",
@@ -119,15 +161,39 @@
    "mandatory_depends_on": "eval:doc.preferred"
   },
   {
+   "description": "Required when this vendor is marked Preferred.",
    "fieldname": "justification",
    "fieldtype": "Long Text",
-   "label": "Justification"
+   "label": "Justification",
+   "mandatory_depends_on": "eval:doc.preferred"
+  },
+  {
+   "fieldname": "msa_section",
+   "fieldtype": "Section Break",
+   "label": "MSA Agreement"
   },
   {
    "default": "0",
+   "description": "To be confirmed by the originator/business for this vendor. If checked, the signed MSA document must be attached below — payment will be stopped if MSA is checked but not updated with the attachment.",
    "fieldname": "msa_agreement",
    "fieldtype": "Check",
-   "label": "MSA Agreement"
+   "in_list_view": 1,
+   "label": "Vendor Has MSA?",
+   "reqd": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "column_break_msa",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.msa_agreement",
+   "description": "Mandatory once MSA is checked. Payment against this BRN will be stopped until this is attached.",
+   "fieldname": "msa_agreement_attachment",
+   "fieldtype": "Attach",
+   "label": "MSA Agreement Attachment",
+   "mandatory_depends_on": "eval:doc.msa_agreement",
+   "allow_on_submit": 1
   }
  ],
  "grid_page_length": 50,
