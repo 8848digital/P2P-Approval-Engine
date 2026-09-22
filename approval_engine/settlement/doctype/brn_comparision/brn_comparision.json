@@ -188,11 +188,10 @@
   },
   {
    "depends_on": "eval:doc.msa_agreement",
-   "description": "Mandatory once MSA is checked. Payment against this BRN will be stopped until this is attached.",
+   "description": "Not required to save, but payment against this BRN will be stopped until this is attached (once MSA is checked). Editable after submission.",
    "fieldname": "msa_agreement_attachment",
    "fieldtype": "Attach",
    "label": "MSA Agreement Attachment",
-   "mandatory_depends_on": "eval:doc.msa_agreement",
    "allow_on_submit": 1
   }
  ],
