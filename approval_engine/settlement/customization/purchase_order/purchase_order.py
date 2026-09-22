@@ -6,6 +6,9 @@
 from approval_engine.settlement.customization.procure_to_pay.utils import (
 	validate_fiscal_year_and_brn_dates,
 )
+from approval_engine.settlement.customization.purchase_order.brn_validity import (
+	validate_transaction_date_within_brn_validity,
+)
 from approval_engine.settlement.customization.purchase_order.utils import (
 	backdated_po_validation,
 	validate_item_rate_and_qty_with_brn,
@@ -15,8 +18,9 @@ from approval_engine.settlement.tax_withholding import apply_tax_withholding
 
 def validate(doc, method=None):
 	"""
-	Purchase Order validate hook: fiscal-year/BRN-date alignment, BRN
-	balance checks, and TDS withholding, in that order.
+	Purchase Order validate hook: fiscal-year/BRN-date alignment, the hard
+	BRN validity-window check, BRN balance checks, and TDS withholding, in
+	that order.
 
 	Parameters:
 		doc (Document, required): The Purchase Order document being validated.
@@ -26,6 +30,7 @@ def validate(doc, method=None):
 		None
 	"""
 	validate_fiscal_year_and_brn_dates(doc, method)
+	validate_transaction_date_within_brn_validity(doc, method)
 	validate_item_rate_and_qty_with_brn(doc, method)
 	apply_tax_withholding(doc, method)
 
