@@ -252,7 +252,7 @@ doc_events = {
 
 scheduler_events = {
 	"cron": {
-		"0 9 * * * *": [
+		"0 9 * * *": [
 			"approval_engine.settlement.doctype.vendor_email.utils.send_reminder_for_non_registered_vendors",
 		],
 	},
