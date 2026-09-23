@@ -16,41 +16,41 @@ from approval_engine.utils.api_handlers.response_formatter import api_response
 
 @frappe.whitelist()
 def get_managed_doctypes():
-	"""Target DocTypes that currently have an active engine-generated workflow.
+    """Target DocTypes that currently have an active engine-generated workflow.
 
-	Used by the client to register the sidebar renderer only where relevant.
+    Used by the client to register the sidebar renderer only where relevant.
 
-	Path: approval_engine.approval_core.api.v1.activity.get_managed_doctypes
-	Method: GET
+    Path: approval_engine.approval_core.api.v1.activity.get_managed_doctypes
+    Method: GET
 
-	Parameters:
-	    None
+    Parameters:
+        None
 
-	Returns:
-	    dict: Envelope whose ``data`` is a list of DocType names.
-	"""
-	return api_response(
-		data=activity.managed_doctypes(),
-		message="Managed DocTypes fetched successfully",
-	)
+    Returns:
+        dict: Envelope whose ``data`` is a list of DocType names.
+    """
+    return api_response(
+        data=activity.managed_doctypes(),
+        message="Managed DocTypes fetched successfully",
+    )
 
 
 @frappe.whitelist()
 def get_workflow_activity(doctype, name):
-	"""Approver chain + live status for a single target document.
+    """Approver chain + live status for a single target document.
 
-	Path: approval_engine.approval_core.api.v1.activity.get_workflow_activity
-	Method: GET
+    Path: approval_engine.approval_core.api.v1.activity.get_workflow_activity
+    Method: GET
 
-	Parameters:
-	    doctype (str, required): Target document's DocType.
-	    name (str, required): Target document's name.
+    Parameters:
+        doctype (str, required): Target document's DocType.
+        name (str, required): Target document's name.
 
-	Returns:
-	    dict: Envelope whose ``data`` is
-	    ``{"managed": bool, "current_state": str, "steps": list}``.
-	"""
-	return api_response(
-		data=activity.workflow_activity(doctype, name),
-		message="Workflow activity fetched successfully",
-	)
+    Returns:
+        dict: Envelope whose ``data`` is
+        ``{"managed": bool, "current_state": str, "steps": list}``.
+    """
+    return api_response(
+        data=activity.workflow_activity(doctype, name),
+        message="Workflow activity fetched successfully",
+    )

@@ -1,17 +1,15 @@
 exclude: 'node_modules|.git'
-default_stages: [commit]
+default_stages: [pre-commit]
 fail_fast: false
 
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.3.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
+        files: "approval_engine.*"
         exclude: ".*json$|.*txt$|.*csv|.*md|.*svg"
-      - id: check-yaml
-      - id: no-commit-to-branch
-        args: ['--branch', 'master', '--branch', 'develop']
       - id: check-merge-conflict
       - id: check-ast
       - id: check-json
@@ -19,12 +17,18 @@ repos:
       - id: check-yaml
       - id: debug-statements
 
-  - repo: https://github.com/frappe/black
-    rev: 951ccf4d5bb0d692b457a5ebc4215d755618eb68
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.10
     hooks:
-      - id: black
-        # utils/api_handlers/ and commands/ are copied verbatim from the skills template -- keep them unformatted.
-        exclude: ^approval_engine/(utils/api_handlers|commands)/
+      - id: ruff
+        name: "Run ruff import sorter"
+        args: ["--select=I", "--fix"]
+
+      - id: ruff
+        name: "Run ruff linter"
+
+      - id: ruff-format
+        name: "Run ruff formatter"
 
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v2.7.1
@@ -37,10 +41,8 @@ repos:
                 approval_engine/public/dist/.*|
                 .*node_modules.*|
                 .*boilerplate.*|
-                approval_engine/www/website_script.js|
                 approval_engine/templates/includes/.*|
-                approval_engine/public/js/lib/.*|
-                approval_engine/website/doctype/website_theme/website_theme_template.scss
+                approval_engine/public/js/lib/.*
             )$
 
 
@@ -57,28 +59,11 @@ repos:
                 cypress/.*|
                 .*node_modules.*|
                 .*boilerplate.*|
-                approval_engine/www/website_script.js|
                 approval_engine/templates/includes/.*|
                 approval_engine/public/js/lib/.*
             )$
 
-  - repo: https://github.com/PyCQA/isort
-    rev: 5.12.0
-    hooks:
-      - id: isort
-        # utils/api_handlers/ and commands/ are copied verbatim from the skills template -- keep them unformatted.
-        exclude: ^approval_engine/(utils/api_handlers|commands)/
-
-  - repo: https://github.com/PyCQA/flake8
-    rev: 6.0.0
-    hooks:
-      - id: flake8
-        additional_dependencies: ['flake8-bugbear',]
-
-  - repo: local
-    hooks:
-    - id: check-max-lines
-      name: Check Max Lines
-      entry: python scripts/check_max_lines.py
-      language: python
-      types: [python]
+ci:
+    autoupdate_schedule: weekly
+    skip: []
+    submodules: false

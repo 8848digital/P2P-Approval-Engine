@@ -26,7 +26,6 @@
 	"root": true,
 	"globals": {
 		"frappe": true,
-		"approval_engine": true,
 		"Vue": true,
 		"SetVueGlobals": true,
 		"__": true,
