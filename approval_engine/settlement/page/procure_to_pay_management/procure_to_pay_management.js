@@ -78,8 +78,7 @@
 	// something this controller can fix without patching that library.
 	const CHART_TYPES_WITHOUT_CLICK_SUPPORT = new Set(["donut", "percentage"]);
 
-	const API_MODULE =
-		"approval_engine.settlement.page.procure_to_pay_management.procure_to_pay_management";
+	const API_MODULE = "approval_engine.settlement.api.v1.procure_to_pay_management";
 
 	class ProcureToPayManagementDashboard {
 		constructor(wrapper) {

@@ -68,7 +68,7 @@ approval_engine.dashboard.SECTIONS = [
 // something this controller can fix without patching that library.
 const CHART_TYPES_WITHOUT_CLICK_SUPPORT = new Set(["donut", "percentage"]);
 
-const API_MODULE = "approval_engine.settlement.page.procure_to_pay.procure_to_pay";
+const API_MODULE = "approval_engine.settlement.api.v1.procure_to_pay";
 
 class PaymentsComplianceDashboard {
 	constructor(wrapper) {
