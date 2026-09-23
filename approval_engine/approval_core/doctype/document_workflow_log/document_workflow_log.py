@@ -8,4 +8,6 @@ from frappe.model.document import Document
 
 
 class DocumentWorkflowLog(Document):
+	"""Audit record of one workflow state change: who moved the document, from where to where, and why."""
+
 	pass

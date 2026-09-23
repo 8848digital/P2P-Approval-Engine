@@ -8,4 +8,6 @@ from frappe.model.document import Document
 
 
 class ApprovalMatrixDetail(Document):
+	"""Child row of Approval Matrix: one department + amount band and its per-tier approver pools."""
+
 	pass
