@@ -74,7 +74,7 @@ approval_engine.vendor = {
 						}
 
 						frappe.call({
-							method: "approval_engine.settlement.api.v1.vendor_email.send_vendor_mail",
+							method: "approval_engine.approval_settlement.api.v1.vendor_email.send_vendor_mail",
 							args: {
 								reference_doctype: doctype,
 								reference_docname: docname,

@@ -14,7 +14,7 @@ def execute():
 			{
 				"doctype": "DocType",
 				"name": "Vendor FAQ Change Log",
-				"module": "Settlement",
+				"module": "Approval Settlement",
 				"custom": 1,
 				"istable": 1,
 				"editable_grid": 1,

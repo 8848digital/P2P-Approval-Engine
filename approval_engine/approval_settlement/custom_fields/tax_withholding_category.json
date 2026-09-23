@@ -1,0 +1,15 @@
+{
+    "Tax Withholding Category": [
+        {
+            "fieldname": "tds_reference",
+            "fieldtype": "Link",
+            "options": "TDS Reference",
+            "insert_after": "supplier_type",
+            "label": "TDS Reference",
+            "no_copy": 1,
+            "read_only": 1,
+            "description": "Set automatically when this category is auto-created from a TDS Reference row.",
+            "module": "Approval Settlement"
+        }
+    ]
+}

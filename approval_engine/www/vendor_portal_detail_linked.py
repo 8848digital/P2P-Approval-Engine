@@ -9,10 +9,10 @@ vendor_portal_detail_sections.py to keep that file under the line-count cap.
 
 import frappe
 
-from approval_engine.vendor_portal.doctype.portal_section_config.portal_section_config import (
+from approval_engine.approval_vendor_portal.doctype.portal_section_config.portal_section_config import (
 	PortalSectionConfig,
 )
-from approval_engine.vendor_portal.utils import (
+from approval_engine.approval_vendor_portal.utils import (
 	get_portal_doctype_by_document_type,
 	row_allowed_for_user,
 	status_pill_color,

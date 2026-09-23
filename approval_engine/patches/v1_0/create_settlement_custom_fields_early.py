@@ -4,11 +4,11 @@
 # written permission from 8848 Digital LLP.
 
 """
-Patch: create the Settlement custom fields (Supplier, Purchase Order,
-Purchase Invoice, etc. -- everything under settlement/custom_fields/)
+Patch: create the Approval Settlement custom fields (Supplier, Purchase Order,
+Purchase Invoice, etc. -- everything under approval_settlement/custom_fields/)
 before any other post_model_sync patch runs.
 
-hooks.py also wires approval_engine.settlement.setup.create_custom_fields
+hooks.py also wires approval_engine.approval_settlement.setup.create_custom_fields
 as an after_migrate hook, which is idempotent and safe to run again -- but
 after_migrate fires only after every patch in this file has already run.
 create_faq_master's FAQ Master.after_insert doc_event
@@ -25,7 +25,7 @@ Registered in patches.txt as:
     approval_engine.patches.v1_0.create_settlement_custom_fields_early
 """
 
-from approval_engine.settlement.setup import create_custom_fields
+from approval_engine.approval_settlement.setup import create_custom_fields
 
 
 def execute():

@@ -24,10 +24,10 @@ Registered in patches.txt as:
 
 import frappe
 
-from approval_engine.settlement.doctype.tds_reference.tds_reference_utils import (
+from approval_engine.approval_settlement.doctype.tds_reference.tds_reference_utils import (
 	create_tax_withholding_categories,
 )
-from approval_engine.settlement.setup import create_custom_fields
+from approval_engine.approval_settlement.setup import create_custom_fields
 
 
 def execute():

@@ -37,11 +37,11 @@ from approval_engine.patches.v1_0.kyc_seed_records_data import (
 
 
 def execute():
-	frappe.reload_doc("settlement", "doctype", "kyc_type")
-	frappe.reload_doc("settlement", "doctype", "vendor_name")
-	frappe.reload_doc("settlement", "doctype", "kyc_credential")
-	frappe.reload_doc("settlement", "doctype", "kyc_vendor")
-	frappe.reload_doc("settlement", "doctype", "kyc_vendor_field_map")
+	frappe.reload_doc("approval_settlement", "doctype", "kyc_type")
+	frappe.reload_doc("approval_settlement", "doctype", "vendor_name")
+	frappe.reload_doc("approval_settlement", "doctype", "kyc_credential")
+	frappe.reload_doc("approval_settlement", "doctype", "kyc_vendor")
+	frappe.reload_doc("approval_settlement", "doctype", "kyc_vendor_field_map")
 
 	_seed_check_types()
 	_seed_vendor_names()
