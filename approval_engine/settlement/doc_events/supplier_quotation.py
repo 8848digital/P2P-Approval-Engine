@@ -41,30 +41,12 @@ def create_brn(supplier_quotation: str):
 				"transaction_date": supplier_quotation.transaction_date,
 				"duration_of_service_months": supplier_quotation.duration_of_service_months,
 				"service_start_date": supplier_quotation.service_start_date,
-				"is_new_vendor": supplier_quotation.is_new_vendor,
 				"quotation_requisition_id": supplier_quotation.custom_requisition_no,
-				"is_existing_vendor": supplier_quotation.is_existing_vendor,
-				"existing_vendor": supplier_quotation.supplier,
-				"msa_agreement": supplier_quotation.msa_agreement,
-				"new_vendor": supplier_quotation.new_vendor,
 				"supplier_quotation": supplier_quotation.name,
 				"single": 1,
 			}
 		)
-
-		brn.append(
-			"comparision",
-			{
-				"is_new_vendor": supplier_quotation.is_new_vendor,
-				"is_existing_vendor": supplier_quotation.is_existing_vendor,
-				"vendor_name": supplier_quotation.new_vendor
-				if supplier_quotation.new_vendor
-				else supplier_quotation.supplier_name,
-				"existing_vendor": supplier_quotation.supplier,
-				"preferred": 1 if supplier_quotation.workflow_state == "Selected" else 0,
-			},
-		)
-
+		brn.append("comparision", _comparision_row_from_quotation(supplier_quotation, default_preferred=True))
 		brn.insert(ignore_mandatory=True)
 		frappe.db.set_value(
 			"Supplier Quotation", supplier_quotation.name, "custom_brn", brn.name, update_modified=False
@@ -76,24 +58,50 @@ def create_brn(supplier_quotation: str):
 		if brn.single == 1:
 			brn.single = 0
 		brn.multi = 1
-		brn.append(
-			"comparision",
-			{
-				"is_new_vendor": supplier_quotation.is_new_vendor,
-				"is_existing_vendor": supplier_quotation.is_existing_vendor,
-				"vendor_name": supplier_quotation.new_vendor
-				if supplier_quotation.new_vendor
-				else supplier_quotation.supplier_name,
-				"existing_vendor": supplier_quotation.supplier,
-				"preferred": 1 if supplier_quotation.workflow_state == "Selected" else 0,
-			},
-		)
+		brn.append("comparision", _comparision_row_from_quotation(supplier_quotation))
 	brn.flags.ignore_mandatory = True
 	brn.save()
 	frappe.db.set_value(
 		"Supplier Quotation", supplier_quotation.name, "custom_brn", brn.name, update_modified=False
 	)
 	return {"name": brn.name, "is_new": False}
+
+
+def _comparision_row_from_quotation(supplier_quotation, default_preferred: bool = False) -> dict:
+	"""Build a BRN Comparision row from a Supplier Quotation. BRN itself no
+	longer carries vendor/MSA fields at the top level -- those moved onto
+	this child table -- so this is the single place create_brn() maps a
+	quotation's vendor/MSA data onto a row, for both the new-BRN and
+	append-to-existing-BRN paths above.
+
+	workflow_state is only a real attribute once a Workflow is configured
+	for Supplier Quotation on this site; doc.get() returns None instead of
+	raising when it isn't, so absent that workflow a row is only marked
+	Preferred via default_preferred instead.
+
+	Parameters:
+		supplier_quotation (Document, required): The Supplier Quotation
+			being converted into a BRN Comparision row.
+		default_preferred (bool, optional): True for the sole row of a
+			brand-new single-vendor BRN, where BRN's own "exactly one
+			Preferred row" rule leaves no other reasonable default --
+			there is no second vendor to compare against yet. False (the
+			default) for a row being added to a Multi/RPT BRN alongside
+			others, where Preferred should only follow a real workflow
+			decision, not every new row appended.
+
+	Returns:
+		dict: A BRN Comparision row, ready to pass to Document.append().
+	"""
+	preferred = default_preferred or supplier_quotation.get("workflow_state") == "Selected"
+	return {
+		"is_new_vendor": supplier_quotation.is_new_vendor,
+		"is_existing_vendor": supplier_quotation.is_existing_vendor,
+		"vendor_name": supplier_quotation.new_vendor or supplier_quotation.supplier_name,
+		"existing_vendor": supplier_quotation.supplier,
+		"msa_agreement": supplier_quotation.msa_agreement,
+		"preferred": 1 if preferred else 0,
+	}
 
 
 # =====================================================================
