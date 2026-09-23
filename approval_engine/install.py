@@ -15,6 +15,7 @@ from frappe.query_builder import DocType
 from frappe.query_builder.functions import Lower
 
 from approval_engine.approval_core import generator
+from approval_engine.settlement.setup import create_custom_fields
 
 # Modules that came over from the retired p2p_customization app.
 P2P_CUSTOMIZATION_APP = "p2p_customization"
@@ -23,14 +24,17 @@ P2P_CUSTOMIZATION_MODULES = ("settlement", "vendor portal")
 
 def after_install():
 	"""
-	Seed workflow master data and take over the modules that came from
-	p2p_customization on sites that already had it.
+	Seed workflow master data, create the Settlement custom fields (install-app
+	runs neither after_migrate nor patches, so a fresh site would otherwise
+	have none -- Supplier hooks then fail), and take over the modules that
+	came from p2p_customization on sites that already had it.
 
 	Returns:
 	    None
 	"""
 	generator.ensure_workflow_states()
 	generator.ensure_actions()
+	create_custom_fields()
 	repoint_p2p_customization_module_defs()
 	frappe.db.commit()
 

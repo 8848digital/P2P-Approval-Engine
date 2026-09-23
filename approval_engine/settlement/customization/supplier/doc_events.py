@@ -34,7 +34,7 @@ def manage_supplier_role_based_on_workflow(doc):
 
 
 def update_vendor_email_doc(doc, method=None):
-	if not doc.is_created_from_webform:
+	if not doc.get("is_created_from_webform"):
 		return
 
 	if doc.email_id:
@@ -48,7 +48,7 @@ def update_vendor_email_doc(doc, method=None):
 
 
 def update_supplier_in_brn(doc, method=None):
-	if not doc.brn:
+	if not doc.get("brn"):
 		return
 
 	update_comparision_row_for_onboarded_vendor(doc)
@@ -150,7 +150,7 @@ def create_supplier_address(doc):
 	if supplier_address_exists(doc):
 		return
 
-	if not doc.is_created_from_webform:
+	if not doc.get("is_created_from_webform"):
 		return
 
 	address = get_supplier_address_doc(doc)
