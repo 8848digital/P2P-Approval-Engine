@@ -15,13 +15,15 @@ included) from the on-disk JSON. So a site that already had these records
 showing the old module in the UI even though the source file here is
 already correct -- this patch is the one-time fix for that gap on
 existing sites. A fresh install has no such record yet, so the JSON's own
-"module": "settlement" is picked up correctly and this patch is a no-op.
+"module": "Settlement" is picked up correctly and this patch is a no-op.
 
 Registered in patches.txt as:
     approval_engine.patches.v1_0.fix_moved_standard_doc_modules
 """
 
 import frappe
+
+MODULE = "Settlement"
 
 DOCS = [
 	("Web Form", "vendor-onboarding-form"),
@@ -34,8 +36,8 @@ def execute():
 	for doctype, name in DOCS:
 		if not frappe.db.exists(doctype, name):
 			continue
-		if frappe.db.get_value(doctype, name, "module") != "settlement":
-			frappe.db.set_value(doctype, name, "module", "settlement", update_modified=False)
+		if frappe.db.get_value(doctype, name, "module") != MODULE:
+			frappe.db.set_value(doctype, name, "module", MODULE, update_modified=False)
 
 	frappe.clear_cache()
 	frappe.db.commit()

@@ -11,11 +11,47 @@ this again (e.g. on reinstall) is safe.
 """
 
 import frappe
+from frappe.query_builder import DocType
+from frappe.query_builder.functions import Lower
 
 from approval_engine.approval_core import generator
 
+# Modules that came over from the retired p2p_customization app.
+P2P_CUSTOMIZATION_APP = "p2p_customization"
+P2P_CUSTOMIZATION_MODULES = ("settlement", "vendor portal")
+
 
 def after_install():
-    generator.ensure_workflow_states()
-    generator.ensure_actions()
-    frappe.db.commit()
+	"""
+	Seed workflow master data and take over the modules that came from
+	p2p_customization on sites that already had it.
+
+	Returns:
+	    None
+	"""
+	generator.ensure_workflow_states()
+	generator.ensure_actions()
+	repoint_p2p_customization_module_defs()
+	frappe.db.commit()
+
+
+def repoint_p2p_customization_module_defs():
+	"""
+	Hand the Settlement and Vendor Portal Module Defs over from
+	p2p_customization to approval_engine. Module Def.app_name decides what
+	`bench uninstall-app` deletes: left on p2p_customization, uninstalling
+	it would drop BRN and every other Settlement/Vendor Portal DocType with
+	its data. Case-insensitive because p2p_customization named the module
+	"settlement". No-op on sites that never had p2p_customization.
+
+	Returns:
+	    None
+	"""
+	module_def = DocType("Module Def")
+
+	(
+		frappe.qb.update(module_def)
+		.set(module_def.app_name, "approval_engine")
+		.where(module_def.app_name == P2P_CUSTOMIZATION_APP)
+		.where(Lower(module_def.name).isin(P2P_CUSTOMIZATION_MODULES))
+	).run()

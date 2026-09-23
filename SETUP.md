@@ -55,3 +55,26 @@ None.
 3. Open a document of that DocType — the generated `<DocType> Approval`
    workflow should be active and the "Workflow Activity" sidebar should
    render on the form.
+
+## Migrating a Site from p2p_customization
+
+The Settlement and Vendor Portal modules (BRN, KYC, vendor portal, etc.) used
+to ship in the separate `p2p_customization` app. On a site that still has it
+installed, follow this order — **never run `bench uninstall-app
+p2p_customization` before step 2 has run**, or Frappe deletes the BRN and
+other Settlement DocTypes together with their data. Take a database backup
+(`bench --site <site> backup`) first.
+
+1. Get and install this app:
+   `bench get-app approval_engine` and
+   `bench --site <site> install-app approval_engine`
+   (or, if it is already installed, `bench --site <site> migrate`).
+2. Confirm the modules now belong to this app — in **Module Def**,
+   `Settlement` and `Vendor Portal` must show App Name `approval_engine`.
+   This is done automatically by `after_install` and by the
+   `repoint_p2p_customization_modules` patch.
+3. Only then remove the old app from the site:
+   `bench --site <site> uninstall-app p2p_customization`, and drop it from
+   the bench with `bench remove-app p2p_customization`.
+4. Run `bench --site <site> migrate` once more and check that existing BRNs
+   still open.
