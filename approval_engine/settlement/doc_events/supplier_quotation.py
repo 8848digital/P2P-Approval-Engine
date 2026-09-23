@@ -22,6 +22,9 @@ from approval_engine.settlement.doc_events.supplier_quotation_extraction import 
 	parse_brn_data,
 )
 
+# Multi/RPT BRNs need at least this many Comparision rows (see brn/doc_events.py).
+MULTI_MIN_COMPARISION_ROWS = 3
+
 
 @frappe.whitelist()
 def create_brn(supplier_quotation: str):
@@ -58,13 +61,52 @@ def create_brn(supplier_quotation: str):
 		if brn.single == 1:
 			brn.single = 0
 		brn.multi = 1
-		brn.append("comparision", _comparision_row_from_quotation(supplier_quotation))
+		_add_quotation_row(brn, _comparision_row_from_quotation(supplier_quotation))
+		_top_up_comparision_rows(brn, MULTI_MIN_COMPARISION_ROWS)
 	brn.flags.ignore_mandatory = True
 	brn.save()
 	frappe.db.set_value(
 		"Supplier Quotation", supplier_quotation.name, "custom_brn", brn.name, update_modified=False
 	)
 	return {"name": brn.name, "is_new": False}
+
+
+def _add_quotation_row(brn, row_data: dict) -> None:
+	"""
+	Put a quotation's vendor into the first empty Comparision row (one left
+	by _top_up_comparision_rows), or append a new row if none is empty.
+
+	Parameters:
+		brn (Document, required): The draft BRN being updated.
+		row_data (dict, required): Row values from _comparision_row_from_quotation.
+
+	Returns:
+		None
+	"""
+	empty_row = next((row for row in brn.comparision if not (row.existing_vendor or row.vendor_name)), None)
+	if empty_row is not None:
+		empty_row.update(row_data)
+		return
+
+	brn.append("comparision", row_data)
+
+
+def _top_up_comparision_rows(brn, min_rows: int) -> None:
+	"""
+	Append empty Comparision rows until the BRN has at least `min_rows`.
+	create_brn() switches a BRN to Multi on its second quotation, but Multi
+	needs 3 rows to save -- the blank rows let the draft save so the user
+	can fill in the remaining vendors.
+
+	Parameters:
+		brn (Document, required): The draft BRN being updated.
+		min_rows (int, required): Minimum number of Comparision rows.
+
+	Returns:
+		None
+	"""
+	for _row_index in range(min_rows - len(brn.comparision)):
+		brn.append("comparision", {})
 
 
 def _comparision_row_from_quotation(supplier_quotation, default_preferred: bool = False) -> dict:
