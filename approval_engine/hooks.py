@@ -9,6 +9,12 @@ app_description = "Config-driven P2P approval workflow engine (Approval Matrix -
 app_email = "dhaval@8848digital.com"
 app_license = "Proprietary"
 
+# Exported by `bench --site <site> 8848-export-fixtures --app approval_engine`
+# (see commands/README.md); imported into fixtures/ on migrate.
+custom_fixtures = [{"dt": "Custom Field", "filters": {"module": "Settlement"}}]
+
+commands = ["approval_engine.commands.export_fixtures.export_fixtures"]
+
 # Apps
 # ------------------
 

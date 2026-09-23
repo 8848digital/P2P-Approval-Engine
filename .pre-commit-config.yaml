@@ -23,8 +23,8 @@ repos:
     rev: 951ccf4d5bb0d692b457a5ebc4215d755618eb68
     hooks:
       - id: black
-        # utils/api_handlers/ is copied verbatim from the skills template -- keep it unformatted.
-        exclude: ^approval_engine/utils/api_handlers/
+        # utils/api_handlers/ and commands/ are copied verbatim from the skills template -- keep them unformatted.
+        exclude: ^approval_engine/(utils/api_handlers|commands)/
 
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v2.7.1
@@ -66,8 +66,8 @@ repos:
     rev: 5.12.0
     hooks:
       - id: isort
-        # utils/api_handlers/ is copied verbatim from the skills template -- keep it unformatted.
-        exclude: ^approval_engine/utils/api_handlers/
+        # utils/api_handlers/ and commands/ are copied verbatim from the skills template -- keep them unformatted.
+        exclude: ^approval_engine/(utils/api_handlers|commands)/
 
   - repo: https://github.com/PyCQA/flake8
     rev: 6.0.0
