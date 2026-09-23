@@ -5,7 +5,7 @@
 
 import frappe
 
-from approval_engine.approval_vendor_portal.utils import (
+from approval_engine.vendor_portal.utils import (
 	base_portal_context,
 	get_portal_doctype_by_document_type,
 	require_vendor_portal_access,

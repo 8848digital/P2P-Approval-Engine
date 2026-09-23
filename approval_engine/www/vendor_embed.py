@@ -8,7 +8,7 @@ from urllib.parse import quote, urlencode
 import frappe
 from frappe import _
 
-from approval_engine.approval_vendor_portal.utils import (
+from approval_engine.vendor_portal.utils import (
 	base_portal_context,
 	require_vendor_login,
 	row_allowed_for_user,

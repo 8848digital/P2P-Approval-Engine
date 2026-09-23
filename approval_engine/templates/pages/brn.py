@@ -7,7 +7,7 @@ from urllib.parse import quote
 
 import frappe
 
-from approval_engine.approval_settlement.doctype.brn.brn_portal import (
+from approval_engine.settlement.doctype.brn.brn_portal import (
 	can_make_purchase_invoice,
 	check_brn_portal_access,
 )
