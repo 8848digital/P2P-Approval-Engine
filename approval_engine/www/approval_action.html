@@ -1,0 +1,105 @@
+{#
+Copyright (c) 2026 8848 Digital LLP. All rights reserved.
+Proprietary and confidential. Unauthorized copying, distribution, or use
+of this file, via any medium, is strictly prohibited without prior
+written permission from 8848 Digital LLP.
+#}
+{% extends "templates/web.html" %}
+
+{% block head_include %}
+	{{ super() }}
+	{# The token is in the URL: keep it out of search indexes and Referer headers. #}
+	<meta name="robots" content="noindex, nofollow">
+	<meta name="referrer" content="no-referrer">
+{% endblock %}
+
+{# A focused, single-purpose page: no site navbar (Home/Login) or footer. #}
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block page_content %}
+<main class="aa-page">
+	{% if not summary.valid %}
+	<section class="aa-panel aa-closed">
+		<h1 class="aa-title">{{ _("Link unavailable") }}</h1>
+		<p class="aa-lead">{{ summary.message | e }}</p>
+		<p class="aa-muted">{{ _("If you still need to act on this document, sign in to the ERP or ask for a new approval email.") }}</p>
+	</section>
+	{% else %}
+	{% set document = summary.document %}
+	<section class="aa-panel" id="approval-action"
+		data-token="{{ token | e }}"
+		data-reason-required="{{ summary.reason_required_for | join(',') | e }}">
+
+		<header class="aa-header">
+			<span class="aa-eyebrow">{{ document.doctype | e }} &middot; <span data-role="state">{{ document.workflow_state | e }}</span></span>
+			<h1 class="aa-title">{{ document.name | e }}</h1>
+			<p class="aa-amount">{{ document.amount | e }}</p>
+		</header>
+
+		<dl class="aa-facts">
+			{% for label, value in [
+				(_("Company"), document.company),
+				(_("Department"), document.department),
+				(_("Party"), document.party),
+				(_("Date"), document.date),
+			] if value %}
+			<div class="aa-fact"><dt>{{ label }}</dt><dd>{{ value | e }}</dd></div>
+			{% endfor %}
+		</dl>
+
+		<p class="aa-muted">
+			{{ _("Hello {0}, the full document is attached to the approval email as a PDF.").format(summary.approver_name | e) }}
+		</p>
+		{% if summary.modified_since_sent %}
+		<p class="aa-warning">{{ _("This document was edited after the email was sent, so the attached PDF may be outdated. The details above are current.") }}</p>
+		{% endif %}
+
+		{% if not summary.actions %}
+		{# Link is valid, but this approver's turn has passed (someone else acted, or the
+		   document moved to another tier). Say so instead of showing dead controls. #}
+		<p class="aa-lead">{{ _("There is nothing for you to do on this document right now — it is with another approver.") }}</p>
+		{% else %}
+		<div class="aa-step" data-step="choose">
+			<div class="aa-actions" role="radiogroup" aria-label="{{ _('Action') }}">
+				{% for action in summary.actions %}
+				<button type="button" class="aa-action" data-action="{{ action | e }}" role="radio" aria-checked="false">{{ _(action) | e }}</button>
+				{% endfor %}
+			</div>
+
+			<label class="aa-field">
+				<span class="aa-label" data-label-optional="{{ _('Remarks (optional)') }}" data-label-required="{{ _('Reason for rejection') }}">{{ _("Remarks (optional)") }}</span>
+				<textarea class="aa-input" name="remarks" rows="3" maxlength="1000"></textarea>
+			</label>
+
+			<button type="button" class="aa-primary" data-role="send-otp" disabled>{{ _("Send verification code") }}</button>
+		</div>
+
+		<div class="aa-step" data-step="verify" hidden>
+			<p class="aa-lead" data-role="otp-hint"></p>
+			<label class="aa-field">
+				<span class="aa-label">{{ _("Verification code") }}</span>
+				<input class="aa-input aa-otp" name="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}">
+			</label>
+			<div class="aa-row">
+				<button type="button" class="aa-primary" data-role="confirm">{{ _("Confirm") }}</button>
+				<button type="button" class="aa-link" data-role="resend">{{ _("Resend code") }}</button>
+				<button type="button" class="aa-link" data-role="back">{{ _("Change action") }}</button>
+			</div>
+		</div>
+
+		<div class="aa-step" data-step="done" hidden>
+			<h2 class="aa-title">{{ _("Done") }}</h2>
+			<p class="aa-lead" data-role="done-message"></p>
+		</div>
+
+		<p class="aa-error" data-role="error" role="alert" hidden></p>
+		{% endif %}
+
+		<p class="aa-footnote">
+			{{ _("This link is personal to {0} and works once. It expires on {1}.").format(summary.approver_name | e, summary.expires_on | e) }}
+		</p>
+	</section>
+	{% endif %}
+</main>
+{% endblock %}

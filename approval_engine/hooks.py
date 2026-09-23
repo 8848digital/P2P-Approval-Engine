@@ -151,11 +151,18 @@ after_install = "approval_engine.install.after_install"
 doc_events = {
 	"*": {
 		"validate": "approval_engine.approval_core.runtime.target_validate",
+		"on_update": "approval_engine.approval_core.runtime.target_on_update",
 	}
 }
 
 # Scheduled Tasks
 # ---------------
+
+scheduler_events = {
+	"daily": [
+		"approval_engine.approval_core.tasks.expire_action_links",
+	],
+}
 
 # scheduler_events = {
 # 	"all": [

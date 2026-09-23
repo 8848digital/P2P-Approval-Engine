@@ -1,0 +1,195 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-09-22 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "reference_doctype",
+  "reference_name",
+  "user",
+  "tier",
+  "column_break_state",
+  "status",
+  "workflow_state",
+  "expires_on",
+  "token_hash",
+  "otp_section",
+  "otp_action",
+  "otp_sent_on",
+  "otp_expires_on",
+  "otp_attempts",
+  "otp_hash",
+  "usage_section",
+  "used_action",
+  "used_on",
+  "used_ip"
+ ],
+ "fields": [
+  {
+   "fieldname": "reference_doctype",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Reference Document Type",
+   "options": "DocType",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "reference_name",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Reference Name",
+   "options": "reference_doctype",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Approver",
+   "options": "User",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "tier",
+   "fieldtype": "Int",
+   "label": "Approver Tier",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_state",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Active",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Active\nUsed\nSuperseded\nExpired",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "description": "The link only works while the document is still in this state.",
+   "fieldname": "workflow_state",
+   "fieldtype": "Data",
+   "label": "Issued At State",
+   "read_only": 1
+  },
+  {
+   "fieldname": "expires_on",
+   "fieldtype": "Datetime",
+   "label": "Expires On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "token_hash",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Token Hash",
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "otp_section",
+   "fieldtype": "Section Break",
+   "label": "OTP"
+  },
+  {
+   "fieldname": "otp_action",
+   "fieldtype": "Data",
+   "label": "OTP Bound Action",
+   "read_only": 1
+  },
+  {
+   "fieldname": "otp_sent_on",
+   "fieldtype": "Datetime",
+   "label": "OTP Sent On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "otp_expires_on",
+   "fieldtype": "Datetime",
+   "label": "OTP Expires On",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "otp_attempts",
+   "fieldtype": "Int",
+   "label": "Failed OTP Attempts",
+   "read_only": 1
+  },
+  {
+   "fieldname": "otp_hash",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "OTP Hash",
+   "read_only": 1
+  },
+  {
+   "fieldname": "usage_section",
+   "fieldtype": "Section Break",
+   "label": "Usage"
+  },
+  {
+   "fieldname": "used_action",
+   "fieldtype": "Data",
+   "label": "Action Taken",
+   "read_only": 1
+  },
+  {
+   "fieldname": "used_on",
+   "fieldtype": "Datetime",
+   "label": "Used On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "used_ip",
+   "fieldtype": "Data",
+   "label": "Used From IP",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "in_create": 1,
+ "links": [],
+ "modified": "2026-09-22 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Approval Core",
+ "name": "Approval Action Token",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "delete": 1,
+   "export": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager"
+  },
+  {
+   "export": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Approval Manager"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "reference_name",
+ "track_changes": 0
+}

@@ -21,6 +21,7 @@ from frappe.utils import flt, get_fullname
 from approval_engine.approval_core.generator import (
     MAX_LEVELS,
     STATE_FOR_TIER,
+    acting_tier,
     amount_field_for,
     configured_levels,
     find_band_row,
@@ -38,20 +39,6 @@ def _managed(doctype):
         {"document_type": doctype, "is_active": 1, "name": workflow_name(doctype)},
         "name",
     ))
-
-
-def _tier_of(from_state):
-    """Which approver tier acted, given the state it acted FROM."""
-    if not from_state:
-        return None
-    if from_state in _TIER_FROM_STATE:
-        return _TIER_FROM_STATE[from_state]
-    if from_state.startswith("On Hold by Approver "):
-        try:
-            return int(from_state.rsplit(" ", 1)[1])
-        except ValueError:
-            return None
-    return None
 
 
 def _status_of(to_state):
@@ -104,7 +91,7 @@ def workflow_activity(doctype, name):
     logs = frappe.get_all(
         "Document Workflow Log",
         filters={"reference_doctype": doctype, "reference_name": name},
-        fields=["from_state", "workflow_state", "user", "creation"],
+        fields=["from_state", "workflow_state", "user", "creation", "remarks", "via_email_link"],
         order_by="creation asc",
     )
 
@@ -112,13 +99,15 @@ def workflow_activity(doctype, name):
     # later approved correctly ends up "approved"; an unresolved hold stays "on_hold").
     tier_action = {}
     for log in logs:
-        tier = _tier_of(log.from_state)
+        tier = acting_tier(log.from_state)
         if not tier:
             continue
         tier_action[tier] = {
             "status": _status_of(log.workflow_state),
             "user": log.user,
             "time": str(log.creation),
+            "remarks": log.remarks,
+            "via_email_link": bool(log.via_email_link),
         }
 
     # The single tier currently awaiting action (only set in an approve-chain state;
@@ -138,12 +127,16 @@ def workflow_activity(doctype, name):
             "owner": [_owner(u) for u in pool(row, level)],
             "acted_by": None,
             "time": None,
+            "remarks": None,
+            "via_email_link": False,
         }
         if act:
             # approved / on_hold / rejected, attributed to the approver who acted
             step["status"] = act["status"]
             step["acted_by"] = _owner(act["user"])
             step["time"] = act["time"]
+            step["remarks"] = act["remarks"]
+            step["via_email_link"] = act["via_email_link"]
         else:
             step["status"] = "pending" if level == current_tier else "upcoming"
         steps.append(step)

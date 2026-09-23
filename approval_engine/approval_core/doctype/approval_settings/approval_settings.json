@@ -6,7 +6,9 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "amount_fields"
+  "amount_fields",
+  "email_action_section",
+  "email_link_validity_hours"
  ],
  "fields": [
   {
@@ -15,13 +17,26 @@
    "fieldtype": "Table",
    "label": "Amount Field Mapping",
    "options": "Approval Amount Field Mapping"
+  },
+  {
+   "fieldname": "email_action_section",
+   "fieldtype": "Section Break",
+   "label": "Email Link Actions"
+  },
+  {
+   "default": "72",
+   "description": "How long an emailed approval link stays usable (1-720 hours). A link also stops working as soon as it is used or the document moves to another state. Left blank, the default of 72 hours applies.",
+   "fieldname": "email_link_validity_hours",
+   "fieldtype": "Int",
+   "label": "Email Link Validity (Hours)",
+   "non_negative": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-08-27 14:44:56.186389",
+ "modified": "2026-09-23 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Approval Core",
  "name": "Approval Settings",

@@ -10,7 +10,9 @@
   "reference_name",
   "from_state",
   "workflow_state",
-  "user"
+  "user",
+  "via_email_link",
+  "remarks"
  ],
  "fields": [
   {
@@ -54,12 +56,24 @@
    "label": "User",
    "options": "User",
    "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "via_email_link",
+   "fieldtype": "Check",
+   "in_standard_filter": 1,
+   "label": "Via Email Link"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-01 00:00:00.000000",
+ "modified": "2026-09-22 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Approval Core",
  "name": "Document Workflow Log",

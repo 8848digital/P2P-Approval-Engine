@@ -1,0 +1,27 @@
+{#
+Copyright (c) 2026 8848 Digital LLP. All rights reserved.
+Proprietary and confidential. Unauthorized copying, distribution, or use
+of this file, via any medium, is strictly prohibited without prior
+written permission from 8848 Digital LLP.
+
+Placeholder layout — final wording/branding to be agreed. Args: see
+approval_core/email_action/notify.py (ActionRequestNotifier.__send).
+#}
+<p>{{ _("Hello {0},").format(approver_name | e) }}</p>
+
+<p>{{ _("{0} {1} is waiting for your action as Approver {2}.").format(doctype | e, docname | e, tier) }}</p>
+
+<table cellpadding="4" style="border-collapse: collapse;">
+	<tr><td>{{ _("Company") }}</td><td><b>{{ company | e }}</b></td></tr>
+	<tr><td>{{ _("Department") }}</td><td><b>{{ department | e }}</b></td></tr>
+	<tr><td>{{ _("Amount") }}</td><td><b>{{ amount | e }}</b></td></tr>
+	<tr><td>{{ _("Current status") }}</td><td><b>{{ workflow_state | e }}</b></td></tr>
+</table>
+
+<p>{{ _("The document is attached as a PDF. You can approve, hold or reject it without signing in:") }}</p>
+
+<p><a href="{{ link_url }}">{{ _("Review and take action") }}</a></p>
+
+<p style="color: #6b7280;">
+	{{ _("This link is personal to you and works once. It expires in {0} hours, or as soon as the document is actioned. You will be asked for a verification code sent to this email address.").format(validity_hours) }}
+</p>
