@@ -21,6 +21,7 @@ from frappe.utils import flt, get_fullname
 from approval_engine.approval_core.generator import (
     MAX_LEVELS,
     STATE_FOR_TIER,
+    acting_tier,
     amount_field_for,
     configured_levels,
     find_band_row,
@@ -38,20 +39,6 @@ def _managed(doctype):
         {"document_type": doctype, "is_active": 1, "name": workflow_name(doctype)},
         "name",
     ))
-
-
-def _tier_of(from_state):
-    """Which approver tier acted, given the state it acted FROM."""
-    if not from_state:
-        return None
-    if from_state in _TIER_FROM_STATE:
-        return _TIER_FROM_STATE[from_state]
-    if from_state.startswith("On Hold by Approver "):
-        try:
-            return int(from_state.rsplit(" ", 1)[1])
-        except ValueError:
-            return None
-    return None
 
 
 def _status_of(to_state):
@@ -112,7 +99,7 @@ def workflow_activity(doctype, name):
     # later approved correctly ends up "approved"; an unresolved hold stays "on_hold").
     tier_action = {}
     for log in logs:
-        tier = _tier_of(log.from_state)
+        tier = acting_tier(log.from_state)
         if not tier:
             continue
         tier_action[tier] = {

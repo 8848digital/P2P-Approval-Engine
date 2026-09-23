@@ -69,6 +69,8 @@ STATE_FOR_TIER = {1: "Pending", 2: "Approved 1", 3: "Approved 2", 4: "Approved 3
 
 ACTIONS = ["Approve", "Hold", "Reject"]
 
+HOLD_STATE_PREFIX = "On Hold by Approver "
+
 DEFAULT_AMOUNT_FIELDS = {
     "Purchase Order": "grand_total",
     "Purchase Invoice": "grand_total",
@@ -85,6 +87,29 @@ def role_name(document_type, level):
 
 def workflow_name(document_type):
     return f"{document_type} Approval"
+
+
+def acting_tier(state):
+    """
+    Approver tier that acts FROM `state` (inverse of STATE_FOR_TIER, plus hold states).
+
+    Example: "Pending" -> 1, "Approved 2" -> 3, "On Hold by Approver 2" -> 2, "Approved" -> None.
+
+    Parameters:
+        state (str, optional): A workflow state of an engine-generated workflow.
+
+    Returns:
+        int | None: The tier, or None for terminal/unknown states.
+    """
+    if not state:
+        return None
+    for tier, tier_state in STATE_FOR_TIER.items():
+        if tier_state == state:
+            return tier
+    if state.startswith(HOLD_STATE_PREFIX):
+        suffix = state[len(HOLD_STATE_PREFIX):]
+        return int(suffix) if suffix.isdigit() else None
+    return None
 
 
 # ---------------------------------------------------------------------------
