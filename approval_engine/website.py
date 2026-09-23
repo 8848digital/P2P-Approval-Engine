@@ -24,7 +24,7 @@ def resolve_website_path(path):
 	  against that route in Vendor Portal Settings.
 	"""
 	if not path and frappe.session.user != "Guest" and _is_vendor(frappe.session.user):
-		from approval_engine.approval_vendor_portal.utils import get_vendor_landing_route
+		from approval_engine.vendor_portal.utils import get_vendor_landing_route
 
 		frappe.flags.redirect_location = get_vendor_landing_route()
 		raise frappe.Redirect(302)
@@ -37,7 +37,7 @@ def resolve_website_path(path):
 
 
 def _is_vendor(user):
-	from approval_engine.approval_settlement.vendor_auth_hooks import is_vendor
+	from approval_engine.settlement.vendor_auth_hooks import is_vendor
 
 	return is_vendor(user)
 

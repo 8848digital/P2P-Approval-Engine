@@ -1,3 +1,3 @@
 Approval Core
-Approval Settlement
-Approval Vendor Portal
+Settlement
+Vendor Portal

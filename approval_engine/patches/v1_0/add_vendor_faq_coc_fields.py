@@ -6,7 +6,7 @@
 # apps/approval_engine/approval_engine/patches/v1_0/add_vendor_faq_coc_fields.py
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
-from approval_engine.approval_settlement.doctype.faq_master.faq_master_utils import (
+from approval_engine.settlement.doctype.faq_master.faq_master_utils import (
 	FAQ_SECTION_VISIBILITY_DEPENDS_ON,
 )
 

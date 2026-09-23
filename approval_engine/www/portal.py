@@ -6,8 +6,8 @@
 import frappe
 from frappe.www.portal import get_context as get_core_portal_context
 
-from approval_engine.approval_settlement.vendor_auth_hooks import is_vendor
-from approval_engine.approval_vendor_portal.utils import (
+from approval_engine.settlement.vendor_auth_hooks import is_vendor
+from approval_engine.vendor_portal.utils import (
 	get_primary_vendor_supplier_name,
 	get_vendor_landing_route,
 	get_vendor_suppliers,

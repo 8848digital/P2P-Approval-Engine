@@ -11,7 +11,7 @@ under the line-count cap.
 
 import frappe
 
-from approval_engine.approval_vendor_portal.doctype.portal_section_config.portal_section_config import (
+from approval_engine.vendor_portal.doctype.portal_section_config.portal_section_config import (
 	PortalSectionConfig,
 )
 

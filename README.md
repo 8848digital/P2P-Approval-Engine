@@ -20,8 +20,8 @@ with who acted, when, and why.
 On top of the approval engine it runs the procure-to-pay (P2P) side: **BRN**
 proposals that compare vendors before a Purchase Order or Invoice is raised,
 vendor onboarding and KYC, MSA and TDS/ITC compliance checks, a vendor
-self-service portal, and Procure to Pay dashboards. The Approval Settlement
-and Approval Vendor Portal modules were merged in from the retired
+self-service portal, and Procure to Pay dashboards. The Settlement
+and Vendor Portal modules were merged in from the retired
 `p2p_customization` app.
 
 ## Key DocTypes

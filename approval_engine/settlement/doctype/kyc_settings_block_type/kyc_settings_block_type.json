@@ -1,0 +1,21 @@
+{
+ "doctype": "DocType",
+ "name": "KYC Settings Block Type",
+ "module": "Settlement",
+ "istable": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "kyc_check_type"
+ ],
+ "fields": [
+  {
+   "fieldname": "kyc_check_type",
+   "fieldtype": "Link",
+   "label": "KYC Check Type",
+   "options": "KYC Type",
+   "in_list_view": 1,
+   "reqd": 1
+  }
+ ],
+ "permissions": []
+}
