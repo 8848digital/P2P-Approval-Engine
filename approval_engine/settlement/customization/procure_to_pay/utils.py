@@ -43,7 +43,7 @@ def get_fiscal_year_and_validity(posting_date: str, brn: str | None = None) -> d
 	if not brn:
 		return result
 
-	service_start_date, expiry_date = frappe.db.get_value("BRN", brn, ["service_start_date", "expiry_date"])
+	service_start_date, expiry_date = get_brn_service_dates(brn)
 
 	if not (service_start_date and expiry_date):
 		return result
@@ -121,7 +121,7 @@ def validate_brn_dates(brn: str, transaction_date: str) -> dict:
 		dict: {"status": "valid" | "before_start" | "expired", plus
 			"start_date"/"expiry_date" (str) when status isn't "valid"}
 	"""
-	start_date, expiry_date = frappe.db.get_value("BRN", brn, ["service_start_date", "expiry_date"])
+	start_date, expiry_date = get_brn_service_dates(brn)
 
 	if not (start_date and expiry_date):
 		return {"status": "valid"}
@@ -135,3 +135,22 @@ def validate_brn_dates(brn: str, transaction_date: str) -> dict:
 		return {"status": "expired", "start_date": str(start_date), "expiry_date": str(expiry_date)}
 
 	return {"status": "valid"}
+
+
+def get_brn_service_dates(brn: str) -> tuple:
+	"""
+	Fetch a BRN's service start and expiry dates, failing loudly if the BRN
+	doesn't exist. PO/PI validate hooks run before Frappe's own link check,
+	so a mistyped BRN would otherwise crash with a TypeError on unpacking.
+
+	Parameters:
+		brn (str, required): The BRN document name.
+
+	Returns:
+		tuple: (service_start_date, expiry_date); either may be None.
+	"""
+	values = frappe.db.get_value("BRN", brn, ["service_start_date", "expiry_date"])
+	if not values:
+		frappe.throw(_("BRN {0} not found.").format(brn), title=_("Invalid BRN"))
+
+	return values
