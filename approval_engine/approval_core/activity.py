@@ -91,7 +91,7 @@ def workflow_activity(doctype, name):
     logs = frappe.get_all(
         "Document Workflow Log",
         filters={"reference_doctype": doctype, "reference_name": name},
-        fields=["from_state", "workflow_state", "user", "creation"],
+        fields=["from_state", "workflow_state", "user", "creation", "remarks", "via_email_link"],
         order_by="creation asc",
     )
 
@@ -106,6 +106,8 @@ def workflow_activity(doctype, name):
             "status": _status_of(log.workflow_state),
             "user": log.user,
             "time": str(log.creation),
+            "remarks": log.remarks,
+            "via_email_link": bool(log.via_email_link),
         }
 
     # The single tier currently awaiting action (only set in an approve-chain state;
@@ -125,12 +127,16 @@ def workflow_activity(doctype, name):
             "owner": [_owner(u) for u in pool(row, level)],
             "acted_by": None,
             "time": None,
+            "remarks": None,
+            "via_email_link": False,
         }
         if act:
             # approved / on_hold / rejected, attributed to the approver who acted
             step["status"] = act["status"]
             step["acted_by"] = _owner(act["user"])
             step["time"] = act["time"]
+            step["remarks"] = act["remarks"]
+            step["via_email_link"] = act["via_email_link"]
         else:
             step["status"] = "pending" if level == current_tier else "upcoming"
         steps.append(step)

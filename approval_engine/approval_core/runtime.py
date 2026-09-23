@@ -8,7 +8,8 @@ Registered on the `validate` event for all DocTypes; they no-op unless the
 DocType is managed by an active `<DocType> Approval` workflow.
 
 - block: refuse to save if no Approval Matrix band matches (company/department/amount)
-- history: record every workflow state change into `Document Workflow Log` (full audit trail)
+- history: record every workflow state change into `Document Workflow Log` (full audit trail),
+  with the approver's remarks (mandatory on Reject — see `remarks.py`)
 """
 
 import frappe
@@ -18,9 +19,21 @@ from frappe.utils import flt
 from approval_engine.approval_core.generator import (
     workflow_name, amount_field_for, find_band_row,
 )
+from approval_engine.approval_core.remarks import (
+    add_timeline_comment, pop_transition_remarks, validate_reject_reason,
+)
 
 
 def _managed(doctype):
+    """
+    Whether `doctype` currently runs on an active engine-generated workflow.
+
+    Parameters:
+        doctype (str, required): DocType to check.
+
+    Returns:
+        bool: True when its `<DocType> Approval` workflow exists and is active.
+    """
     return bool(frappe.db.get_value(
         "Workflow",
         {"document_type": doctype, "is_active": 1, "name": workflow_name(doctype)},
@@ -29,6 +42,16 @@ def _managed(doctype):
 
 
 def target_validate(doc, method=None):
+    """
+    `validate` hook for every DocType: band gate + transition history for managed ones.
+
+    Parameters:
+        doc (Document, required): Document being saved.
+        method (str, optional): Hook event name passed by Frappe.
+
+    Returns:
+        None
+    """
     if not _managed(doc.doctype):
         return
     _block_if_no_band(doc)
@@ -36,6 +59,15 @@ def target_validate(doc, method=None):
 
 
 def _block_if_no_band(doc):
+    """
+    Refuse to save a governed document that no Approval Matrix band covers.
+
+    Parameters:
+        doc (Document, required): Document being saved.
+
+    Returns:
+        None
+    """
     if not doc.get("department"):
         frappe.throw(_("Please set Department — it is required for approval routing."))
     amount = flt(doc.get(amount_field_for(doc.doctype)))
@@ -73,6 +105,12 @@ def _record_history(doc):
     )
     if last and last[0].workflow_state == new_state:
         return
+
+    # Popped only once we know this is a real, not-yet-logged transition, so a repeated
+    # `validate` can't consume the remarks before the logging pass sees them.
+    note = pop_transition_remarks(doc, new_state)
+    validate_reject_reason(new_state, note.remarks)
+
     frappe.get_doc({
         "doctype": "Document Workflow Log",
         "reference_doctype": doc.doctype,
@@ -80,4 +118,9 @@ def _record_history(doc):
         "from_state": old_state,
         "workflow_state": new_state,
         "user": frappe.session.user,
+        "remarks": note.remarks,
+        "via_email_link": note.via_email_link,
     }).insert(ignore_permissions=True)
+
+    if note.remarks:
+        add_timeline_comment(doc, new_state, note.remarks)
