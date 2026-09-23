@@ -9,7 +9,7 @@ rows. Called from supplier_quotation.py's create_supplier_quotation_from_file.
 
 import frappe
 
-from approval_engine.settlement.doc_events.supplier_quotation_parsing import (
+from approval_engine.settlement.customization.supplier_quotation.supplier_quotation_parsing import (
 	parse_qty_and_duration,
 	resolve_supplier,
 	to_float,

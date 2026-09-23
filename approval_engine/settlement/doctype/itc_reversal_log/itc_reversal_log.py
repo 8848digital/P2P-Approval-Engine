@@ -9,7 +9,7 @@ from frappe.model.document import Document
 
 class ITCReversalLog(Document):
 	"""Tracks one Purchase Invoice's ITC (Input Tax Credit) reversal
-	decision and outcome -- see doc_events/purchase_invoice_itc_reversal.py
+	decision and outcome -- see customization/purchase_invoice/itc_reversal.py
 	for the classification/reversal logic that maintains it."""
 
 	def validate(self) -> None:

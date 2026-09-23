@@ -16,20 +16,22 @@ from datetime import date
 import frappe
 from frappe.utils import cint, getdate, nowdate
 
-from approval_engine.settlement.doc_events.itc_reversal_fiscal_year import (
+from approval_engine.settlement.customization.purchase_invoice.itc_reversal_fiscal_year import (
 	classify_itc_requirement,
 	get_current_fiscal_year_doc,
 	get_cutoff_date,
 )
-from approval_engine.settlement.doc_events.itc_reversal_fiscal_year import (
+from approval_engine.settlement.customization.purchase_invoice.itc_reversal_fiscal_year import (
 	get_fiscal_year_doc as _get_fiscal_year_doc,
 )
-from approval_engine.settlement.doc_events.itc_reversal_fiscal_year import (
+from approval_engine.settlement.customization.purchase_invoice.itc_reversal_fiscal_year import (
 	get_or_create_log,
 	get_previous_fiscal_year_doc,
 	is_prior_fiscal_year,
 )
-from approval_engine.settlement.doc_events.itc_reversal_jv import create_itc_reversal_jv
+from approval_engine.settlement.customization.purchase_invoice.itc_reversal_jv import (
+	create_itc_reversal_jv,
+)
 
 
 def get_settings():

@@ -3,7 +3,10 @@
 # of this file, via any medium, is strictly prohibited without prior
 # written permission from 8848 Digital LLP.
 
-# apps/approval_engine/approval_engine/settlement/doc_events/supplier.py
+"""Supplier onboarding logic: FAQ answer validation and change log, MSA
+sync onto Supplier Quotations, and company sync. Wired via supplier.py.
+"""
+
 import frappe
 from frappe import _
 from frappe.utils import now_datetime
@@ -133,7 +136,7 @@ def update_brn_msa_agreement(self, method) -> None:
 	row per vendor, msa_agreement set directly by the originator/business
 	per vendor -- see brn_comparision.json) and payment blocking now reads
 	that child table directly (see
-	settlement/doc_events/payment_entry.py:block_payment_without_msa_attachment),
+	customization/payment_entry/msa_check.py:block_payment_without_msa_attachment),
 	so there is no longer a parent-BRN/PI field for this hook to write to.
 
 	Parameters:

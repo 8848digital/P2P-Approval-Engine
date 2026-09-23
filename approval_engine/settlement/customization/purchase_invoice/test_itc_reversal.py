@@ -35,7 +35,7 @@ from unittest.mock import patch
 import frappe
 from frappe.tests import IntegrationTestCase, UnitTestCase
 
-from approval_engine.settlement.doc_events.purchase_invoice_itc_reversal import (
+from approval_engine.settlement.customization.purchase_invoice.itc_reversal import (
 	classify_itc_requirement,
 	get_cutoff_date,
 	is_prior_fiscal_year,
@@ -125,7 +125,7 @@ class TestGuardClauses(IntegrationTestCase):
 		fake_settings = frappe._dict(enable_itc_reversal=0)
 		doc = frappe._dict(bill_date="2026-06-01", name="PI-TEST-0001")
 		with patch(
-			"approval_engine.settlement.doc_events.purchase_invoice_itc_reversal.get_settings",
+			"approval_engine.settlement.customization.purchase_invoice.itc_reversal.get_settings",
 			return_value=fake_settings,
 		):
 			set_itc_status(doc)  # must return immediately, no DB writes
@@ -134,7 +134,7 @@ class TestGuardClauses(IntegrationTestCase):
 		fake_settings = frappe._dict(enable_itc_reversal=1)
 		doc = frappe._dict(bill_date=None, name="PI-TEST-0002")
 		with patch(
-			"approval_engine.settlement.doc_events.purchase_invoice_itc_reversal.get_settings",
+			"approval_engine.settlement.customization.purchase_invoice.itc_reversal.get_settings",
 			return_value=fake_settings,
 		):
 			set_itc_status(doc)  # must return immediately, no DB writes
@@ -142,7 +142,7 @@ class TestGuardClauses(IntegrationTestCase):
 	def test_daily_sweep_noop_when_feature_disabled(self):
 		fake_settings = frappe._dict(enable_itc_reversal=0)
 		with patch(
-			"approval_engine.settlement.doc_events.purchase_invoice_itc_reversal.get_settings",
+			"approval_engine.settlement.customization.purchase_invoice.itc_reversal.get_settings",
 			return_value=fake_settings,
 		):
 			run_daily_itc_reversal_sweep()  # must return immediately, before even looking up candidate logs
@@ -156,7 +156,7 @@ class TestGuardClauses(IntegrationTestCase):
 		fake_fy = _fy("2026-2027", date(2026, 4, 1), date(2027, 3, 31))
 		fake_previous_fy = _fy("2025-2026", date(2025, 4, 1), date(2026, 3, 31))
 		fake_settings = frappe._dict(enable_itc_reversal=1, cutoff_month=3, cutoff_day=31)
-		module = "approval_engine.settlement.doc_events.purchase_invoice_itc_reversal"
+		module = "approval_engine.settlement.customization.purchase_invoice.itc_reversal"
 		with (
 			patch(f"{module}.get_settings", return_value=fake_settings),
 			patch(f"{module}.get_current_fiscal_year_doc", return_value=fake_fy),

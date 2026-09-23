@@ -11,7 +11,7 @@ import re
 
 import frappe
 
-from approval_engine.settlement.doc_events.supplier_quotation_parsing import (
+from approval_engine.settlement.customization.supplier_quotation.supplier_quotation_parsing import (
 	clean,
 	default_cost_center,
 	find_table,

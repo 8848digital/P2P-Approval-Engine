@@ -6,13 +6,15 @@
 quotation, and create quotations from an uploaded proposal PDF.
 
 Thin wrappers only -- the logic lives in
-settlement/doc_events/supplier_quotation.py.
+settlement/customization/supplier_quotation/quotation_actions.py.
 """
 
 import frappe
 
-from approval_engine.settlement.doc_events.supplier_quotation import create_brn as _create_brn
-from approval_engine.settlement.doc_events.supplier_quotation import (
+from approval_engine.settlement.customization.supplier_quotation.quotation_actions import (
+	create_brn as _create_brn,
+)
+from approval_engine.settlement.customization.supplier_quotation.quotation_actions import (
 	create_supplier_quotation_from_file as _create_supplier_quotation_from_file,
 )
 

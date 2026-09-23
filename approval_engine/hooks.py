@@ -193,35 +193,19 @@ doc_events = {
 		"validate": "approval_engine.approval_core.runtime.target_validate",
 	},
 	"Payment Request": {
-		"before_validate": "approval_engine.settlement.doc_events.payment_request.msa_agreement_validation",
+		"before_validate": "approval_engine.settlement.customization.payment_request.payment_request.before_validate",
 	},
 	"Purchase Order": {
 		"validate": "approval_engine.settlement.customization.purchase_order.purchase_order.validate",
 		"before_save": "approval_engine.settlement.customization.purchase_order.purchase_order.before_save",
 	},
 	"Purchase Invoice": {
-		"before_validate": [
-			"approval_engine.settlement.tax_withholding.force_apply_tds_for_locked_allowance_rows",
-		],
-		"on_update": [
-			"approval_engine.settlement.doc_events.purchase_invoice_itc_reversal.set_itc_status",
-		],
-		"validate": [
-			"approval_engine.settlement.tax_withholding.apply_supplier_allowance_limit",
-			"approval_engine.settlement.tax_withholding.apply_return_tds_reversal",
-			"approval_engine.settlement.customization.purchase_invoice.purchase_invoice.validate",
-		],
-		"after_insert": [
-			"approval_engine.settlement.doc_events.purchase_invoice_itc_reversal.set_itc_status",
-		],
-		"on_submit": [
-			"approval_engine.settlement.tax_withholding.update_supplier_allowance_consumed",
-			"approval_engine.settlement.doc_events.validate_po_status.on_purchase_invoice_submit",
-			"approval_engine.settlement.doc_events.purchase_invoice_itc_reversal.handle_itc_reversal_on_submit",
-		],
-		"on_cancel": [
-			"approval_engine.settlement.tax_withholding.cancel_supplier_allowance_consumed",
-		],
+		"before_validate": "approval_engine.settlement.customization.purchase_invoice.purchase_invoice.before_validate",
+		"validate": "approval_engine.settlement.customization.purchase_invoice.purchase_invoice.validate",
+		"after_insert": "approval_engine.settlement.customization.purchase_invoice.purchase_invoice.after_insert",
+		"on_update": "approval_engine.settlement.customization.purchase_invoice.purchase_invoice.on_update",
+		"on_submit": "approval_engine.settlement.customization.purchase_invoice.purchase_invoice.on_submit",
+		"on_cancel": "approval_engine.settlement.customization.purchase_invoice.purchase_invoice.on_cancel",
 	},
 	"FAQ Master": {
 		"validate": "approval_engine.settlement.doc_events.faq_master.validate",
@@ -230,11 +214,7 @@ doc_events = {
 		"on_trash": "approval_engine.settlement.doc_events.faq_master.delete_supplier_custom_field",
 	},
 	"Supplier": {
-		"validate": [
-			"approval_engine.settlement.doc_events.supplier.validate_vendor_onboarding",
-			"approval_engine.settlement.doc_events.supplier.update_brn_msa_agreement",
-			"approval_engine.settlement.doc_events.supplier.sync_company_to_supplier",
-		],
+		"validate": "approval_engine.settlement.customization.supplier.supplier.validate",
 		"on_update": "approval_engine.settlement.customization.supplier.supplier.on_update",
 		"before_insert": "approval_engine.settlement.customization.supplier.supplier.before_insert",
 		"after_insert": "approval_engine.settlement.customization.supplier.supplier.after_insert",
@@ -243,7 +223,7 @@ doc_events = {
 		"on_update_after_submit": "approval_engine.settlement.customization.supplier_quotation.supplier_quotation.on_update_after_submit",
 	},
 	"Payment Entry": {
-		"before_submit": "approval_engine.settlement.doc_events.payment_entry.block_payment_without_msa_attachment",
+		"before_submit": "approval_engine.settlement.customization.payment_entry.payment_entry.before_submit",
 	},
 }
 
@@ -257,7 +237,7 @@ scheduler_events = {
 		],
 	},
 	"daily": [
-		"approval_engine.settlement.doc_events.purchase_invoice_itc_reversal.run_daily_itc_reversal_sweep",
+		"approval_engine.settlement.customization.purchase_invoice.itc_reversal.run_daily_itc_reversal_sweep",
 	],
 }
 

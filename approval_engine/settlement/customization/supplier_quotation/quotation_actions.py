@@ -12,10 +12,10 @@ supplier_quotation_extraction.py and supplier_quotation_parsing.py modules.
 import frappe
 from frappe import _
 
-from approval_engine.settlement.doc_events.supplier_quotation_creation import (
+from approval_engine.settlement.customization.supplier_quotation.supplier_quotation_creation import (
 	create_quotation_for_vendor,
 )
-from approval_engine.settlement.doc_events.supplier_quotation_extraction import (
+from approval_engine.settlement.customization.supplier_quotation.supplier_quotation_extraction import (
 	extract_tables,
 	parse_brn_data,
 )
