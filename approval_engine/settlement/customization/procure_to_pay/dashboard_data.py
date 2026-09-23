@@ -804,6 +804,11 @@ def build_debug_raw_counts(settings, doctype, company=None, from_date=None, to_d
 		_log("PCD: build_debug_raw_counts MISSING DOCTYPE", "Called with no 'doctype' argument.")
 		frappe.throw(_("Please select a Doctype before running the debug tool."))
 
+	# ignore_permissions below makes an open doctype argument a data leak --
+	# same allowlist as build_debug_line_items.
+	if doctype not in DEBUGGABLE_DOCTYPES:
+		frappe.throw(_("Unsupported doctype for raw-count debug: {0}").format(doctype))
+
 	target_keys = DOCTYPE_TARGET_KEYS.get(doctype, APPROVAL_TARGET_KEYS)
 	is_payment_order = doctype == "Payment Order"
 
@@ -940,7 +945,11 @@ def build_debug_line_items(settings, doctype, company=None, from_date=None, to_d
 
 
 def build_error_logs(doctype=None, from_date=None, to_date=None, limit=100):
-	"""Line-by-line Frappe Error Log viewer, scoped to this dashboard's doctypes and a date range."""
+	"""Line-by-line Frappe Error Log viewer, scoped to this dashboard's doctypes and a date range.
+	System Manager only: tracebacks can carry data from any module, and the
+	query below reads Error Log with ignore_permissions."""
+	frappe.only_for("System Manager")
+
 	_log(
 		"PCD: build_error_logs CALLED",
 		f"doctype={doctype!r} from_date={from_date!r} to_date={to_date!r} limit={limit!r}",

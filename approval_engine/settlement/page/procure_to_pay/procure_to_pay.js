@@ -23,13 +23,7 @@ approval_engine.dashboard.COLOR_MAP = {
 
 // 5th color is only used by MSME Ageing's "Overdue" bucket (worse than
 // the 31-45 Days bucket, hence a darker red than #dc3545).
-approval_engine.dashboard.BUCKET_COLORS = [
-	"#28a745",
-	"#ffc107",
-	"#fd7e14",
-	"#dc3545",
-	"#8b0000",
-];
+approval_engine.dashboard.BUCKET_COLORS = ["#28a745", "#ffc107", "#fd7e14", "#dc3545", "#8b0000"];
 
 approval_engine.dashboard.SECTIONS = [
 	{ key: "brn", container: "chart-brn", title: __("BRN Approval Status") },
@@ -623,7 +617,11 @@ class PaymentsComplianceDashboard {
 			<div class="pc-debug-tabs">
 				<button class="pc-tab-btn active" data-tab="raw">${__("Raw Counts")}</button>
 				<button class="pc-tab-btn" data-tab="lines">${__("Line Items")}</button>
-				<button class="pc-tab-btn" data-tab="logs">${__("Error Log")}</button>
+				${
+					can_view_error_log()
+						? `<button class="pc-tab-btn" data-tab="logs">${__("Error Log")}</button>`
+						: ""
+				}
 			</div>
 			<div class="pc-debug-pane active" data-pane="raw"><p class="text-muted">${__(
 				"Click Run to load."
@@ -691,6 +689,8 @@ class PaymentsComplianceDashboard {
 			callback: (r) => this.render_line_items(dialog, r.message),
 			error: (r) => this.render_call_error(dialog, "lines", r),
 		});
+
+		if (!can_view_error_log()) return;
 
 		frappe.call({
 			method: `${API_MODULE}.get_error_logs`,
@@ -910,3 +910,13 @@ approval_engine.dashboard.PaymentsComplianceDashboard = PaymentsComplianceDashbo
 frappe.pages["procure-to-pay"].on_page_load = function (wrapper) {
 	new approval_engine.dashboard.PaymentsComplianceDashboard(wrapper);
 };
+
+/**
+ * Whether the current user may see the Error Log tab. The server allows
+ * System Manager only, so the tab and its call are skipped for others.
+ *
+ * @returns {boolean} True for System Managers.
+ */
+function can_view_error_log() {
+	return frappe.user.has_role("System Manager");
+}

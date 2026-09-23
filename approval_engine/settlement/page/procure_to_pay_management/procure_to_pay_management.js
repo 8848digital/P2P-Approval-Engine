@@ -865,7 +865,13 @@
 				<div class="ptpm-debug-tabs">
 					<button class="ptpm-tab-btn active" data-tab="raw">${__("Raw Counts")}</button>
 					<button class="ptpm-tab-btn" data-tab="lines">${__("Line Items")}</button>
-					<button class="ptpm-tab-btn" data-tab="logs">${__("Error Log")}</button>
+					${
+						can_view_error_log()
+							? `<button class="ptpm-tab-btn" data-tab="logs">${__(
+									"Error Log"
+							  )}</button>`
+							: ""
+					}
 				</div>
 				<div class="ptpm-debug-pane active" data-pane="raw"><p class="text-muted">${__(
 					"Click Run to load."
@@ -933,6 +939,8 @@
 				callback: (r) => this.render_line_items(dialog, r.message),
 				error: (r) => this.render_call_error(dialog, "lines", r),
 			});
+
+			if (!can_view_error_log()) return;
 
 			frappe.call({
 				method: `${API_MODULE}.get_error_logs`,
@@ -1199,3 +1207,13 @@
 		new ProcureToPayManagementDashboard(wrapper);
 	};
 })();
+
+/**
+ * Whether the current user may see the Error Log tab. The server allows
+ * System Manager only, so the tab and its call are skipped for others.
+ *
+ * @returns {boolean} True for System Managers.
+ */
+function can_view_error_log() {
+	return frappe.user.has_role("System Manager");
+}
