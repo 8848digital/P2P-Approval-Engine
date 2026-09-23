@@ -91,7 +91,7 @@ after_migrate = [
 	"approval_engine.settlement.setup.create_custom_fields",
 ]
 
-extend_bootinfo = "approval_engine.settlement.boot.boot_session"
+boot_session = "approval_engine.boot_session.boot_session"
 
 update_website_context = [
 	"approval_engine.settlement.vendor_auth_hooks.update_website_context",
@@ -177,11 +177,11 @@ after_install = "approval_engine.install.after_install"
 # Permissions evaluated in scripted ways
 
 permission_query_conditions = {
-	"FAQ Master": "approval_engine.settlement.permissions.faq_master.get_permission_query_conditions",
+	"FAQ Master": "approval_engine.settlement.permissions.get_permission_query_conditions",
 }
 
 has_permission = {
-	"FAQ Master": "approval_engine.settlement.permissions.faq_master.has_permission",
+	"FAQ Master": "approval_engine.settlement.permissions.has_permission",
 }
 
 # Document Events
@@ -227,11 +227,11 @@ doc_events = {
 scheduler_events = {
 	"cron": {
 		"0 9 * * *": [
-			"approval_engine.settlement.doctype.vendor_email.utils.send_reminder_for_non_registered_vendors",
+			"approval_engine.settlement.tasks.send_vendor_onboarding_reminders",
 		],
 	},
 	"daily": [
-		"approval_engine.settlement.customization.purchase_invoice.itc_reversal.run_daily_itc_reversal_sweep",
+		"approval_engine.settlement.tasks.reverse_prior_year_itc",
 	],
 }
 

@@ -3,7 +3,6 @@
 # of this file, via any medium, is strictly prohibited without prior
 # written permission from 8848 Digital LLP.
 
-# apps/approval_engine/approval_engine/settlement/permissions/faq_master.py
 import frappe
 
 VENDOR_FAQ_MANAGER_ROLE = (

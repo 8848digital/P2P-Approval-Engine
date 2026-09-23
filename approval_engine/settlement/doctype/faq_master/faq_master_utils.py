@@ -21,7 +21,7 @@ from approval_engine.settlement.doctype.faq_master.faq_master_sync import (
 # patch), so hiding it via depends_on hides every field in and after the Vendor
 # FAQs tab - questions, Code of Conduct, and the FAQ change log - in one place.
 #
-# The role is read from frappe.boot.jfs_faq_manager_role (see boot.boot_session)
+# The role is read from frappe.boot.jfs_faq_manager_role (see approval_engine/boot_session.py)
 # rather than being baked in as a literal here, so changing JFS Settings.
 # faq_manager_role takes effect on next page load without needing to rewrite
 # this Custom Field's depends_on.

@@ -3,12 +3,11 @@
 # of this file, via any medium, is strictly prohibited without prior
 # written permission from 8848 Digital LLP.
 
-# apps/approval_engine/approval_engine/settlement/boot.py
 import frappe
 
 
 def boot_session(bootinfo):
-	"""extend_bootinfo hook: exposes the FAQ Section toggle and the
+	"""boot_session hook: exposes the FAQ Section toggle and the
 	configured FAQ Manager Role from JFS Settings so client-side depends_on
 	expressions (e.g. on the Supplier form's faq_section Tab Break) can read
 	them synchronously instead of making an extra server call. Toggling
