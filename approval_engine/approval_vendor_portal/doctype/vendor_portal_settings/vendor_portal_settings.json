@@ -1,0 +1,51 @@
+{
+ "actions": [],
+ "creation": "2026-09-09 11:50:18.628153",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "portal_title",
+  "doctypes"
+ ],
+ "fields": [
+  {
+   "default": "Vendor Portal",
+   "description": "Shown in the sidebar brand area",
+   "fieldname": "portal_title",
+   "fieldtype": "Data",
+   "label": "Portal Title"
+  },
+  {
+   "description": "Every Document Type listed here shows up as a section in the vendor portal, with its own labels, permission fieldname, and display fields -- configure new ones here without any code changes.",
+   "fieldname": "doctypes",
+   "fieldtype": "Table",
+   "label": "Document Types",
+   "options": "Portal Section Config"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-09-09 17:01:35.286627",
+ "modified_by": "Administrator",
+ "module": "Approval Vendor Portal",
+ "name": "Vendor Portal Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

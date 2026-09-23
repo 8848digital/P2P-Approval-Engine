@@ -6,8 +6,8 @@
 import frappe
 from frappe import _
 
-from approval_engine.settlement.vendor_auth_hooks import is_vendor as is_vendor_user
-from approval_engine.vendor_portal.utils import get_vendor_landing_route
+from approval_engine.approval_settlement.vendor_auth_hooks import is_vendor as is_vendor_user
+from approval_engine.approval_vendor_portal.utils import get_vendor_landing_route
 
 no_cache = 1
 

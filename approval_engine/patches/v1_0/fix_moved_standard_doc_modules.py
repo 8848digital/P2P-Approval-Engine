@@ -4,7 +4,7 @@
 # written permission from 8848 Digital LLP.
 """
 Patch: fix the "module" field on standard, user-editable documents that
-moved into this app's settlement module (Web Form, Print Format,
+moved into this app's Approval Settlement module (Web Form, Print Format,
 Workspace).
 
 Unlike DocType meta, these are treated as user-customizable records once
@@ -15,7 +15,7 @@ included) from the on-disk JSON. So a site that already had these records
 showing the old module in the UI even though the source file here is
 already correct -- this patch is the one-time fix for that gap on
 existing sites. A fresh install has no such record yet, so the JSON's own
-"module": "Settlement" is picked up correctly and this patch is a no-op.
+"module": "Approval Settlement" is picked up correctly and this patch is a no-op.
 
 Registered in patches.txt as:
     approval_engine.patches.v1_0.fix_moved_standard_doc_modules
@@ -23,7 +23,7 @@ Registered in patches.txt as:
 
 import frappe
 
-MODULE = "Settlement"
+MODULE = "Approval Settlement"
 
 DOCS = [
 	("Web Form", "vendor-onboarding-form"),

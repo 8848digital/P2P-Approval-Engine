@@ -5,7 +5,10 @@
 
 import frappe
 
-from approval_engine.vendor_portal.utils import base_portal_context, require_vendor_portal_access
+from approval_engine.approval_vendor_portal.utils import (
+	base_portal_context,
+	require_vendor_portal_access,
+)
 
 no_cache = 1
 

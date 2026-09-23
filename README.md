@@ -17,7 +17,7 @@ vendors before a Purchase Order or Invoice is raised, vendor onboarding and
 KYC, MSA and TDS/ITC compliance checks, a vendor self-service portal, and
 Procure to Pay dashboards.
 
-The Settlement and Vendor Portal parts were merged in from the retired
+The Approval Settlement and Approval Vendor Portal modules were merged in from the retired
 `p2p_customization` app.
 
 ## Key DocTypes

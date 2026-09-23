@@ -5,10 +5,10 @@
 
 import frappe
 
-from approval_engine.vendor_portal.doctype.vendor_portal_settings.vendor_portal_settings import (
+from approval_engine.approval_vendor_portal.doctype.vendor_portal_settings.vendor_portal_settings import (
 	seed_default_settings,
 )
-from approval_engine.vendor_portal.utils import (
+from approval_engine.approval_vendor_portal.utils import (
 	base_portal_context,
 	get_docstatus_filter,
 	require_vendor_portal_access,

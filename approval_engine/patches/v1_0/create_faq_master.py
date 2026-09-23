@@ -24,7 +24,7 @@ def _create_faq_master_doctype():
 		{
 			"doctype": "DocType",
 			"name": "FAQ Master",
-			"module": "Settlement",
+			"module": "Approval Settlement",
 			"custom": 1,
 			"naming_rule": "By fieldname",
 			"autoname": "field:question_code",
@@ -99,7 +99,7 @@ def _create_supplier_faq_answer_doctype():
 		{
 			"doctype": "DocType",
 			"name": "Supplier FAQ Answer",
-			"module": "Settlement",
+			"module": "Approval Settlement",
 			"custom": 1,
 			"istable": 1,
 			"editable_grid": 1,
