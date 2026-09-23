@@ -13,9 +13,18 @@ this again (e.g. on reinstall) is safe.
 import frappe
 
 from approval_engine.approval_core import generator
+from approval_engine.approval_core.email_action.action_link import DEFAULT_VALIDITY_HOURS
 
 
 def after_install():
+    """
+    Seed workflow masters and the default Approval Settings values on a new site.
+
+    Returns:
+        None
+    """
     generator.ensure_workflow_states()
     generator.ensure_actions()
+    frappe.db.set_single_value(
+        "Approval Settings", "email_link_validity_hours", DEFAULT_VALIDITY_HOURS)
     frappe.db.commit()
