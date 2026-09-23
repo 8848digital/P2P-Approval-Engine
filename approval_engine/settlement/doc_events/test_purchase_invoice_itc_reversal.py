@@ -2,7 +2,7 @@
 # Proprietary and confidential. Unauthorized copying, distribution, or use
 # of this file, via any medium, is strictly prohibited without prior
 # written permission from 8848 Digital LLP.
-# See license.txt
+
 """Coverage for the ITC reversal sweep, per issue #11's plan: tests for
 set_itc_status, handle_itc_reversal_on_submit, and the daily sweep.
 

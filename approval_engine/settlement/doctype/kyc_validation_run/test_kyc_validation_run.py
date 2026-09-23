@@ -3,8 +3,6 @@
 # of this file, via any medium, is strictly prohibited without prior
 # written permission from 8848 Digital LLP.
 
-# Copyright (c) 2026, Satya and Contributors
-# See license.txt
 """Coverage for KYCValidationRun.recompute_summary() -- part of issue
 #10's "KYC validation run ... lifecycle" test-coverage ask.
 

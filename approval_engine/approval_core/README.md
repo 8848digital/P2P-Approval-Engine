@@ -12,7 +12,7 @@ written permission from 8848 Digital LLP.
 Owns the entire config-driven approval engine: the Approval Matrix
 configuration, the generation of standard ERPNext Workflows from it, the
 runtime gating/audit of governed documents, and the Finance Overview
-dashboard. This is the app's single module.
+dashboard.
 
 ## DocTypes
 

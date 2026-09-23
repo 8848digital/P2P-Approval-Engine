@@ -2,7 +2,7 @@
 # Proprietary and confidential. Unauthorized copying, distribution, or use
 # of this file, via any medium, is strictly prohibited without prior
 # written permission from 8848 Digital LLP.
-# See license.txt
+
 """Regression coverage for the BRN auto-close sweep, written before
 converting its per-item raw SQL (_brn_amount_fully_invoiced /
 _brn_qty_fully_invoiced) into a single batched frappe.qb query, per issue #7's
