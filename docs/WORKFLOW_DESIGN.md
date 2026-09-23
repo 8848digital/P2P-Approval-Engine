@@ -103,3 +103,46 @@ Pending    --Hold-->    On Hold by Approver 1 [PI-Approver 1]  company + dept + 
   table — see SPEC §5.3) — audit only, feeds no condition, since no-repeat was removed. The
   initial `create → Pending` is intentionally not logged (see DECISIONS #14). This full trail is
   what lets the dashboard attribute an on-hold document to whoever placed the hold.
+
+## 6. Remarks on every transition (Milestone 3)
+
+Frappe's `apply_workflow(doc, action)` has no slot for a note, so remarks travel beside it:
+the caller stashes them in Redis (`remarks.stash_remarks`, keyed by user + document, 5 min
+TTL), and `runtime._record_history` pops them while logging the transition.
+
+```
+Desk        : before_workflow_action dialog -> api/v1/workflow.stash_remarks -> apply_workflow
+Email link  : link_actions.perform_action  -> stash_remarks(via_email_link=1) -> apply_workflow
+both        -> runtime._record_history -> Document Workflow Log {remarks, via_email_link}
+                                       -> doc.add_comment (timeline, authored by the approver)
+```
+
+- A stash made for a different action is discarded, not attached to the wrong transition.
+- **Reject requires a reason**, enforced in `validate` (`remarks.validate_reject_reason`), so it
+  holds for Desk, the email page and direct API calls. Bulk Reject from a list view therefore
+  fails — it cannot collect a reason.
+- The log row is the durable, tamper-resistant copy; the timeline comment is for visibility.
+
+## 7. Acting from email (Milestone 3)
+
+Per-tier **Action via Email** on the matrix row switches this on. It changes *who is notified*,
+never *who may act* — the transition conditions of §2 are unchanged.
+
+```
+state change (on_update, managed doc)
+  -> supersede open links for this doc       (same transaction: first approver wins)
+  -> enqueue tasks.send_action_emails        (enqueue_after_commit -> never on a rolled-back save)
+       -> ActionRequestNotifier: acting tier from the new state (generator.acting_tier),
+          matched band row (find_band_row), tier's Action-via-Email flag
+       -> one Approval Action Token + one email per approver of that tier (PDF deferred)
+approver opens /approval_action?token=...    (GET renders only; scanners pre-fetch links)
+  -> POST request_otp  -> 6-digit code emailed now=True to the approver's own address
+  -> POST submit_action -> OTP verified -> acting_as(approver) -> apply_workflow
+                        -> token Used, siblings superseded by the state change itself
+```
+
+A link is usable only while: status Active, before `expires_on` (Approval Settings, default 72h),
+the document still a draft **in the exact state the link was issued for**, and the approver still
+enabled. Anything else answers with a visitor-safe reason. Because the action runs as the
+approver, §2's conditions, §5's band gate and the §6 audit trail all apply untouched — the email
+channel adds no new way to approve, only a new way to reach the same one.
