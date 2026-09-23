@@ -3,18 +3,21 @@
 # of this file, via any medium, is strictly prohibited without prior
 # written permission from 8848 Digital LLP.
 
-# apps/approval_engine/approval_engine/patches/v1_0/create_faq_master.py
 import frappe
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
+from approval_engine.patches.v1_0.create_faq_master_data import FAQ_QUESTIONS
+
 
 def execute():
+	"""Create FAQ Master / Supplier FAQ Answer if missing and seed the onboarding questions."""
 	_create_faq_master_doctype()
 	_create_supplier_faq_answer_doctype()
 	_seed_faq_master_questions()
 
 
 def _create_faq_master_doctype():
+	"""Create FAQ Master as a custom DocType on sites that don't have it yet."""
 	if frappe.db.exists("DocType", "FAQ Master"):
 		return
 	frappe.get_doc(
@@ -89,6 +92,7 @@ def _create_faq_master_doctype():
 
 
 def _create_supplier_faq_answer_doctype():
+	"""Create the Supplier FAQ Answer child DocType on sites that don't have it yet."""
 	if frappe.db.exists("DocType", "Supplier FAQ Answer"):
 		return
 	frappe.get_doc(
@@ -137,94 +141,8 @@ def _create_supplier_faq_answer_doctype():
 
 
 def _seed_faq_master_questions():
-	"""Seeds FAQ Master with all 6 vendor onboarding questions, including
-	sustainable_goods_percentage (4-option, no enforced expected_answer)."""
-	yes_no = "\nYes\nNo"
-	sustainability_options = (
-		"\n100% of the goods or service provided"
-		"\n80% to 100% of the goods or service provided"
-		"\n70% to 80% of the goods or service provided"
-		"\nBelow 70% of the goods or services provided"
-	)
-
-	questions = [
-		# question_code, label, options, expected_answer, reqd, order, description,
-		# field_type, depends_on_question
-		(
-			"vendor_related_to_employee_director",
-			"Vendor related to any employee/Director of the Company?",
-			yes_no,
-			"No",
-			1,
-			1,
-			"Vendor related to any employee/Director of the Company?",
-			"Select",
-			None,
-		),
-		("related_partys", "Related Party?", yes_no, "No", 1, 2, "Related Party?", "Select", None),
-		(
-			"agreement_po_engagement_letter",
-			"Agreement/PO/Engagement Letter exists? (If there is an Agreement or Engagement Letter, please upload the copy)",
-			yes_no,
-			"Yes",
-			1,
-			3,
-			"Agreement/PO/Engagement Letter exists? (If there is an Agreement or Engagement Letter, please upload the copy)",
-			"Select",
-			None,
-		),
-		# Dependent attachment - a FAQ Master row like any other, just with
-		# field_type Attach and depends_on_question pointing at the question
-		# above. Its Supplier/web form field is created, positioned right
-		# after agreement_po_engagement_letter, and deleted through the exact
-		# same generic path as every other row - no special-casing needed.
-		(
-			"agreement_attachment",
-			"Agreement / PO / Engagement Letter Copy",
-			"",
-			"",
-			0,
-			4,
-			"Attachment for Agreement/PO/Engagement Letter, required when the corresponding question is answered Yes.",
-			"Attach",
-			"agreement_po_engagement_letter",
-		),
-		(
-			"pan_aadhaar_linked_field",
-			"PAN & Aadhaar linking/seeding to avoid short deduction due to vendor default",
-			yes_no,
-			"Yes",
-			1,
-			5,
-			"PAN & Aadhaar linking/seeding to avoid short deduction due to vendor default",
-			"Select",
-			None,
-		),
-		(
-			"sustainable_goods_percentage",
-			"What % of the goods or service being provided by you is offered in a sustainable manner?",
-			sustainability_options,
-			"",
-			1,
-			6,
-			"What % of the goods or service being provided by you is offered in a sustainable manner?",
-			"Select",
-			None,
-		),
-		(
-			"aadhaar_consent",
-			"Aadhar Consent",
-			yes_no,
-			"Yes",
-			1,
-			7,
-			"If you choose to provide Aadhaar, you consent to its use only for verification and record "
-			+ "purposes, and it will be stored and processed securely in compliance with applicable UIDAI regulations.",
-			"Select",
-			None,
-		),
-	]
-
+	"""Seed FAQ Master with the vendor onboarding questions in
+	create_faq_master_data.FAQ_QUESTIONS, skipping any that already exist."""
 	for (
 		question_code,
 		label,
@@ -235,7 +153,7 @@ def _seed_faq_master_questions():
 		desc,
 		field_type,
 		depends_on_question,
-	) in questions:
+	) in FAQ_QUESTIONS:
 		if frappe.db.exists("FAQ Master", question_code):
 			continue
 		frappe.get_doc(
