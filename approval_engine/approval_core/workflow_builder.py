@@ -25,6 +25,19 @@ from approval_engine.approval_core.workflow_config import (
 
 
 def _t(state, action, next_state, allowed, condition):
+	"""
+	Build one Workflow Transition row.
+
+	Parameters:
+	    state (str, required): State the transition acts from.
+	    action (str, required): Workflow action name.
+	    next_state (str, required): State the document moves to.
+	    allowed (str, required): Role allowed to perform it.
+	    condition (str, required): Python condition evaluated against the document.
+
+	Returns:
+	    dict: Transition row for `Workflow.append("transitions", ...)`.
+	"""
 	return {
 		"state": state,
 		"action": action,
@@ -36,6 +49,18 @@ def _t(state, action, next_state, allowed, condition):
 
 
 def build_transitions(document_type):
+	"""
+	Build every transition for a DocType from all submitted matrices (see module docstring).
+
+	One set per (company, department, band, tier): Approve (escalate and finalize), plus
+	Hold/Reject where that tier allows them.
+
+	Parameters:
+	    document_type (str, required): Target DocType.
+
+	Returns:
+	    list[dict]: Transition rows in generation order.
+	"""
 	amt = amount_field_for(document_type)
 	transitions = []
 
@@ -105,11 +130,33 @@ def build_transitions(document_type):
 
 
 def _allow_edit(document_type, state):
+	"""
+	Role allowed to edit a document sitting in `state`.
+
+	Parameters:
+	    document_type (str, required): Target DocType.
+	    state (str, required): Workflow state.
+
+	Returns:
+	    str: "All", or the tier's approver role.
+	"""
 	v = ALLOW_EDIT[state]
 	return "All" if v == "All" else role_name(document_type, v)
 
 
 def build_workflow(document_type):
+	"""
+	Create or refresh the single Workflow for a DocType: states + generated transitions.
+
+	An existing workflow is rewritten in place (states and transitions cleared first), so
+	the live workflow always reflects the currently submitted matrices.
+
+	Parameters:
+	    document_type (str, required): Target DocType.
+
+	Returns:
+	    str: Name of the saved Workflow.
+	"""
 	existing = frappe.db.get_value("Workflow", {"document_type": document_type}, "name")
 	if existing:
 		wf = frappe.get_doc("Workflow", existing)

@@ -26,6 +26,7 @@ from approval_engine.approval_core.workflow_builder import (  # noqa: F401
 from approval_engine.approval_core.workflow_config import (  # noqa: F401
 	MAX_LEVELS,
 	STATE_FOR_TIER,
+	acting_tier,
 	amount_field_for,
 	band_condition,
 	configured_levels,
@@ -48,6 +49,18 @@ from approval_engine.approval_core.workflow_setup import (  # noqa: F401
 
 
 def setup_workflow(document_type):
+	"""
+	Bring everything a governed DocType needs into line (idempotent; run on matrix submit).
+
+	Ensures masters, roles and permissions, the routing department field, then rebuilds the
+	workflow from all submitted matrices and reconciles role holders.
+
+	Parameters:
+	    document_type (str, required): Target DocType.
+
+	Returns:
+	    None
+	"""
 	ensure_workflow_states()
 	ensure_actions()
 	ensure_roles(document_type)
@@ -63,6 +76,18 @@ def setup_workflow(document_type):
 
 
 def on_matrix_cancel(document_type):
+	"""
+	React to a cancelled matrix: rebuild the workflow without it, or deactivate it.
+
+	The workflow is deactivated (never deleted) when no submitted matrix remains for the
+	DocType, so in-flight documents keep their recorded state.
+
+	Parameters:
+	    document_type (str, required): Target DocType.
+
+	Returns:
+	    None
+	"""
 	reconcile_roles(document_type)
 	remaining = frappe.db.count("Approval Matrix", {"document_type": document_type, "docstatus": 1})
 	wf = frappe.db.get_value("Workflow", {"document_type": document_type}, "name")

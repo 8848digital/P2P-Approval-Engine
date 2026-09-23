@@ -15,6 +15,7 @@ from frappe.query_builder import DocType
 from frappe.query_builder.functions import Lower
 
 from approval_engine.approval_core import generator
+from approval_engine.approval_core.email_action.action_link import DEFAULT_VALIDITY_HOURS
 from approval_engine.approval_settlement.setup import create_custom_fields
 
 # Modules that came over from the retired p2p_customization app.
@@ -30,7 +31,8 @@ RENAMED_MODULES = {
 
 def after_install():
 	"""
-	Seed workflow master data, create the Approval Settlement custom fields
+	Seed workflow master data and the default Approval Settings values,
+	create the Approval Settlement custom fields
 	(install-app runs neither after_migrate nor patches, so a fresh site
 	would otherwise have none -- Supplier hooks then fail), and take over
 	the modules that came from p2p_customization on sites that already had
@@ -41,6 +43,9 @@ def after_install():
 	"""
 	generator.ensure_workflow_states()
 	generator.ensure_actions()
+	frappe.db.set_single_value(
+		"Approval Settings", "email_link_validity_hours", DEFAULT_VALIDITY_HOURS
+	)
 	create_custom_fields()
 	repoint_p2p_customization_module_defs()
 	rename_legacy_modules()

@@ -1,0 +1,16 @@
+{#
+Copyright (c) 2026 8848 Digital LLP. All rights reserved.
+Proprietary and confidential. Unauthorized copying, distribution, or use
+of this file, via any medium, is strictly prohibited without prior
+written permission from 8848 Digital LLP.
+
+Placeholder layout — final wording/branding to be agreed. Args: see
+approval_core/email_action/otp.py (LinkOtp.__email_code).
+#}
+<p>{{ _("Your verification code to {0} {1} {2} is:").format(action | e, doctype | e, docname | e) }}</p>
+
+<p style="font-size: 24px; letter-spacing: 0.2em;"><b>{{ code }}</b></p>
+
+<p>{{ _("It is valid for {0} minutes and can be used once.").format(validity_minutes) }}</p>
+
+<p style="color: #6b7280;">{{ _("If you did not request this code, someone may have your approval link. Do not share this code; you can ignore this email.") }}</p>

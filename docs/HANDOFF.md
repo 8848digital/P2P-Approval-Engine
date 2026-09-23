@@ -126,6 +126,11 @@ removed; those were dev-only scripts, superseded by `install.py` + the doctype u
 - **Administrator** sees every action (superuser + all roles) — never test gating as Administrator.
 - **PO/PI have no native `department`** field — the engine adds it; each document must set it.
 - Approvers need a **business role** for the save-time re-validation (reads Supplier/Item/etc.).
+  Now documented for admins in `SETUP.md`, and the email page reports the missing DocType by name
+  instead of a bare "You do not have permission".
+- **`host_name` must be set** on any site using email approvals: emailed links are built from
+  `get_url()`, and an unreachable value also hangs PDF rendering (the renderer fetches print assets
+  from it).
 - A prior **Redis outage during the original `bench new-site`** left ERPNext's Address/Contact
   custom fields uncreated; fixed by re-running ERPNext's own installer. A clean install won't have this.
 

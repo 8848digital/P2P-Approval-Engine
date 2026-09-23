@@ -20,13 +20,27 @@ from approval_engine.approval_core.generator import (
 
 
 class ApprovalMatrix(Document):
+	"""Per (company, document type) approval configuration; submitting it builds the Workflow."""
+
 	def validate(self):
+		"""
+		Check the configuration is internally consistent before it can be saved.
+
+		Returns:
+		    None
+		"""
 		self._validate_unique_active()
 		self._validate_departments_company()
 		self._validate_rows()
 		self._validate_bands()
 
 	def on_submit(self):
+		"""
+		Generate (or refresh) the workflow, roles and permissions for this DocType.
+
+		Returns:
+		    None
+		"""
 		# Guard here (not in validate) so a WIP draft can still be saved while the amount-field
 		# mapping is being sorted out; the client shows a live hint meanwhile. Hard-block at
 		# submit, since submit bakes the amount field into the generated conditions.
@@ -34,6 +48,12 @@ class ApprovalMatrix(Document):
 		setup_workflow(self.document_type)
 
 	def on_cancel(self):
+		"""
+		Rebuild the workflow without this matrix, or deactivate it if none remain.
+
+		Returns:
+		    None
+		"""
 		on_matrix_cancel(self.document_type)
 
 	# ------------------------------------------------------------------
@@ -55,6 +75,14 @@ class ApprovalMatrix(Document):
 			)
 
 	def _validate_unique_active(self):
+		"""
+		Refuse a second submitted matrix for the same (document type, company).
+
+		Two live matrices would generate overlapping transitions for one workflow.
+
+		Returns:
+		    None
+		"""
 		dupe = frappe.db.exists(
 			"Approval Matrix",
 			{
@@ -88,6 +116,15 @@ class ApprovalMatrix(Document):
 				)
 
 	def _validate_rows(self):
+		"""
+		Require Approver 1 on every row, and tiers filled in order (no gaps).
+
+		A gap would strand the escalation chain: the runtime escalate check looks for the
+		*next* tier, so Approver 3 without Approver 2 could never be reached.
+
+		Returns:
+		    None
+		"""
 		for row in self.detail:
 			levels = configured_levels(row)
 			if 1 not in levels:

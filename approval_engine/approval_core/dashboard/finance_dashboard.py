@@ -175,7 +175,12 @@ def approved_for_doctype(document_type, company, user, from_date=None, to_date=N
 		"l.user             = %(user)s",
 		"l.workflow_state    IN %(states)s",
 	]
-	params = {"doctype": document_type, "company": company, "user": user, "states": APPROVED_STATES}
+	params = {
+		"doctype": document_type,
+		"company": company,
+		"user": user,
+		"states": APPROVED_STATES,
+	}
 	if from_date:
 		conditions.append("l.creation >= %(from_dt)s")
 		params["from_dt"] = getdate(from_date)  # start of that day

@@ -90,6 +90,7 @@ has_permission = {
 doc_events = {
 	"*": {
 		"validate": "approval_engine.approval_core.runtime.target_validate",
+		"on_update": "approval_engine.approval_core.runtime.target_on_update",
 	},
 	"Payment Request": {
 		"before_validate": "approval_engine.approval_settlement.customization.payment_request.payment_request.before_validate",
@@ -130,6 +131,7 @@ scheduler_events = {
 		],
 	},
 	"daily": [
+		"approval_engine.approval_core.tasks.expire_action_links",
 		"approval_engine.approval_settlement.tasks.reverse_prior_year_itc",
 	],
 }

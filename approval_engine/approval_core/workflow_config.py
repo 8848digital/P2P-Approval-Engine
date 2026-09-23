@@ -67,6 +67,9 @@ STATE_FOR_TIER = {1: "Pending", 2: "Approved 1", 3: "Approved 2", 4: "Approved 3
 ACTIONS = ["Approve", "Hold", "Reject"]
 
 
+HOLD_STATE_PREFIX = "On Hold by Approver "
+
+
 DEFAULT_AMOUNT_FIELDS = {
 	"Purchase Order": "grand_total",
 	"Purchase Invoice": "grand_total",
@@ -75,14 +78,66 @@ DEFAULT_AMOUNT_FIELDS = {
 
 
 def role_name(document_type, level):
+	"""
+	Name of the approver role for one tier of a DocType's generated workflow.
+
+	Parameters:
+	    document_type (str, required): Target DocType.
+	    level (int, required): Approver tier, 1..MAX_LEVELS.
+
+	Returns:
+	    str: e.g. "Purchase Order - Approver 2".
+	"""
 	return f"{document_type} - Approver {level}"
 
 
 def workflow_name(document_type):
+	"""
+	Name of the single Workflow this engine generates for a DocType.
+
+	Parameters:
+	    document_type (str, required): Target DocType.
+
+	Returns:
+	    str: e.g. "Purchase Order Approval".
+	"""
 	return f"{document_type} Approval"
 
 
+def acting_tier(state):
+	"""
+	Approver tier that acts FROM `state` (inverse of STATE_FOR_TIER, plus hold states).
+
+	Example: "Pending" -> 1, "Approved 2" -> 3, "On Hold by Approver 2" -> 2, "Approved" -> None.
+
+	Parameters:
+	        state (str, optional): A workflow state of an engine-generated workflow.
+
+	Returns:
+	        int | None: The tier, or None for terminal/unknown states.
+	"""
+	if not state:
+		return None
+	for tier, tier_state in STATE_FOR_TIER.items():
+		if tier_state == state:
+			return tier
+	if state.startswith(HOLD_STATE_PREFIX):
+		suffix = state[len(HOLD_STATE_PREFIX) :]
+		return int(suffix) if suffix.isdigit() else None
+	return None
+
+
 def pool(row, level):
+	"""
+	Users configured for one tier of one matrix row, in field order, blanks dropped.
+
+	Parameters:
+	    row (Document, required): An Approval Matrix Detail row.
+	    level (int, required): Approver tier, 1..MAX_LEVELS.
+
+	Returns:
+	    list[str]: User IDs; empty when the tier is not configured.
+	"""
 	return [
 		row.get(f"approver_{level}_user_{u}")
 		for u in range(1, 6)
@@ -91,10 +146,31 @@ def pool(row, level):
 
 
 def configured_levels(row):
+	"""
+	Tiers of a matrix row that have at least one approver.
+
+	Parameters:
+	    row (Document, required): An Approval Matrix Detail row.
+
+	Returns:
+	    list[int]: Ascending tier numbers, e.g. [1, 2].
+	"""
 	return [level for level in range(1, MAX_LEVELS + 1) if pool(row, level)]
 
 
 def amount_field_for(document_type):
+	"""
+	Fieldname whose value the amount bands compare against for a DocType.
+
+	Prefers the explicit Approval Settings mapping, else a per-DocType default.
+	See `resolve_amount_field` for the same answer with its provenance.
+
+	Parameters:
+	    document_type (str, required): Target DocType.
+
+	Returns:
+	    str: Fieldname, e.g. "grand_total".
+	"""
 	settings = frappe.get_single("Approval Settings")
 	for r in settings.amount_fields:
 		if r.document_type == document_type:
@@ -150,7 +226,9 @@ def band_condition(amt_field, min_amount, max_amount):
 def find_band_row(document_type, company, department, amount):
 	"""Return the matching Approval Matrix Detail row for (company, dept, amount), or None."""
 	name = frappe.db.get_value(
-		"Approval Matrix", {"document_type": document_type, "company": company, "docstatus": 1}, "name"
+		"Approval Matrix",
+		{"document_type": document_type, "company": company, "docstatus": 1},
+		"name",
 	)
 	if not name:
 		return None

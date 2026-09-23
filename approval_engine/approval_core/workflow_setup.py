@@ -23,6 +23,15 @@ from approval_engine.approval_core.workflow_config import (
 
 
 def ensure_roles(document_type):
+	"""
+	Create the `<DocType> - Approver 1..N` roles if they don't exist yet (idempotent).
+
+	Parameters:
+	    document_type (str, required): Target DocType.
+
+	Returns:
+	    None
+	"""
 	for level in range(1, MAX_LEVELS + 1):
 		name = role_name(document_type, level)
 		if not frappe.db.exists("Role", name):
@@ -60,7 +69,9 @@ def _grant_read_to_flow_roles(target_doctype, document_type):
 	for perm_dt in ("DocPerm", "Custom DocPerm"):
 		roles.update(
 			frappe.get_all(
-				perm_dt, filters={"parent": document_type, "create": 1, "permlevel": 0}, pluck="role"
+				perm_dt,
+				filters={"parent": document_type, "create": 1, "permlevel": 0},
+				pluck="role",
 			)
 		)
 
@@ -99,6 +110,12 @@ def ensure_company_read(document_type):
 
 
 def ensure_actions():
+	"""
+	Create the Workflow Action Masters the generated transitions use (Approve/Hold/Reject).
+
+	Returns:
+	    None
+	"""
 	for action in ACTIONS:
 		if not frappe.db.exists("Workflow Action Master", action):
 			frappe.get_doc(
@@ -110,6 +127,12 @@ def ensure_actions():
 
 
 def ensure_workflow_states():
+	"""
+	Create the Workflow State masters for every state in the engine's fixed state machine.
+
+	Returns:
+	    None
+	"""
 	for name in STATE_ORDER:
 		if not frappe.db.exists("Workflow State", name):
 			frappe.get_doc(
@@ -122,6 +145,17 @@ def ensure_workflow_states():
 
 
 def ensure_amount_field(document_type):
+	"""
+	Seed an Approval Settings amount-field row for this DocType if none exists.
+
+	Makes the resolved default visible and editable instead of leaving it implicit.
+
+	Parameters:
+	    document_type (str, required): Target DocType.
+
+	Returns:
+	    None
+	"""
 	settings = frappe.get_single("Approval Settings")
 	if not any(r.document_type == document_type for r in settings.amount_fields):
 		settings.append(

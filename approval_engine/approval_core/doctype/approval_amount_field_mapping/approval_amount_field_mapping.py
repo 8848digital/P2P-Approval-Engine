@@ -8,4 +8,6 @@ from frappe.model.document import Document
 
 
 class ApprovalAmountFieldMapping(Document):
+	"""Child row of Approval Settings: the amount field one DocType's bands compare against."""
+
 	pass

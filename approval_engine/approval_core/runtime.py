@@ -8,17 +8,41 @@ Registered on the `validate` event for all DocTypes; they no-op unless the
 DocType is managed by an active `<DocType> Approval` workflow.
 
 - block: refuse to save if no Approval Matrix band matches (company/department/amount)
-- history: record every workflow state change into `Document Workflow Log` (full audit trail)
+- history: record every workflow state change into `Document Workflow Log` (full audit trail),
+  with the approver's remarks (mandatory on Reject — see `remarks.py`)
+
+Registered on `on_update` too: after a state change, retire the document's open
+email links and queue the next tier's action-link emails (see `email_action/`).
 """
 
 import frappe
 from frappe import _
 from frappe.utils import flt
 
-from approval_engine.approval_core.generator import amount_field_for, find_band_row, workflow_name
+from approval_engine.approval_core.email_action.action_link import supersede_links
+from approval_engine.approval_core.generator import (
+	acting_tier,
+	amount_field_for,
+	find_band_row,
+	workflow_name,
+)
+from approval_engine.approval_core.remarks import (
+	add_timeline_comment,
+	pop_transition_remarks,
+	validate_reject_reason,
+)
 
 
 def _managed(doctype):
+	"""
+	Whether `doctype` currently runs on an active engine-generated workflow.
+
+	Parameters:
+	    doctype (str, required): DocType to check.
+
+	Returns:
+	    bool: True when its `<DocType> Approval` workflow exists and is active.
+	"""
 	return bool(
 		frappe.db.get_value(
 			"Workflow",
@@ -29,13 +53,64 @@ def _managed(doctype):
 
 
 def target_validate(doc, method=None):
+	"""
+	`validate` hook for every DocType: band gate + transition history for managed ones.
+
+	Parameters:
+	    doc (Document, required): Document being saved.
+	    method (str, optional): Hook event name passed by Frappe.
+
+	Returns:
+	    None
+	"""
 	if not _managed(doc.doctype):
 		return
 	_block_if_no_band(doc)
 	_record_history(doc)
 
 
+def target_on_update(doc, method=None):
+	"""
+	`on_update` hook for every DocType: on a workflow state change of a managed document,
+	retire its open email links and queue emails for whoever must act next.
+
+	Links are retired synchronously (same transaction as the state change); emails go
+	out from a job queued only after commit, so a rolled-back save never emails anyone.
+
+	Parameters:
+	    doc (Document, required): Document that was saved.
+	    method (str, optional): Hook event name passed by Frappe.
+
+	Returns:
+	    None
+	"""
+	if not doc.get("workflow_state") or not doc.has_value_changed("workflow_state"):
+		return
+	if not _managed(doc.doctype):
+		return
+	supersede_links(doc.doctype, doc.name)
+	if not acting_tier(doc.workflow_state):
+		return  # Approved / Rejected: nobody left to email
+	frappe.enqueue(
+		"approval_engine.approval_core.tasks.send_action_emails",
+		queue="short",
+		enqueue_after_commit=True,
+		doctype=doc.doctype,
+		name=doc.name,
+		workflow_state=doc.workflow_state,
+	)
+
+
 def _block_if_no_band(doc):
+	"""
+	Refuse to save a governed document that no Approval Matrix band covers.
+
+	Parameters:
+	    doc (Document, required): Document being saved.
+
+	Returns:
+	    None
+	"""
 	if not doc.get("department"):
 		frappe.throw(_("Please set Department — it is required for approval routing."))
 	amount = flt(doc.get(amount_field_for(doc.doctype)))
@@ -78,6 +153,12 @@ def _record_history(doc):
 	)
 	if last and last[0].workflow_state == new_state:
 		return
+
+	# Popped only once we know this is a real, not-yet-logged transition, so a repeated
+	# `validate` can't consume the remarks before the logging pass sees them.
+	note = pop_transition_remarks(doc, new_state)
+	validate_reject_reason(new_state, note.remarks)
+
 	frappe.get_doc(
 		{
 			"doctype": "Document Workflow Log",
@@ -86,5 +167,10 @@ def _record_history(doc):
 			"from_state": old_state,
 			"workflow_state": new_state,
 			"user": frappe.session.user,
+			"remarks": note.remarks,
+			"via_email_link": note.via_email_link,
 		}
 	).insert(ignore_permissions=True)
+
+	if note.remarks:
+		add_timeline_comment(doc, new_state, note.remarks)
