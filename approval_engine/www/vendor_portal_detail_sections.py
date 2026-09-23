@@ -41,12 +41,12 @@ def build_kv_fields(doc: "frappe.model.document.Document", row: PortalSectionCon
 	amount/etc, capped at 8 entries.
 
 	Parameters:
-		doc (Document, required): The document being displayed.
-		row (PortalSectionConfig, required): Portal section config for
-			`doc`'s DocType.
+	        doc (Document, required): The document being displayed.
+	        row (PortalSectionConfig, required): Portal section config for
+	                `doc`'s DocType.
 
 	Returns:
-		list[dict]: Up to 8 `{"label": str, "value": Any}` entries.
+	        list[dict]: Up to 8 `{"label": str, "value": Any}` entries.
 	"""
 	skip = {
 		row.title_field,
@@ -74,27 +74,29 @@ def build_kv_fields(doc: "frappe.model.document.Document", row: PortalSectionCon
 
 
 def build_child_table(
-	doc: "frappe.model.document.Document", row: PortalSectionConfig, item_columns: list[tuple[str, str]]
+	doc: "frappe.model.document.Document",
+	row: PortalSectionConfig,
+	item_columns: list[tuple[str, str]],
 ) -> tuple[list[dict], list[tuple[str, str]]]:
 	"""
 	Build the item-table rows/columns shown on a detail page, from
 	`row.child_table_fieldname`.
 
 	Parameters:
-		doc (Document, required): The document being displayed.
-		row (PortalSectionConfig, required): Portal section config for
-			`doc`'s DocType; `child_table_fieldname` names the child table
-			to render.
-		item_columns (list[tuple[str, str]], required): Candidate
-			`(fieldname, label)` columns, resolved fresh per-request by the
-			caller (translated labels can't be cached at module level).
+	        doc (Document, required): The document being displayed.
+	        row (PortalSectionConfig, required): Portal section config for
+	                `doc`'s DocType; `child_table_fieldname` names the child table
+	                to render.
+	        item_columns (list[tuple[str, str]], required): Candidate
+	                `(fieldname, label)` columns, resolved fresh per-request by the
+	                caller (translated labels can't be cached at module level).
 
 	Returns:
-		tuple[list[dict], list[tuple[str, str]]]: `(rows, columns)`, where
-		`columns` is a `(fieldname, label)` list limited to the columns
-		present on the child doctype, and `rows` is one dict per child row
-		keyed by those fieldnames (plus `description`/`item_name`/`uom`
-		when present). Both empty if there's no child table or no rows.
+	        tuple[list[dict], list[tuple[str, str]]]: `(rows, columns)`, where
+	        `columns` is a `(fieldname, label)` list limited to the columns
+	        present on the child doctype, and `rows` is one dict per child row
+	        keyed by those fieldnames (plus `description`/`item_name`/`uom`
+	        when present). Both empty if there's no child table or no rows.
 	"""
 	if not row.child_table_fieldname:
 		return [], []
@@ -104,7 +106,9 @@ def build_child_table(
 		return [], []
 
 	child_meta = child_rows[0].meta
-	columns = [(fieldname, label) for fieldname, label in item_columns if child_meta.has_field(fieldname)]
+	columns = [
+		(fieldname, label) for fieldname, label in item_columns if child_meta.has_field(fieldname)
+	]
 	if not columns:
 		return [], []
 
@@ -129,12 +133,12 @@ def show_attach_invoice(doc: "frappe.model.document.Document", row: PortalSectio
 	is treated as always eligible rather than silently never showing it).
 
 	Parameters:
-		doc (Document, required): The document being displayed.
-		row (PortalSectionConfig, required): Portal section config for
-			`doc`'s DocType.
+	        doc (Document, required): The document being displayed.
+	        row (PortalSectionConfig, required): Portal section config for
+	                `doc`'s DocType.
 
 	Returns:
-		bool: True if the invoice-attach uploader should be shown.
+	        bool: True if the invoice-attach uploader should be shown.
 	"""
 	if not row.allow_invoice_attach:
 		return False
@@ -150,13 +154,13 @@ def get_invoice_attachments(document_type: str, docname: str) -> list[dict]:
 	first.
 
 	Parameters:
-		document_type (str, required): DocType the files are attached to.
-		docname (str, required): Name of the document the files are
-			attached to.
+	        document_type (str, required): DocType the files are attached to.
+	        docname (str, required): Name of the document the files are
+	                attached to.
 
 	Returns:
-		list[dict]: File rows with `name`, `file_name`, `file_url`,
-		`creation`.
+	        list[dict]: File rows with `name`, `file_name`, `file_url`,
+	        `creation`.
 	"""
 	# ignore_permissions: same reasoning as the rest of this system's data
 	# fetches -- ownership was already checked against the parent record

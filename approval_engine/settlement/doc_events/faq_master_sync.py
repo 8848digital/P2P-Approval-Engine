@@ -97,7 +97,9 @@ def reposition_tail_fields(exclude_name=None) -> None:
 	)
 	anchor = last_faq[0].question_code if last_faq else FIRST_FIELD_ANCHOR
 
-	coc_section = frappe.db.get_value("Custom Field", {"dt": "Supplier", "fieldname": TAIL_HEAD_FIELD})
+	coc_section = frappe.db.get_value(
+		"Custom Field", {"dt": "Supplier", "fieldname": TAIL_HEAD_FIELD}
+	)
 	if not coc_section:
 		return  # add_vendor_faq_coc_fields patch hasn't run yet
 

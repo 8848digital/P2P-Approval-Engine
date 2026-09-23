@@ -5,8 +5,9 @@
 
 import json
 
-import frappe
 from erpnext.controllers.website_list_for_contact import get_parents_for_user
+
+import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.utils.user import is_website_user
@@ -27,7 +28,9 @@ class BRN(Document):
 	def validate(self):
 		"""Recompute the expiry date and total amount, and enforce the
 		Comparision table's Single/Multi/Preferred row constraints."""
-		self.expiry_date = calculate_brn_expiry_date(self.service_start_date, self.duration_of_service_months)
+		self.expiry_date = calculate_brn_expiry_date(
+			self.service_start_date, self.duration_of_service_months
+		)
 		set_total_amount(self)
 		validate_comparision_rows(self)
 
@@ -46,11 +49,11 @@ def get_list_context(context=None):
 	(the /brn route -- see hooks.py's standard_portal_menu_items).
 
 	Parameters:
-		context (dict, optional): Unused; matches Frappe's get_list_context
-			hook signature.
+	        context (dict, optional): Unused; matches Frappe's get_list_context
+	                hook signature.
 
 	Returns:
-		dict: Template/list config consumed by Frappe's website list view.
+	        dict: Template/list config consumed by Frappe's website list view.
 	"""
 	currencies = frappe.get_all("Currency", filters={"enabled": 1}, fields=["name", "symbol"])
 
@@ -82,18 +85,18 @@ def get_brn_list(
 	logged-in Supplier's own proposals when a portal user is browsing.
 
 	Parameters:
-		doctype (str, required): Unused; matches Frappe's get_list signature.
-		txt (str, optional): Search text, matched against BRN name.
-		filters (dict, optional): Unused beyond presence (kept for signature
-			compatibility with Frappe's website list view).
-		limit_start (int, optional): Pagination offset.
-		limit_page_length (int, optional): Page size.
-		order_by (str, optional): Unused; results are always creation desc.
-		**kwargs: Ignored, absorbs any other args Frappe's list view passes.
+	        doctype (str, required): Unused; matches Frappe's get_list signature.
+	        txt (str, optional): Search text, matched against BRN name.
+	        filters (dict, optional): Unused beyond presence (kept for signature
+	                compatibility with Frappe's website list view).
+	        limit_start (int, optional): Pagination offset.
+	        limit_page_length (int, optional): Page size.
+	        order_by (str, optional): Unused; results are always creation desc.
+	        **kwargs: Ignored, absorbs any other args Frappe's list view passes.
 
 	Returns:
-		list[Document]: Submitted BRN documents, each with an added
-			`items_preview` attribute (comma-joined item names).
+	        list[Document]: Submitted BRN documents, each with an added
+	                `items_preview` attribute (comma-joined item names).
 	"""
 	user = frappe.session.user
 
@@ -122,7 +125,9 @@ def get_brn_list(
 		query = query.where(BRNTable.name.like(f"%{txt}%"))
 
 	query = (
-		query.orderby(BRNTable.creation, order=frappe.qb.desc).limit(limit_page_length).offset(limit_start)
+		query.orderby(BRNTable.creation, order=frappe.qb.desc)
+		.limit(limit_page_length)
+		.offset(limit_start)
 	)
 
 	brns = query.run(as_dict=True)

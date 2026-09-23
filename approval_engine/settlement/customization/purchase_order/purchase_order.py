@@ -23,11 +23,11 @@ def validate(doc, method=None):
 	that order.
 
 	Parameters:
-		doc (Document, required): The Purchase Order document being validated.
-		method (str, optional): The hook event name passed by Frappe.
+	        doc (Document, required): The Purchase Order document being validated.
+	        method (str, optional): The hook event name passed by Frappe.
 
 	Returns:
-		None
+	        None
 	"""
 	validate_fiscal_year_and_brn_dates(doc, method)
 	validate_transaction_date_within_brn_validity(doc, method)
@@ -40,10 +40,10 @@ def before_save(doc, method=None):
 	Purchase Order before_save hook: enforce the backdated-posting window.
 
 	Parameters:
-		doc (Document, required): The Purchase Order document being saved.
-		method (str, optional): The hook event name passed by Frappe.
+	        doc (Document, required): The Purchase Order document being saved.
+	        method (str, optional): The hook event name passed by Frappe.
 
 	Returns:
-		None
+	        None
 	"""
 	backdated_po_validation(doc, method)

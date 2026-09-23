@@ -3,9 +3,10 @@
 # of this file, via any medium, is strictly prohibited without prior
 # written permission from 8848 Digital LLP.
 
+from pypika import functions as fn
+
 import frappe
 from frappe.utils import flt
-from pypika import functions as fn
 
 
 def auto_close_brns():
@@ -29,7 +30,9 @@ def auto_close_brns():
 				message=frappe.get_traceback(),
 			)
 	frappe.db.commit()  # nosemgrep: frappe-manual-commit - scheduled job, not a web request; no auto-commit at the end
-	frappe.logger().info(f"Auto Close BRN (scheduler): closed {closed_count} of {len(brns)} eligible BRNs")
+	frappe.logger().info(
+		f"Auto Close BRN (scheduler): closed {closed_count} of {len(brns)} eligible BRNs"
+	)
 
 
 def on_purchase_invoice_submit(doc):
@@ -52,10 +55,10 @@ def check_and_close_brn(brn_name) -> bool:
 	False) if it's already closed/cancelled or not yet submitted.
 
 	Parameters:
-		brn_name (str, required): The BRN document name.
+	        brn_name (str, required): The BRN document name.
 
 	Returns:
-		bool: True if this call closed the BRN, False otherwise.
+	        bool: True if this call closed the BRN, False otherwise.
 	"""
 	brn = frappe.db.get_value(
 		"BRN",
@@ -93,12 +96,12 @@ def _billed_totals_by_item(brn_name: str, item_codes: list) -> dict:
 	qty-based closure checks below, instead of one query per BRN item.
 
 	Parameters:
-		brn_name (str, required): The BRN document name.
-		item_codes (list, required): The item codes to sum for.
+	        brn_name (str, required): The BRN document name.
+	        item_codes (list, required): The item codes to sum for.
 
 	Returns:
-		dict: {item_code: {"billed_qty": float, "billed_amount": float}}.
-			An item_code with no billed rows is simply absent.
+	        dict: {item_code: {"billed_qty": float, "billed_amount": float}}.
+	                An item_code with no billed rows is simply absent.
 	"""
 	if not item_codes:
 		return {}

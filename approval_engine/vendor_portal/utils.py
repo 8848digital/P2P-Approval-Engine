@@ -74,12 +74,12 @@ def get_vendor_landing_route(user: str | None = None) -> str:
 	is one rule, not four separate hardcoded ones.
 
 	Parameters:
-		user (str, optional): User to resolve a landing route for.
-			Defaults to the current session user.
+	        user (str, optional): User to resolve a landing route for.
+	                Defaults to the current session user.
 
 	Returns:
-		str: "/vendor-portal" if onboarded, else
-		"/vendor-onboarding-form/new".
+	        str: "/vendor-portal" if onboarded, else
+	        "/vendor-onboarding-form/new".
 	"""
 	user = user or frappe.session.user
 	if get_vendor_suppliers(user):
@@ -98,10 +98,10 @@ def is_vendor_portal_enabled() -> bool:
 	save of JFS Settings), matching its Check field's own default.
 
 	Parameters:
-		None.
+	        None.
 
 	Returns:
-		bool: True if the vendor portal is enabled (or unset), else False.
+	        bool: True if the vendor portal is enabled (or unset), else False.
 	"""
 	# JFS Settings is owned by jfs_report_customization, which isn't a
 	# required_apps dependency here -- treated the same as the field being
@@ -121,14 +121,14 @@ def require_vendor_login() -> None:
 	before that link exists -- e.g. the onboarding form embed.
 
 	Parameters:
-		None.
+	        None.
 
 	Returns:
-		None
+	        None
 
 	Raises:
-		frappe.PermissionError: If the portal is disabled, or the current
-			user isn't a logged-in vendor.
+	        frappe.PermissionError: If the portal is disabled, or the current
+	                user isn't a logged-in vendor.
 	"""
 	if not is_vendor_portal_enabled():
 		frappe.throw(
@@ -137,7 +137,9 @@ def require_vendor_login() -> None:
 
 	user = frappe.session.user
 	if user == "Guest" or not is_vendor(user):
-		frappe.throw(_("You need to be logged in as a vendor to access this page"), frappe.PermissionError)
+		frappe.throw(
+			_("You need to be logged in as a vendor to access this page"), frappe.PermissionError
+		)
 
 
 def require_vendor_portal_access() -> list[str]:
@@ -146,15 +148,15 @@ def require_vendor_portal_access() -> list[str]:
 	least one linked Supplier via Portal User.
 
 	Parameters:
-		None.
+	        None.
 
 	Returns:
-		list[str]: Names of Supplier documents the current user may act
-		as.
+	        list[str]: Names of Supplier documents the current user may act
+	        as.
 
 	Raises:
-		frappe.PermissionError: If the portal is disabled, the user isn't
-			a logged-in vendor, or the vendor has no linked Supplier.
+	        frappe.PermissionError: If the portal is disabled, the user isn't
+	                a logged-in vendor, or the vendor has no linked Supplier.
 	"""
 	require_vendor_login()
 

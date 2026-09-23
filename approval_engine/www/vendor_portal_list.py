@@ -28,18 +28,18 @@ def get_context(context: frappe._dict) -> None:
 	shared Tab Group).
 
 	Parameters:
-		context (frappe._dict, required): Website render context, mutated
-			in place. Expects `route` and reads optional `q`/`sort` from
-			`frappe.form_dict`.
+	        context (frappe._dict, required): Website render context, mutated
+	                in place. Expects `route` and reads optional `q`/`sort` from
+	                `frappe.form_dict`.
 
 	Returns:
-		None
+	        None
 
 	Raises:
-		frappe.DoesNotExistError: If `route` doesn't match a configured
-			portal section.
-		frappe.PermissionError: If the current user isn't allowed to view
-			this row.
+	        frappe.DoesNotExistError: If `route` doesn't match a configured
+	                portal section.
+	        frappe.PermissionError: If the current user isn't allowed to view
+	                this row.
 	"""
 	suppliers = require_vendor_portal_access()
 
@@ -56,7 +56,9 @@ def get_context(context: frappe._dict) -> None:
 	tab_siblings = get_tab_siblings(row)
 	context.tab_siblings = tab_siblings
 	context.tab_group_label = (
-		next((s.tab_group_label for s in tab_siblings if s.tab_group_label), None) if tab_siblings else None
+		next((s.tab_group_label for s in tab_siblings if s.tab_group_label), None)
+		if tab_siblings
+		else None
 	)
 
 	fields = ["name"]

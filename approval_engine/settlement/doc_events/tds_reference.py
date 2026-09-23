@@ -131,7 +131,9 @@ def _resolve_category(nature_of_service, bucket):
 	if bucket != "Others":
 		# Single-rate TDS Reference rows only ever get an "Others" category.
 		category = frappe.db.get_value(
-			"Tax Withholding Category", {"tds_reference": nature_of_service, "entity_type": "Others"}, "name"
+			"Tax Withholding Category",
+			{"tds_reference": nature_of_service, "entity_type": "Others"},
+			"name",
 		)
 
 	return category

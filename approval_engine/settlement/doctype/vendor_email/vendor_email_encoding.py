@@ -18,10 +18,10 @@ def encode_email(email: str) -> str:
 	param without further escaping.
 
 	Parameters:
-		email (str, required): Email address in "local@domain" form.
+	        email (str, required): Email address in "local@domain" form.
 
 	Returns:
-		str: "<encoded_local>@<encoded_domain>"
+	        str: "<encoded_local>@<encoded_domain>"
 	"""
 	local, domain = email.split("@")
 	encoded_local = encode_string_part(local)
@@ -35,10 +35,10 @@ def encode_string_part(part: str) -> str:
 	Base64url-encode a single string, stripping padding.
 
 	Parameters:
-		part (str, required): String to encode.
+	        part (str, required): String to encode.
 
 	Returns:
-		str: URL-safe base64 encoding of `part`, without `=` padding.
+	        str: URL-safe base64 encoding of `part`, without `=` padding.
 	"""
 	encoded_part = base64.urlsafe_b64encode(part.encode()).decode().rstrip("=")
 	return encoded_part

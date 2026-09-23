@@ -28,7 +28,9 @@ def auto_close_purchase_orders():
 				message=frappe.get_traceback(),
 			)
 	frappe.db.commit()  # nosemgrep: frappe-manual-commit - scheduled job, not a web request; no auto-commit at the end
-	frappe.logger().info(f"Auto Close PO (scheduler): closed {closed_count} of {len(pos)} eligible POs")
+	frappe.logger().info(
+		f"Auto Close PO (scheduler): closed {closed_count} of {len(pos)} eligible POs"
+	)
 
 
 def on_purchase_invoice_submit(doc, method=None):

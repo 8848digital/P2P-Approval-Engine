@@ -23,20 +23,22 @@ def send_vendor_mail(
 	company: str | None = None,
 ):
 	"""
-		Create a Vendor Email record and send the vendor onboarding invite email.
+	        Create a Vendor Email record and send the vendor onboarding invite email.
 
-		**Endpoint:** `/api/method/approval_engine.settlement.api.v1.vendor_email.send_vendor_mail`
-		**HTTP Method:** POST
-		**Parameters:**
-			- mail (str, required): The vendor's email address
-			- reference_doctype (str, required): The doctype that triggered onboarding (e.g. Supplier)
-			- reference_docname (str, optional): The referencing document's name
-			- name (str, optional): The vendor's display name
-			- email_2 (str, optional): A second recipient for the same invite
-			- company (str, optional): The company context for the onboarding link
-		**Response:**
+	        **Endpoint:** `/api/method/approval_engine.settlement.api.v1.vendor_email.send_vendor_mail`
+	        **HTTP Method:** POST
+	        **Parameters:**
+	                - mail (str, required): The vendor's email address
+	                - reference_doctype (str, required): The doctype that triggered onboarding (e.g. Supplier)
+	                - reference_docname (str, optional): The referencing document's name
+	                - name (str, optional): The vendor's display name
+	                - email_2 (str, optional): A second recipient for the same invite
+	                - company (str, optional): The company context for the onboarding link
+	        **Response:**
 	```json
-			{"status": "success", "message": "Email sent to vendor@example.com"}
+	                {"status": "success", "message": "Email sent to vendor@example.com"}
 	```
 	"""
-	return create_vendor(mail, reference_doctype, reference_docname, name, email_2=email_2, company=company)
+	return create_vendor(
+		mail, reference_doctype, reference_docname, name, email_2=email_2, company=company
+	)

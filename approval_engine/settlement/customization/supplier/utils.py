@@ -37,7 +37,9 @@ def _send_supplier_status_mail(supplier, reason, action):
 	# __delete_linked_files(supplier)
 	# __update_supplier(supplier)
 
-	vendor_email, supplier_name = frappe.db.get_value("Supplier", supplier, ["email_id", "supplier_name"])
+	vendor_email, supplier_name = frappe.db.get_value(
+		"Supplier", supplier, ["email_id", "supplier_name"]
+	)
 
 	frappe.get_doc("Supplier", supplier).add_comment("Comment", f"{action}: {reason}")
 

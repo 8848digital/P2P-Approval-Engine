@@ -21,7 +21,9 @@ def apply_supplier_allowance_limit_impl(self, settings) -> None:
 	rows consume the allowance first), then rewrite self.taxes,
 	_item_wise_tax_details, and tax_withholding_entries to reflect only
 	the taxable portion, and stamp each item's own exempt amount."""
-	items_with_category = [i for i in self.items if i.get("apply_tds") and i.get("tax_withholding_category")]
+	items_with_category = [
+		i for i in self.items if i.get("apply_tds") and i.get("tax_withholding_category")
+	]
 	if not items_with_category:
 		return
 

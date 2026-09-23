@@ -15,10 +15,10 @@ def set_total_amount(doc) -> None:
 	Recompute doc.total_amount as the sum of its BRN Item rows' amounts.
 
 	Parameters:
-		doc (Document, required): The BRN document being validated.
+	        doc (Document, required): The BRN document being validated.
 
 	Returns:
-		None
+	        None
 	"""
 	total_amount = 0
 	for row in doc.items:
@@ -33,10 +33,10 @@ def validate_comparision_rows(doc) -> None:
 	for Multi/RPT, the minimum-3-quotes rule, and exactly one Preferred row.
 
 	Parameters:
-		doc (Document, required): The BRN document being validated.
+	        doc (Document, required): The BRN document being validated.
 
 	Returns:
-		None
+	        None
 	"""
 	rows = doc.comparision or []
 	row_count = len(rows)
@@ -59,10 +59,10 @@ def validate_preferred_row_details(doc) -> None:
 	submit, so create_brn() can still save an incomplete draft.
 
 	Parameters:
-		doc (Document, required): The BRN document being submitted.
+	        doc (Document, required): The BRN document being submitted.
 
 	Returns:
-		None
+	        None
 	"""
 	for row in doc.comparision or []:
 		if not row.preferred:
@@ -85,10 +85,10 @@ def validate_single_or_multi(doc) -> None:
 	the row-count rule ambiguous.
 
 	Parameters:
-		doc (Document, required): The BRN document being validated.
+	        doc (Document, required): The BRN document being validated.
 
 	Returns:
-		None
+	        None
 	"""
 	is_multi = doc.get("multi") or doc.get("rpt")
 
@@ -104,11 +104,11 @@ def validate_minimum_comparison_rows(doc, row_count: int) -> None:
 	Multi/RPT needs at least 3 vendors to compare; there is no upper limit.
 
 	Parameters:
-		doc (Document, required): The BRN document being validated.
-		row_count (int, required): Number of Comparision rows.
+	        doc (Document, required): The BRN document being validated.
+	        row_count (int, required): Number of Comparision rows.
 
 	Returns:
-		None
+	        None
 	"""
 	if not (doc.get("multi") or doc.get("rpt")):
 		return
@@ -129,11 +129,11 @@ def validate_minimum_quotes(doc, rows: list) -> None:
 	has one row, so the 3-quote rule can't apply there.
 
 	Parameters:
-		doc (Document, required): The BRN document being validated.
-		rows (list, required): The BRN's Comparision rows.
+	        doc (Document, required): The BRN document being validated.
+	        rows (list, required): The BRN's Comparision rows.
 
 	Returns:
-		None
+	        None
 	"""
 	is_related_party = any(row.related_party == "Yes" for row in rows)
 	related_party_under_multi = is_related_party and doc.get("multi")
@@ -159,11 +159,11 @@ def validate_single_preferred_row(doc, rows: list) -> None:
 	Zero leaves the choice unmade; more than one makes it ambiguous.
 
 	Parameters:
-		doc (Document, required): The BRN document being validated.
-		rows (list, required): The BRN's Comparision rows.
+	        doc (Document, required): The BRN document being validated.
+	        rows (list, required): The BRN's Comparision rows.
 
 	Returns:
-		None
+	        None
 	"""
 	if not rows:
 		return
@@ -187,10 +187,10 @@ def block_requisition_id(doc) -> None:
 	so it can't be reused by another BRN.
 
 	Parameters:
-		doc (Document, required): The BRN document being submitted.
+	        doc (Document, required): The BRN document being submitted.
 
 	Returns:
-		None
+	        None
 	"""
 	if doc.quotation_requisition_id:
 		frappe.db.set_value(

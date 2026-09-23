@@ -23,11 +23,11 @@ def validate_transaction_date_within_brn_validity(doc, method: str | None = None
 	the BRN doesn't actually cover.
 
 	Parameters:
-		doc (Document, required): The Purchase Order document being validated.
-		method (str, optional): The hook event name passed by Frappe.
+	        doc (Document, required): The Purchase Order document being validated.
+	        method (str, optional): The hook event name passed by Frappe.
 
 	Returns:
-		None
+	        None
 	"""
 	if not doc.brn:
 		return
@@ -62,11 +62,11 @@ def validate_brn_is_usable(brn: str, brn_link: str) -> None:
 	have POs raised against it.
 
 	Parameters:
-		brn (str, required): The BRN document name.
-		brn_link (str, required): HTML link to the BRN, for the error message.
+	        brn (str, required): The BRN document name.
+	        brn_link (str, required): HTML link to the BRN, for the error message.
 
 	Returns:
-		None
+	        None
 	"""
 	values = frappe.db.get_value("BRN", brn, ["docstatus", "status"], as_dict=True)
 	if not values:

@@ -7,8 +7,9 @@
 utils.py - split out to keep utils.py under the line-count cap.
 """
 
-import frappe
 from pypika import functions as fn
+
+import frappe
 
 
 class POI_Fields:
@@ -24,13 +25,13 @@ def _sum_other_po_items(doc, item_code: str, field: str) -> float:
 	non-cancelled Purchase Order linked to doc's BRN.
 
 	Parameters:
-		doc (Document, required): The Purchase Order being validated
-			(excluded from the sum by name).
-		item_code (str, required): The Item to sum.
-		field (str, required): POI_Fields.qty or POI_Fields.amount.
+	        doc (Document, required): The Purchase Order being validated
+	                (excluded from the sum by name).
+	        item_code (str, required): The Item to sum.
+	        field (str, required): POI_Fields.qty or POI_Fields.amount.
 
 	Returns:
-		float: The summed value, or 0 if no other PO has this item.
+	        float: The summed value, or 0 if no other PO has this item.
 	"""
 	POI = frappe.qb.DocType("Purchase Order Item")
 	PO = frappe.qb.DocType("Purchase Order")

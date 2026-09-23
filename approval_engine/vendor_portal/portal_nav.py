@@ -26,11 +26,11 @@ def get_portal_doctypes() -> list[PortalSectionConfig]:
 	Single so this is one row read, not a query.
 
 	Parameters:
-		None.
+	        None.
 
 	Returns:
-		list[PortalSectionConfig]: Enabled child-table rows, sorted by
-		`idx_order` then `idx`.
+	        list[PortalSectionConfig]: Enabled child-table rows, sorted by
+	        `idx_order` then `idx`.
 	"""
 	settings = frappe.get_cached_doc("Vendor Portal Settings")
 	rows = [row for row in settings.doctypes if row.enabled]
@@ -43,12 +43,12 @@ def get_portal_doctype_by_route(route: str) -> PortalSectionConfig | None:
 	Find the enabled portal section row for a given URL route segment.
 
 	Parameters:
-		route (str, required): Route value to match against each row's
-			`route` field.
+	        route (str, required): Route value to match against each row's
+	                `route` field.
 
 	Returns:
-		PortalSectionConfig | None: The matching row, or None if no
-		enabled row has this route.
+	        PortalSectionConfig | None: The matching row, or None if no
+	        enabled row has this route.
 	"""
 	for row in get_portal_doctypes():
 		if row.route == route:
@@ -61,12 +61,12 @@ def get_portal_doctype_by_document_type(document_type: str) -> PortalSectionConf
 	Find the enabled portal section row configured for a given DocType.
 
 	Parameters:
-		document_type (str, required): DocType name to match against each
-			row's `document_type` field.
+	        document_type (str, required): DocType name to match against each
+	                row's `document_type` field.
 
 	Returns:
-		PortalSectionConfig | None: The matching row, or None if no
-		enabled row targets this DocType.
+	        PortalSectionConfig | None: The matching row, or None if no
+	        enabled row targets this DocType.
 	"""
 	for row in get_portal_doctypes():
 		if row.document_type == document_type:
@@ -82,13 +82,13 @@ def row_allowed_for_user(row: PortalSectionConfig, user: str | None = None) -> b
 	deliberately assigns it a Role.
 
 	Parameters:
-		row (PortalSectionConfig, required): The portal section row to
-			check.
-		user (str, optional): User to check roles for. Defaults to the
-			current session user.
+	        row (PortalSectionConfig, required): The portal section row to
+	                check.
+	        user (str, optional): User to check roles for. Defaults to the
+	                current session user.
 
 	Returns:
-		bool: True if the row has a Role and the user holds it.
+	        bool: True if the row has a Role and the user holds it.
 	"""
 	if not row.role:
 		return False
@@ -104,16 +104,18 @@ def get_visible_portal_doctypes(user: str | None = None) -> list[PortalSectionCo
 	error instead of a blanket 404).
 
 	Parameters:
-		user (str, optional): User to check roles for. Defaults to the
-			current session user.
+	        user (str, optional): User to check roles for. Defaults to the
+	                current session user.
 
 	Returns:
-		list[PortalSectionConfig]: Enabled rows the user's roles permit.
+	        list[PortalSectionConfig]: Enabled rows the user's roles permit.
 	"""
 	return [row for row in get_portal_doctypes() if row_allowed_for_user(row, user)]
 
 
-def get_tab_siblings(row: PortalSectionConfig, user: str | None = None) -> list[PortalSectionConfig]:
+def get_tab_siblings(
+	row: PortalSectionConfig, user: str | None = None
+) -> list[PortalSectionConfig]:
 	"""
 	All visible rows sharing row's Tab Group (including row itself), in
 	configured order -- e.g. Purchase Orders + Purchase Invoices under
@@ -122,14 +124,14 @@ def get_tab_siblings(row: PortalSectionConfig, user: str | None = None) -> list[
 	"no tabs to show" with a plain truthiness check.
 
 	Parameters:
-		row (PortalSectionConfig, required): The row whose Tab Group
-			siblings are wanted.
-		user (str, optional): User to filter visibility for. Defaults to
-			the current session user.
+	        row (PortalSectionConfig, required): The row whose Tab Group
+	                siblings are wanted.
+	        user (str, optional): User to filter visibility for. Defaults to
+	                the current session user.
 
 	Returns:
-		list[PortalSectionConfig]: Rows sharing row's Tab Group, or an
-		empty list if row has no Tab Group.
+	        list[PortalSectionConfig]: Rows sharing row's Tab Group, or an
+	        empty list if row has no Tab Group.
 	"""
 	if not row or not row.tab_group:
 		return []
@@ -146,12 +148,12 @@ def get_portal_nav_items(user: str | None = None) -> list[dict]:
 	the group is actually open.
 
 	Parameters:
-		user (str, optional): User to build nav items for. Defaults to the
-			current session user.
+	        user (str, optional): User to build nav items for. Defaults to the
+	                current session user.
 
 	Returns:
-		list[dict]: One dict per nav entry with `route`, `label`, `icon`,
-		and `member_routes` keys.
+	        list[dict]: One dict per nav entry with `route`, `label`, `icon`,
+	        and `member_routes` keys.
 	"""
 	items = []
 	seen_groups = set()
@@ -189,15 +191,15 @@ def require_row_access(row: PortalSectionConfig) -> None:
 	role-restricted and the current user doesn't hold that role.
 
 	Parameters:
-		row (PortalSectionConfig, required): The portal section row being
-			accessed.
+	        row (PortalSectionConfig, required): The portal section row being
+	                accessed.
 
 	Returns:
-		None
+	        None
 
 	Raises:
-		frappe.PermissionError: If the current user doesn't hold the row's
-			configured Role.
+	        frappe.PermissionError: If the current user doesn't hold the row's
+	                configured Role.
 	"""
 	if not row_allowed_for_user(row):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)

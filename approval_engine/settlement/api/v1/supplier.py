@@ -28,9 +28,9 @@ def send_supplier_message(supplier: str, reason: str, action: str):
 	**Endpoint:** `/api/method/approval_engine.settlement.api.v1.supplier.send_supplier_message`
 	**HTTP Method:** POST
 	**Parameters:**
-		- supplier (str, required): The Supplier document name
-		- reason (str, required): The reason/comment text
-		- action (str, required): The workflow action ("Reject" or any other, treated as "Comment")
+	        - supplier (str, required): The Supplier document name
+	        - reason (str, required): The reason/comment text
+	        - action (str, required): The workflow action ("Reject" or any other, treated as "Comment")
 	**Response:** `"sent"` or `"no_email"`, serialized as JSON.
 	"""
 	return _send_supplier_status_mail(supplier, reason, action)
@@ -44,8 +44,8 @@ def send_approval_mail(supplier_name: str, email_id: str):
 	**Endpoint:** `/api/method/approval_engine.settlement.api.v1.supplier.send_approval_mail`
 	**HTTP Method:** POST
 	**Parameters:**
-		- supplier_name (str, required): The supplier's display name (used in the email body)
-		- email_id (str, required): The recipient email address
+	        - supplier_name (str, required): The supplier's display name (used in the email body)
+	        - email_id (str, required): The recipient email address
 	**Response:** `"sent"` or `"no_email"`, serialized as JSON.
 	"""
 	return approval_mail(supplier_name, email_id)
@@ -64,12 +64,12 @@ def get_nature_of_service_query(
 	**Endpoint:** `/api/method/approval_engine.settlement.api.v1.supplier.get_nature_of_service_query`
 	**HTTP Method:** GET, POST
 	**Parameters:**
-		- doctype (str, required): The Link/MultiSelect target doctype (standard search-query arg)
-		- txt (str, required): The text typed into the search box
-		- searchfield (str, required): The field being searched (standard search-query arg)
-		- start (int, required): Pagination offset (standard search-query arg, unused here)
-		- page_len (int, required): Page size (standard search-query arg, unused here)
-		- filters (dict, required): Additional filters (standard search-query arg, unused here)
+	        - doctype (str, required): The Link/MultiSelect target doctype (standard search-query arg)
+	        - txt (str, required): The text typed into the search box
+	        - searchfield (str, required): The field being searched (standard search-query arg)
+	        - start (int, required): Pagination offset (standard search-query arg, unused here)
+	        - page_len (int, required): Page size (standard search-query arg, unused here)
+	        - filters (dict, required): Additional filters (standard search-query arg, unused here)
 	**Response:** List of (name, section_as_per_it_act_1961, tds_rate) tuples, serialized as JSON.
 	"""
 	return get_nature_of_service_options(txt)

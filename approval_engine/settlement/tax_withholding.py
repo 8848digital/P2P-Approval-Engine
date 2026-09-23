@@ -9,8 +9,11 @@ sibling tds_allowance_limit.py / tds_return_reversal.py / tds_allowance_consumed
 modules - split out to keep this file under the line-count cap.
 """
 
+from erpnext.accounts.doctype.tax_withholding_entry.tax_withholding_entry import (
+	PurchaseTaxWithholding,
+)
+
 import frappe
-from erpnext.accounts.doctype.tax_withholding_entry.tax_withholding_entry import PurchaseTaxWithholding
 from frappe.utils import flt
 
 from approval_engine.settlement.tds_allowance_consumed import (
@@ -153,7 +156,9 @@ def update_supplier_allowance_consumed(self, method=None) -> None:
 	# of a doc's categories have one, so consumed_amount must not advance
 	# either in that case.
 	valid_accounts = _tds_account_by_category(self.company, category_map.keys())
-	total_amount = sum(amount for category, amount in category_map.items() if category in valid_accounts)
+	total_amount = sum(
+		amount for category, amount in category_map.items() if category in valid_accounts
+	)
 	if total_amount <= 0:
 		return
 
@@ -170,7 +175,9 @@ def update_supplier_allowance_consumed(self, method=None) -> None:
 		return
 
 	frappe.db.set_value("Supplier", self.supplier, "consumed_amount", new_total)
-	frappe.db.set_value("Purchase Invoice", self.name, "custom_allowance_consumed_amount", contributed)
+	frappe.db.set_value(
+		"Purchase Invoice", self.name, "custom_allowance_consumed_amount", contributed
+	)
 
 
 def cancel_supplier_allowance_consumed(self, method=None) -> None:

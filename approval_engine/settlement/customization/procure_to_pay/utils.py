@@ -12,8 +12,9 @@ under procure_to_pay/ rather than under just one of purchase_order/ or
 purchase_invoice/.
 """
 
-import frappe
 from erpnext.accounts.utils import get_fiscal_year
+
+import frappe
 from frappe import _
 from frappe.utils import getdate
 
@@ -24,14 +25,14 @@ def get_fiscal_year_and_validity(posting_date: str, brn: str | None = None) -> d
 	clamp its service period to that fiscal year's bounds.
 
 	Parameters:
-		posting_date (str, required): The transaction/posting date to resolve.
-		brn (str, optional): A BRN document name whose service period should
-			be validated against and clamped to the resolved fiscal year.
+	        posting_date (str, required): The transaction/posting date to resolve.
+	        brn (str, optional): A BRN document name whose service period should
+	                be validated against and clamped to the resolved fiscal year.
 
 	Returns:
-		dict: {"fiscal_year": str} always; plus "validity_start_date" and
-			"validity_end_date" (date) when brn is given and has a service
-			period that overlaps the fiscal year.
+	        dict: {"fiscal_year": str} always; plus "validity_start_date" and
+	                "validity_end_date" (date) when brn is given and has a service
+	                period that overlaps the fiscal year.
 	"""
 	if not posting_date:
 		frappe.throw(_("Posting Date is required"))
@@ -75,12 +76,12 @@ def validate_fiscal_year_and_brn_dates(doc, method: str | None = None) -> None:
 	JFS Settings toggle so sites that don't use BRN validity can opt out.
 
 	Parameters:
-		doc (Document, required): The Purchase Order or Purchase Invoice
-			document being validated.
-		method (str, optional): The hook event name passed by Frappe.
+	        doc (Document, required): The Purchase Order or Purchase Invoice
+	                document being validated.
+	        method (str, optional): The hook event name passed by Frappe.
 
 	Returns:
-		None
+	        None
 	"""
 	# JFS Settings is owned by jfs_report_customization, which isn't a
 	# required_apps dependency here -- without it, this validation is
@@ -114,12 +115,12 @@ def validate_brn_dates(brn: str, transaction_date: str) -> dict:
 	Used by the PO/PI client scripts to warn before the date is even saved.
 
 	Parameters:
-		brn (str, required): The BRN document name.
-		transaction_date (str, required): The date to check.
+	        brn (str, required): The BRN document name.
+	        transaction_date (str, required): The date to check.
 
 	Returns:
-		dict: {"status": "valid" | "before_start" | "expired", plus
-			"start_date"/"expiry_date" (str) when status isn't "valid"}
+	        dict: {"status": "valid" | "before_start" | "expired", plus
+	                "start_date"/"expiry_date" (str) when status isn't "valid"}
 	"""
 	start_date, expiry_date = get_brn_service_dates(brn)
 
@@ -144,10 +145,10 @@ def get_brn_service_dates(brn: str) -> tuple:
 	so a mistyped BRN would otherwise crash with a TypeError on unpacking.
 
 	Parameters:
-		brn (str, required): The BRN document name.
+	        brn (str, required): The BRN document name.
 
 	Returns:
-		tuple: (service_start_date, expiry_date); either may be None.
+	        tuple: (service_start_date, expiry_date); either may be None.
 	"""
 	values = frappe.db.get_value("BRN", brn, ["service_start_date", "expiry_date"])
 	if not values:

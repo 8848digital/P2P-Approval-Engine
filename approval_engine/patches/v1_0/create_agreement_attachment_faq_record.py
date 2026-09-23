@@ -47,7 +47,9 @@ def execute():
 		fields=["name", "sort_order"],
 	)
 	for row in later_rows:
-		frappe.db.set_value("FAQ Master", row.name, "sort_order", row.sort_order + 1, update_modified=False)
+		frappe.db.set_value(
+			"FAQ Master", row.name, "sort_order", row.sort_order + 1, update_modified=False
+		)
 
 	doc = frappe.get_doc(
 		{

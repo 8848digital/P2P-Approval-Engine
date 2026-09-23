@@ -34,7 +34,9 @@ def execute():
 			{"parent": "Payments Compliance Settings", "parentfield": "allowed_roles", "role": old_role},
 		)
 		if not already_present:
-			print(f"Migrating Payments Compliance Settings.allowed_role={old_role!r} to allowed_roles table")
+			print(
+				f"Migrating Payments Compliance Settings.allowed_role={old_role!r} to allowed_roles table"
+			)
 			settings = frappe.get_single("Payments Compliance Settings")
 			settings.append("allowed_roles", {"role": old_role})
 			settings.save(ignore_permissions=True)

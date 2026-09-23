@@ -14,10 +14,10 @@ def send_portal_invoice_notification(log_name: str) -> None:
 	error log entry) when no default outgoing Email Account is configured.
 
 	Parameters:
-		log_name (str, required): Name of the Portal Invoice Log document.
+	        log_name (str, required): Name of the Portal Invoice Log document.
 
 	Returns:
-		None
+	        None
 	"""
 
 	if not is_email_configured():
@@ -45,11 +45,11 @@ def is_email_configured() -> str | None:
 	Check whether a default outgoing Email Account exists for this site.
 
 	Parameters:
-		None
+	        None
 
 	Returns:
-		str | None: The matching Email Account's name if one is
-		configured with outgoing enabled, else None.
+	        str | None: The matching Email Account's name if one is
+	        configured with outgoing enabled, else None.
 	"""
 
 	return frappe.db.exists("Email Account", {"default_outgoing": 1, "enable_outgoing": 1})
@@ -61,11 +61,11 @@ def get_po_text(pi: Document) -> str:
 	referenced by a Purchase Invoice's item rows.
 
 	Parameters:
-		pi (Document, required): Purchase Invoice document (or any object
-			exposing an `items` iterable of rows with `purchase_order`).
+	        pi (Document, required): Purchase Invoice document (or any object
+	                exposing an `items` iterable of rows with `purchase_order`).
 
 	Returns:
-		str: Comma separated Purchase Order names, or "N/A" if none.
+	        str: Comma separated Purchase Order names, or "N/A" if none.
 	"""
 
 	po_names = sorted({row.purchase_order for row in pi.items if row.purchase_order})
@@ -80,11 +80,11 @@ def send_company_notification(pi: Document, po_text: str) -> None:
 	Company has no email address on file.
 
 	Parameters:
-		pi (Document, required): The Purchase Invoice document.
-		po_text (str, required): Comma separated Purchase Order names.
+	        pi (Document, required): The Purchase Invoice document.
+	        po_text (str, required): Comma separated Purchase Order names.
 
 	Returns:
-		None
+	        None
 	"""
 
 	company_email = frappe.db.get_value("Company", pi.company, "email")
@@ -144,11 +144,11 @@ def send_supplier_acknowledgement(pi: Document, po_text: str) -> None:
 	address on file.
 
 	Parameters:
-		pi (Document, required): The Purchase Invoice document.
-		po_text (str, required): Comma separated Purchase Order names.
+	        pi (Document, required): The Purchase Invoice document.
+	        po_text (str, required): Comma separated Purchase Order names.
 
 	Returns:
-		None
+	        None
 	"""
 
 	supplier_email = frappe.db.get_value("Supplier", pi.supplier, "email_id")
@@ -207,12 +207,12 @@ def send_email(recipients: list[str], subject: str, message: str) -> None:
 	notifications. No-op when `recipients` is empty.
 
 	Parameters:
-		recipients (list[str], required): Email addresses to send to.
-		subject (str, required): Email subject line.
-		message (str, required): HTML email body.
+	        recipients (list[str], required): Email addresses to send to.
+	        subject (str, required): Email subject line.
+	        message (str, required): HTML email body.
 
 	Returns:
-		None
+	        None
 	"""
 
 	if not recipients:
@@ -226,10 +226,10 @@ def create_error_log(message: str) -> None:
 	Create an Error Log entry for a Portal Invoice notification issue.
 
 	Parameters:
-		message (str, required): Error detail to log.
+	        message (str, required): Error detail to log.
 
 	Returns:
-		None
+	        None
 	"""
 
 	frappe.log_error(title="Portal Invoice Notification", message=message)

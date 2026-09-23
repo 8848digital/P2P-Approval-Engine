@@ -41,6 +41,8 @@ class IntegrationTestNatureOfTransaction(IntegrationTestCase):
 		"""
 		frappe.get_doc(doctype="Nature Of Transaction", nature_of_transition="Test Settlement").insert()
 
-		duplicate = frappe.get_doc(doctype="Nature Of Transaction", nature_of_transition="Test Settlement")
+		duplicate = frappe.get_doc(
+			doctype="Nature Of Transaction", nature_of_transition="Test Settlement"
+		)
 
 		self.assertRaises((frappe.DuplicateEntryError, frappe.UniqueValidationError), duplicate.insert)

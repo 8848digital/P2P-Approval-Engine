@@ -24,10 +24,10 @@ class PortalInvoiceLog(Document):
 		Portal Invoice Log entry is created.
 
 		Parameters:
-			None (operates on self).
+		        None (operates on self).
 
 		Returns:
-			None
+		        None
 		"""
 		frappe.enqueue(
 			method=send_portal_invoice_notification,

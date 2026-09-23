@@ -69,14 +69,14 @@ def classify_itc_requirement(invoice_fy, current_fy, previous_fy, today, cutoff_
 	  - Anything older: always required, no cut-off grace period.
 
 	Parameters:
-		invoice_fy (Document, required): The Fiscal Year covering the invoice's bill_date.
-		current_fy (Document, required): The Fiscal Year covering today.
-		previous_fy (Document, required): The Fiscal Year immediately before current_fy.
-		today (date, required): The date to evaluate the cut-off against.
-		cutoff_date (date, required): The grace-period cut-off date (see get_cutoff_date).
+	        invoice_fy (Document, required): The Fiscal Year covering the invoice's bill_date.
+	        current_fy (Document, required): The Fiscal Year covering today.
+	        previous_fy (Document, required): The Fiscal Year immediately before current_fy.
+	        today (date, required): The date to evaluate the cut-off against.
+	        cutoff_date (date, required): The grace-period cut-off date (see get_cutoff_date).
 
 	Returns:
-		tuple[str, bool]: (itc_criteria_status label, reversal_required).
+	        tuple[str, bool]: (itc_criteria_status label, reversal_required).
 	"""
 	if invoice_fy.name == current_fy.name:
 		return "All Other ITC", False

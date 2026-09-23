@@ -18,10 +18,10 @@ def on_update_after_submit(doc, method=None):
 	been assigned one yet.
 
 	Parameters:
-		doc (Document, required): The Supplier Quotation document.
-		method (str, optional): The hook event name passed by Frappe.
+	        doc (Document, required): The Supplier Quotation document.
+	        method (str, optional): The hook event name passed by Frappe.
 
 	Returns:
-		None
+	        None
 	"""
 	ensure_requisition_number(doc)

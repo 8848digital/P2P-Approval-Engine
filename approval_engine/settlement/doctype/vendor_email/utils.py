@@ -56,18 +56,18 @@ def create_vendor(
 	onboarding/onboarded.
 
 	Parameters:
-		vendor_mail (str, required): Vendor's primary email address.
-		reference_doctype (str, required): DocType this onboarding is linked to.
-		reference_docname (str, optional): Name of the linked reference document.
-		vendor_name (str, optional): Vendor's display name.
-		email_2 (str, optional): Secondary recipient for the same invite link.
-		company (str, optional): Company the vendor is onboarding against.
+	        vendor_mail (str, required): Vendor's primary email address.
+	        reference_doctype (str, required): DocType this onboarding is linked to.
+	        reference_docname (str, optional): Name of the linked reference document.
+	        vendor_name (str, optional): Vendor's display name.
+	        email_2 (str, optional): Secondary recipient for the same invite link.
+	        company (str, optional): Company the vendor is onboarding against.
 
 	Returns:
-		dict: Result of send_vendor_mail_logic() for a new vendor.
+	        dict: Result of send_vendor_mail_logic() for a new vendor.
 
 	Raises:
-		frappe.ValidationError: If a Vendor Email record for `vendor_mail` already exists.
+	        frappe.ValidationError: If a Vendor Email record for `vendor_mail` already exists.
 	"""
 	if not frappe.db.exists("Vendor Email", vendor_mail):
 		new_doc = frappe.new_doc("Vendor Email")
@@ -99,10 +99,10 @@ def ensure_vendor_portal_role() -> None:
 	address records.
 
 	Parameters:
-		None
+	        None
 
 	Returns:
-		None
+	        None
 	"""
 	role_name = "Vendor Portal"
 

@@ -25,7 +25,9 @@ def boot_session(bootinfo):
 		bootinfo.jfs_faq_manager_role = "Vendor FAQ Manager"
 		return
 
-	bootinfo.jfs_faq_section_enabled = frappe.db.get_single_value("JFS Settings", "enable_faq_section")
+	bootinfo.jfs_faq_section_enabled = frappe.db.get_single_value(
+		"JFS Settings", "enable_faq_section"
+	)
 	bootinfo.jfs_faq_manager_role = (
 		frappe.db.get_single_value("JFS Settings", "faq_manager_role") or "Vendor FAQ Manager"
 	)

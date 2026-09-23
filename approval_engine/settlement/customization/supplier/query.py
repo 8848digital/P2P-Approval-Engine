@@ -17,10 +17,10 @@ def get_nature_of_service_options(txt: str):
 	MultiSelect, unpaginated so it isn't capped at the default page length.
 
 	Parameters:
-		txt (str, required): The search text typed into the multiselect.
+	        txt (str, required): The search text typed into the multiselect.
 
 	Returns:
-		list[tuple]: Rows of (name, section_as_per_it_act_1961, tds_rate).
+	        list[tuple]: Rows of (name, section_as_per_it_act_1961, tds_rate).
 	"""
 	TDS = frappe.qb.DocType("TDS Reference")
 	txt_like = f"%{txt or ''}%"

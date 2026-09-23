@@ -33,7 +33,7 @@ def create_purchase_order_from_brn(source_name: str):
 	**Endpoint:** `/api/method/approval_engine.settlement.api.v1.brn.create_purchase_order_from_brn`
 	**HTTP Method:** POST
 	**Parameters:**
-		- source_name (str, required): The BRN document name to map from
+	        - source_name (str, required): The BRN document name to map from
 	**Response:** The mapped (unsaved) Purchase Order document, serialized as JSON.
 	"""
 	vendor = (frappe.flags.args or {}).get("vendor")
@@ -51,7 +51,7 @@ def create_purchase_invoice_from_brn(source_name: str):
 	**Endpoint:** `/api/method/approval_engine.settlement.api.v1.brn.create_purchase_invoice_from_brn`
 	**HTTP Method:** POST
 	**Parameters:**
-		- source_name (str, required): The BRN document name to map from
+	        - source_name (str, required): The BRN document name to map from
 	**Response:** The mapped (unsaved) Purchase Invoice document, serialized as JSON.
 	"""
 	vendor = (frappe.flags.args or {}).get("vendor")
@@ -66,8 +66,8 @@ def get_expiry_date(date: str, months: int):
 	**Endpoint:** `/api/method/approval_engine.settlement.api.v1.brn.get_expiry_date`
 	**HTTP Method:** GET, POST
 	**Parameters:**
-		- date (str, required): The service start date
-		- months (int, required): Duration of service, in months
+	        - date (str, required): The service start date
+	        - months (int, required): Duration of service, in months
 	**Response:** The computed expiry date (ISO date string), serialized as JSON.
 	"""
 	return calculate_brn_expiry_date(date, months)
@@ -88,10 +88,10 @@ def make_purchase_invoice_from_brn(
 	**Endpoint:** `/api/method/approval_engine.settlement.api.v1.brn.make_purchase_invoice_from_brn`
 	**HTTP Method:** POST
 	**Parameters:**
-		- brn_name (str, required): The BRN document name to invoice against
-		- items (str, required): JSON-encoded list of {item_code, qty, rate}
-		- supplier_invoice_no (str, optional): The supplier's own invoice number
-		- supplier_invoice_date (str, optional): The supplier's own invoice date
+	        - brn_name (str, required): The BRN document name to invoice against
+	        - items (str, required): JSON-encoded list of {item_code, qty, rate}
+	        - supplier_invoice_no (str, optional): The supplier's own invoice number
+	        - supplier_invoice_date (str, optional): The supplier's own invoice date
 	**Response:** The new Purchase Invoice's name (str), in the standard envelope's `data`.
 	"""
 	return _make_portal_purchase_invoice(brn_name, items, supplier_invoice_no, supplier_invoice_date)

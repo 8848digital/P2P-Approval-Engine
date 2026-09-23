@@ -13,8 +13,9 @@ import json
 import re
 import time
 
-import frappe
 import requests
+
+import frappe
 from frappe import _
 
 PLACEHOLDER_RE = re.compile(r"\{\{\s*([a-zA-Z0-9_]+)\s*\}\}")
@@ -111,7 +112,9 @@ def _do_request(vendor, cred, url, body_str, values, timeout):
 	headers = {"Content-Type": "application/json"}
 	if cred.auth_type != "None":
 		token = cred.get_password("token")
-		prefix = "Bearer " if cred.auth_type == "Bearer" else ("Basic " if cred.auth_type == "Basic" else "")
+		prefix = (
+			"Bearer " if cred.auth_type == "Bearer" else ("Basic " if cred.auth_type == "Basic" else "")
+		)
 		headers[cred.header_key or "Authorization"] = f"{prefix}{token}"
 
 	if vendor.request_style == "JSON Body":
@@ -119,7 +122,9 @@ def _do_request(vendor, cred, url, body_str, values, timeout):
 
 	if vendor.request_style == "Form Data":
 		form_headers = {k: v for k, v in headers.items() if k.lower() != "content-type"}
-		return requests.request(vendor.http_method, url, headers=form_headers, data=values, timeout=timeout)
+		return requests.request(
+			vendor.http_method, url, headers=form_headers, data=values, timeout=timeout
+		)
 
 	# Query Params — endpoint_path already has placeholders substituted
 	return requests.request(vendor.http_method, url, headers=headers, timeout=timeout)
@@ -216,7 +221,9 @@ def _classify_response(vendor_doc, resp, resp_json):
 	if has_error:
 		haystack = f"{error_type_val or ''} {error_message_val or ''}".lower()
 		keywords = [
-			k.strip().lower() for k in (vendor_doc.system_error_type_keywords or "").splitlines() if k.strip()
+			k.strip().lower()
+			for k in (vendor_doc.system_error_type_keywords or "").splitlines()
+			if k.strip()
 		]
 		is_system_error = any(k in haystack for k in keywords)
 

@@ -15,6 +15,6 @@ def execute():
 	install.repoint_p2p_customization_module_defs.
 
 	Returns:
-		None
+	        None
 	"""
 	repoint_p2p_customization_module_defs()

@@ -74,7 +74,9 @@ def apply_return_tds_reversal_impl(self, original_entries_by_category, ratios) -
 	to reflect the reversed portion of the original invoice's withholding,
 	once apply_return_tds_reversal's guard clauses and ratio computation
 	have confirmed there's something to reverse."""
-	tds_account_by_category = _tds_account_by_category(self.company, original_entries_by_category.keys())
+	tds_account_by_category = _tds_account_by_category(
+		self.company, original_entries_by_category.keys()
+	)
 
 	tds_accounts = set(tds_account_by_category.values())
 	if not tds_accounts:

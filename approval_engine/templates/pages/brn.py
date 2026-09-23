@@ -20,10 +20,10 @@ def get_context(context) -> None:
 	"Create Purchase Invoice" button should show.
 
 	Parameters:
-		context (frappe._dict, required): The website render context.
+	        context (frappe._dict, required): The website render context.
 
 	Returns:
-		None
+	        None
 	"""
 	context.no_cache = 1
 	context.show_sidebar = True

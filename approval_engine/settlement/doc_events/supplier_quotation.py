@@ -49,7 +49,9 @@ def create_brn(supplier_quotation: str):
 				"single": 1,
 			}
 		)
-		brn.append("comparision", _comparision_row_from_quotation(supplier_quotation, default_preferred=True))
+		brn.append(
+			"comparision", _comparision_row_from_quotation(supplier_quotation, default_preferred=True)
+		)
 		brn.insert(ignore_mandatory=True)
 		frappe.db.set_value(
 			"Supplier Quotation", supplier_quotation.name, "custom_brn", brn.name, update_modified=False
@@ -77,13 +79,15 @@ def _add_quotation_row(brn, row_data: dict) -> None:
 	by _top_up_comparision_rows), or append a new row if none is empty.
 
 	Parameters:
-		brn (Document, required): The draft BRN being updated.
-		row_data (dict, required): Row values from _comparision_row_from_quotation.
+	        brn (Document, required): The draft BRN being updated.
+	        row_data (dict, required): Row values from _comparision_row_from_quotation.
 
 	Returns:
-		None
+	        None
 	"""
-	empty_row = next((row for row in brn.comparision if not (row.existing_vendor or row.vendor_name)), None)
+	empty_row = next(
+		(row for row in brn.comparision if not (row.existing_vendor or row.vendor_name)), None
+	)
 	if empty_row is not None:
 		empty_row.update(row_data)
 		return
@@ -99,11 +103,11 @@ def _top_up_comparision_rows(brn, min_rows: int) -> None:
 	can fill in the remaining vendors.
 
 	Parameters:
-		brn (Document, required): The draft BRN being updated.
-		min_rows (int, required): Minimum number of Comparision rows.
+	        brn (Document, required): The draft BRN being updated.
+	        min_rows (int, required): Minimum number of Comparision rows.
 
 	Returns:
-		None
+	        None
 	"""
 	for _row_index in range(min_rows - len(brn.comparision)):
 		brn.append("comparision", {})
@@ -122,18 +126,18 @@ def _comparision_row_from_quotation(supplier_quotation, default_preferred: bool 
 	Preferred via default_preferred instead.
 
 	Parameters:
-		supplier_quotation (Document, required): The Supplier Quotation
-			being converted into a BRN Comparision row.
-		default_preferred (bool, optional): True for the sole row of a
-			brand-new single-vendor BRN, where BRN's own "exactly one
-			Preferred row" rule leaves no other reasonable default --
-			there is no second vendor to compare against yet. False (the
-			default) for a row being added to a Multi/RPT BRN alongside
-			others, where Preferred should only follow a real workflow
-			decision, not every new row appended.
+	        supplier_quotation (Document, required): The Supplier Quotation
+	                being converted into a BRN Comparision row.
+	        default_preferred (bool, optional): True for the sole row of a
+	                brand-new single-vendor BRN, where BRN's own "exactly one
+	                Preferred row" rule leaves no other reasonable default --
+	                there is no second vendor to compare against yet. False (the
+	                default) for a row being added to a Multi/RPT BRN alongside
+	                others, where Preferred should only follow a real workflow
+	                decision, not every new row appended.
 
 	Returns:
-		dict: A BRN Comparision row, ready to pass to Document.append().
+	        dict: A BRN Comparision row, ready to pass to Document.append().
 	"""
 	preferred = default_preferred or supplier_quotation.get("workflow_state") == "Selected"
 	return {

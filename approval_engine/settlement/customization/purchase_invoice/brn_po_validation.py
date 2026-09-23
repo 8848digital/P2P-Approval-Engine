@@ -8,11 +8,12 @@ utils.py to keep that file under the line-count cap - imported by
 doc_events.py's validate hook, never called from utils.py itself.
 """
 
+from pypika import Case
+from pypika import functions as fn
+
 import frappe
 from frappe import _
 from frappe.utils import flt, get_link_to_form
-from pypika import Case
-from pypika import functions as fn
 
 
 def validate_item_qty_with_brn(self) -> None:
@@ -23,10 +24,10 @@ def validate_item_qty_with_brn(self) -> None:
 	against the same BRN.
 
 	Parameters:
-		self (Document, required): The Purchase Invoice document being validated.
+	        self (Document, required): The Purchase Invoice document being validated.
 
 	Returns:
-		None
+	        None
 	"""
 	if not self.items or not self.brn:
 		return
@@ -135,10 +136,10 @@ def validate_item_qty_with_po(self) -> None:
 	line.
 
 	Parameters:
-		self (Document, required): The Purchase Invoice document being validated.
+	        self (Document, required): The Purchase Invoice document being validated.
 
 	Returns:
-		None
+	        None
 	"""
 	if not self.items:
 		return

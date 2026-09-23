@@ -28,12 +28,16 @@ from approval_engine.settlement.customization.procure_to_pay.dashboard_data impo
 
 
 @frappe.whitelist()
-def get_dashboard_data(company: str | None = None, from_date: str | None = None, to_date: str | None = None):
+def get_dashboard_data(
+	company: str | None = None, from_date: str | None = None, to_date: str | None = None
+):
 	settings = _get_settings()
 	# Always personal, forced to the logged-in user -- this open dashboard
 	# has no company-wide/aggregate mode (that's the management dashboard's
 	# default; see procure_to_pay_management.py).
-	return build_dashboard_payload(settings, company, from_date, to_date, scope_user=frappe.session.user)
+	return build_dashboard_payload(
+		settings, company, from_date, to_date, scope_user=frappe.session.user
+	)
 
 
 @frappe.whitelist()
@@ -66,6 +70,9 @@ def debug_line_items(
 
 @frappe.whitelist()
 def get_error_logs(
-	doctype: str | None = None, from_date: str | None = None, to_date: str | None = None, limit: int = 100
+	doctype: str | None = None,
+	from_date: str | None = None,
+	to_date: str | None = None,
+	limit: int = 100,
 ):
 	return build_error_logs(doctype, from_date, to_date, limit)

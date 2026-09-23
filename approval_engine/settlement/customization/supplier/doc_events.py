@@ -166,10 +166,10 @@ def supplier_address_exists(doc) -> bool:
 	the address form leaves an unfilled field.
 
 	Parameters:
-		doc (Document, required): The Supplier document being saved.
+	        doc (Document, required): The Supplier document being saved.
 
 	Returns:
-		bool: True if a matching Address is already linked.
+	        bool: True if a matching Address is already linked.
 	"""
 	Address = frappe.qb.DocType("Address")
 	DynamicLink = frappe.qb.DocType("Dynamic Link")

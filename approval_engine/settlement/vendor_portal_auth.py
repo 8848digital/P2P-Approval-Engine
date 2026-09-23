@@ -37,12 +37,12 @@ def authenticate_vendor_login(usr: str, pwd: str) -> dict:
 	trying to use the wrong door) can't just log in here.
 
 	Parameters:
-		usr (str, required): The login email/username.
-		pwd (str, required): The login password.
+	        usr (str, required): The login email/username.
+	        pwd (str, required): The login password.
 
 	Returns:
-		dict: {"success": bool, "error": str} on failure, or
-			{"success": True, "redirect_to": str} on success.
+	        dict: {"success": bool, "error": str} on failure, or
+	                {"success": True, "redirect_to": str} on success.
 	"""
 	if not usr or not pwd:
 		frappe.response["http_status_code"] = 400
@@ -103,10 +103,10 @@ def logout_vendor_user() -> None:
 	frappe.local.response as a side effect; returns nothing.
 
 	Parameters:
-		None.
+	        None.
 
 	Returns:
-		None
+	        None
 	"""
 	user = frappe.session.user
 	was_vendor = is_vendor(user)
@@ -131,11 +131,11 @@ def change_vendor_password(old_password: str, new_password: str) -> None:
 	guard, so this sets the same bypass flag around the call.
 
 	Parameters:
-		old_password (str, required): The user's current password.
-		new_password (str, required): The new password to set.
+	        old_password (str, required): The user's current password.
+	        new_password (str, required): The new password to set.
 
 	Returns:
-		None
+	        None
 	"""
 	if not is_vendor(frappe.session.user):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
@@ -159,11 +159,11 @@ def attach_vendor_invoice_copy(route: str, docname: str) -> dict:
 	default), while it isn't fully billed yet.
 
 	Parameters:
-		route (str, required): The portal route identifying the section config row.
-		docname (str, required): The name of the document to attach the file to.
+	        route (str, required): The portal route identifying the section config row.
+	        docname (str, required): The name of the document to attach the file to.
 
 	Returns:
-		dict: {"file_name": str, "file_url": str}
+	        dict: {"file_name": str, "file_url": str}
 	"""
 	if not is_vendor(frappe.session.user):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)

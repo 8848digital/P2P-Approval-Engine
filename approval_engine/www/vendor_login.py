@@ -20,13 +20,13 @@ def get_context(context: frappe._dict) -> frappe._dict:
 	Guest.
 
 	Parameters:
-		context (frappe._dict, required): Website render context, mutated
-			in place. Reads an optional `redirect-to` from
-			`frappe.form_dict`.
+	        context (frappe._dict, required): Website render context, mutated
+	                in place. Reads an optional `redirect-to` from
+	                `frappe.form_dict`.
 
 	Returns:
-		frappe._dict: The same context, updated with login-page display
-		flags (only reached when no redirect happens).
+	        frappe._dict: The same context, updated with login-page display
+	        flags (only reached when no redirect happens).
 	"""
 	redirect_to = sanitize_redirect(frappe.form_dict.get("redirect-to"))
 
@@ -61,11 +61,11 @@ def sanitize_redirect(redirect_to: str | None) -> str | None:
 	another host.
 
 	Parameters:
-		redirect_to (str, optional): Raw `redirect-to` query value.
+	        redirect_to (str, optional): Raw `redirect-to` query value.
 
 	Returns:
-		str | None: `redirect_to` unchanged if it's a safe site-relative
-		path, else None.
+	        str | None: `redirect_to` unchanged if it's a safe site-relative
+	        path, else None.
 	"""
 	if not redirect_to:
 		return None
@@ -83,12 +83,12 @@ def build_login_url(redirect_to: str | None) -> str:
 	in as a vendor.
 
 	Parameters:
-		redirect_to (str, optional): Site-relative path to redirect to
-			after login.
+	        redirect_to (str, optional): Site-relative path to redirect to
+	                after login.
 
 	Returns:
-		str: "/vendor-login", with `?redirect-to=...` appended when
-		`redirect_to` is given.
+	        str: "/vendor-login", with `?redirect-to=...` appended when
+	        `redirect_to` is given.
 	"""
 	if not redirect_to:
 		return "/vendor-login"

@@ -20,11 +20,11 @@ def validate(doc, method=None):
 	BRN/PO balance checks.
 
 	Parameters:
-		doc (Document, required): The Purchase Invoice document being validated.
-		method (str, optional): The hook event name passed by Frappe.
+	        doc (Document, required): The Purchase Invoice document being validated.
+	        method (str, optional): The hook event name passed by Frappe.
 
 	Returns:
-		None
+	        None
 	"""
 	validate_fiscal_year_and_brn_dates(doc, method)
 	validate_rate_and_qty(doc, method)

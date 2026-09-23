@@ -15,7 +15,10 @@ from frappe.model.meta import Meta
 from approval_engine.vendor_portal.doctype.portal_section_config.portal_section_config import (
 	PortalSectionConfig,
 )
-from approval_engine.vendor_portal.portal_nav import get_portal_nav_items, get_visible_portal_doctypes
+from approval_engine.vendor_portal.portal_nav import (
+	get_portal_nav_items,
+	get_visible_portal_doctypes,
+)
 from approval_engine.vendor_portal.vendor_identity import get_primary_vendor_supplier_name
 
 # Pill color shown next to a document's status on the portal list/detail
@@ -47,11 +50,11 @@ def status_pill_color(status: str | None) -> str:
 	Map a document status to the CSS pill color used to render it.
 
 	Parameters:
-		status (str, optional): The status value to map.
+	        status (str, optional): The status value to map.
 
 	Returns:
-		str: A color name from STATUS_PILL_COLORS, or "gray" for any
-		unmapped/unknown status.
+	        str: A color name from STATUS_PILL_COLORS, or "gray" for any
+	        unmapped/unknown status.
 	"""
 	return STATUS_PILL_COLORS.get(status, "gray")
 
@@ -67,13 +70,13 @@ def get_docstatus_filter(row: PortalSectionConfig, meta: Meta) -> int | None:
 	uniformly instead of each re-deriving this.
 
 	Parameters:
-		row (PortalSectionConfig, required): The portal section row whose
-			filter is being resolved.
-		meta (Meta, required): DocType meta for `row.document_type`.
+	        row (PortalSectionConfig, required): The portal section row whose
+	                filter is being resolved.
+	        meta (Meta, required): DocType meta for `row.document_type`.
 
 	Returns:
-		int | None: 1 to filter to submitted documents only, or None to
-		apply no docstatus filter.
+	        int | None: 1 to filter to submitted documents only, or None to
+	        apply no docstatus filter.
 	"""
 	if not meta.is_submittable:
 		return None
@@ -89,13 +92,13 @@ def base_portal_context(vp_active: str) -> dict:
 	roles allow), brand name/title, and which nav item is active.
 
 	Parameters:
-		vp_active (str, required): Route/identifier of the currently active
-			nav item, used to highlight it in the sidebar.
+	        vp_active (str, required): Route/identifier of the currently active
+	                nav item, used to highlight it in the sidebar.
 
 	Returns:
-		dict: Context keys consumed by the shared portal sidebar template
-		(`vp_active`, `vendor_supplier_name`, `portal_doctypes`,
-		`portal_nav_items`, `portal_title`, `full_width`).
+	        dict: Context keys consumed by the shared portal sidebar template
+	        (`vp_active`, `vendor_supplier_name`, `portal_doctypes`,
+	        `portal_nav_items`, `portal_title`, `full_width`).
 	"""
 	settings = frappe.get_cached_doc("Vendor Portal Settings")
 	return {

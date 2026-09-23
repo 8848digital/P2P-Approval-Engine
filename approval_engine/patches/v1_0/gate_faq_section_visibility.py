@@ -21,9 +21,7 @@ Registered in patches.txt as:
 
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
-from approval_engine.settlement.doc_events.faq_master import (
-	FAQ_SECTION_VISIBILITY_DEPENDS_ON,
-)
+from approval_engine.settlement.doc_events.faq_master import FAQ_SECTION_VISIBILITY_DEPENDS_ON
 
 
 def execute():

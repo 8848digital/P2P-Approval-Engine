@@ -37,7 +37,9 @@ def create_custom_fields():
 
 	CUSTOM_FIELDS = _drop_fields_for_missing_doctypes(CUSTOM_FIELDS)
 
-	from frappe.custom.doctype.custom_field.custom_field import create_custom_fields as _create_custom_fields
+	from frappe.custom.doctype.custom_field.custom_field import (
+		create_custom_fields as _create_custom_fields,
+	)
 
 	_create_custom_fields(CUSTOM_FIELDS)
 
@@ -50,11 +52,11 @@ def _drop_fields_for_missing_doctypes(custom_fields: dict) -> dict:
 	batch insert fail with LinkValidationError.
 
 	Parameters:
-		custom_fields (dict, required): {doctype: [field_dict, ...]} as read
-			from settlement/custom_fields/*.json.
+	        custom_fields (dict, required): {doctype: [field_dict, ...]} as read
+	                from settlement/custom_fields/*.json.
 
 	Returns:
-		dict: Same shape, with entries for missing DocTypes removed.
+	        dict: Same shape, with entries for missing DocTypes removed.
 	"""
 	available = {}
 	for doctype, fields in custom_fields.items():

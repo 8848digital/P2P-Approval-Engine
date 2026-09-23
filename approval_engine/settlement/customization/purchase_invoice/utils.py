@@ -26,10 +26,10 @@ def send_purchase_invoice_to_vendor(purchase_invoice: str) -> bool:
 	Email a Purchase Invoice's PDF to its supplier.
 
 	Parameters:
-		purchase_invoice (str, required): The Purchase Invoice document name.
+	        purchase_invoice (str, required): The Purchase Invoice document name.
 
 	Returns:
-		bool: True on success (raises on permission/validation failure).
+	        bool: True on success (raises on permission/validation failure).
 	"""
 	doc = frappe.get_doc("Purchase Invoice", purchase_invoice)
 	# frappe.get_doc() does not check permissions on its own -- without this,
@@ -86,17 +86,18 @@ def upload_invoice_file_from_portal(**args) -> str:
 	a Purchase Order/Purchase Invoice, from the vendor portal.
 
 	Parameters:
-		**args: doctype (str, required), name (str, required, the docname),
-			fieldname (str, required), value (str, required, the File's file_url).
+	        **args: doctype (str, required), name (str, required, the docname),
+	                fieldname (str, required), value (str, required, the File's file_url).
 
 	Returns:
-		str: "success" once the field has been updated.
+	        str: "success" once the field has been updated.
 	"""
 	doctype = args.get("doctype")
 	fieldname = args.get("fieldname")
 
-	if doctype not in PORTAL_UPLOAD_ALLOWED_FIELDS or fieldname not in PORTAL_UPLOAD_ALLOWED_FIELDS.get(
-		doctype, ()
+	if (
+		doctype not in PORTAL_UPLOAD_ALLOWED_FIELDS
+		or fieldname not in PORTAL_UPLOAD_ALLOWED_FIELDS.get(doctype, ())
 	):
 		frappe.throw(
 			_("This field cannot be updated from the vendor portal."),
@@ -123,12 +124,12 @@ def upload_file(**args) -> str:
 	newly-uploaded one, deleting the old File record(s) first.
 
 	Parameters:
-		**args: doctype (str, required), name (str, required, the docname),
-			fieldname (str, required, the attach field to update),
-			value (str, required, the new file's URL).
+	        **args: doctype (str, required), name (str, required, the docname),
+	                fieldname (str, required, the attach field to update),
+	                value (str, required, the new file's URL).
 
 	Returns:
-		str: "success" once the field is updated.
+	        str: "success" once the field is updated.
 	"""
 	doctype = args.get("doctype")
 	docname = args.get("name")

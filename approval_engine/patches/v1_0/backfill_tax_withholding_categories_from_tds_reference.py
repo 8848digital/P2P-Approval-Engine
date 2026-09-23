@@ -24,9 +24,7 @@ Registered in patches.txt as:
 
 import frappe
 
-from approval_engine.settlement.doc_events.tds_reference import (
-	create_tax_withholding_categories,
-)
+from approval_engine.settlement.doc_events.tds_reference import create_tax_withholding_categories
 from approval_engine.settlement.setup import create_custom_fields
 
 

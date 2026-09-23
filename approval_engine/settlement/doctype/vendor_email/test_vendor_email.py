@@ -34,10 +34,10 @@ class IntegrationTestVendorEmail(IntegrationTestCase):
 		ERPNext's demo fixtures being present.
 
 		Parameters:
-			None
+		        None
 
 		Returns:
-			str: A Company document name.
+		        str: A Company document name.
 		"""
 		company = frappe.db.get_value("Company", {}, "name")
 		if not company:
@@ -145,10 +145,10 @@ def _decode_padded_base64url(value: str) -> str:
 	`__`-prefixed name would be Python name-mangled and fail to resolve.
 
 	Parameters:
-		value (str, required): Padding-stripped base64url string.
+	        value (str, required): Padding-stripped base64url string.
 
 	Returns:
-		str: The decoded UTF-8 string.
+	        str: The decoded UTF-8 string.
 	"""
 	padded = value + "=" * (-len(value) % 4)
 	return base64.urlsafe_b64decode(padded).decode()

@@ -5,8 +5,9 @@
 
 import json
 
-import frappe
 from erpnext.buying.doctype.purchase_order.purchase_order import get_mapped_purchase_invoice
+
+import frappe
 from frappe import _
 from frappe.utils import get_link_to_form, get_url_to_form
 
@@ -133,11 +134,11 @@ def backdated_po_validation(doc, method: str | None = None) -> None:
 	crash when there's no fiscal year to check against.
 
 	Parameters:
-		doc (Document, required): The Purchase Order document being saved.
-		method (str, optional): The hook event name passed by Frappe.
+	        doc (Document, required): The Purchase Order document being saved.
+	        method (str, optional): The hook event name passed by Frappe.
 
 	Returns:
-		None
+	        None
 	"""
 	if not doc.custom_fiscal_year:
 		return
@@ -176,16 +177,18 @@ def validate_item_rate_and_qty_with_brn(doc, method: str | None = None) -> None:
 	non-cancelled POs against the same BRN have already consumed.
 
 	Parameters:
-		doc (Document, required): The Purchase Order document being validated.
-		method (str, optional): The hook event name passed by Frappe.
+	        doc (Document, required): The Purchase Order document being validated.
+	        method (str, optional): The hook event name passed by Frappe.
 
 	Returns:
-		None
+	        None
 	"""
 	if not doc.brn:
 		return
 
-	brn_items = frappe.get_all("BRN Item", filters={"parent": doc.brn}, fields=["item_code", "qty", "rate"])
+	brn_items = frappe.get_all(
+		"BRN Item", filters={"parent": doc.brn}, fields=["item_code", "qty", "rate"]
+	)
 	brn_map = {d.item_code: d for d in brn_items}
 
 	brn_link = get_link_to_form("BRN", doc.brn)

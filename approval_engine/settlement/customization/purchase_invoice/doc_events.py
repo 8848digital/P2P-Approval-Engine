@@ -15,11 +15,11 @@ def validate_rate_and_qty(self, method: str | None = None) -> None:
 	BRN-based (brn set directly, no PO on any item).
 
 	Parameters:
-		self (Document, required): The Purchase Invoice document being validated.
-		method (str, optional): The hook event name passed by Frappe.
+	        self (Document, required): The Purchase Invoice document being validated.
+	        method (str, optional): The hook event name passed by Frappe.
 
 	Returns:
-		None
+	        None
 	"""
 	has_brn_po = False
 	po_names = [d.purchase_order for d in self.items if d.purchase_order]

@@ -5,10 +5,7 @@
 
 import frappe
 
-from approval_engine.vendor_portal.utils import (
-	base_portal_context,
-	require_vendor_portal_access,
-)
+from approval_engine.vendor_portal.utils import base_portal_context, require_vendor_portal_access
 
 no_cache = 1
 
@@ -19,11 +16,11 @@ def get_context(context: frappe._dict) -> None:
 	settings page (password change, etc).
 
 	Parameters:
-		context (frappe._dict, required): Website render context, mutated
-			in place.
+	        context (frappe._dict, required): Website render context, mutated
+	                in place.
 
 	Returns:
-		None
+	        None
 	"""
 	require_vendor_portal_access()
 

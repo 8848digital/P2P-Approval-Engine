@@ -363,8 +363,12 @@ def _is_workflow_active(doctype):
 	custom app) and both write to the same `workflow_state` field, so a
 	Workflow State Mapping row must be able to take effect regardless of
 	which engine produced the state."""
-	custom_name = frappe.db.get_value("Approval Workflow", {"document_type": doctype, "is_active": 1}, "name")
-	standard_name = frappe.db.get_value("Workflow", {"document_type": doctype, "is_active": 1}, "name")
+	custom_name = frappe.db.get_value(
+		"Approval Workflow", {"document_type": doctype, "is_active": 1}, "name"
+	)
+	standard_name = frappe.db.get_value(
+		"Workflow", {"document_type": doctype, "is_active": 1}, "name"
+	)
 	_log(
 		"PCD: _is_workflow_active",
 		f"doctype={doctype!r} -> custom Approval Workflow={custom_name!r} standard Workflow={standard_name!r}",
@@ -616,9 +620,18 @@ def _msme_ageing(company, settings, from_date=None, to_date=None, extra_filters=
 	bucket_filters = {
 		bucket_labels[4]: {**base, "due_date": ["<", today]},
 		bucket_labels[0]: {**base, "due_date": ["between", [today, add_days(today, b1)]]},
-		bucket_labels[1]: {**base, "due_date": ["between", [add_days(today, b1 + 1), add_days(today, b2)]]},
-		bucket_labels[2]: {**base, "due_date": ["between", [add_days(today, b2 + 1), add_days(today, b3)]]},
-		bucket_labels[3]: {**base, "due_date": ["between", [add_days(today, b3 + 1), add_days(today, b4)]]},
+		bucket_labels[1]: {
+			**base,
+			"due_date": ["between", [add_days(today, b1 + 1), add_days(today, b2)]],
+		},
+		bucket_labels[2]: {
+			**base,
+			"due_date": ["between", [add_days(today, b2 + 1), add_days(today, b3)]],
+		},
+		bucket_labels[3]: {
+			**base,
+			"due_date": ["between", [add_days(today, b3 + 1), add_days(today, b4)]],
+		},
 	}
 
 	return counts, bucket_filters
@@ -824,7 +837,10 @@ def build_debug_raw_counts(settings, doctype, company=None, from_date=None, to_d
 	state_field = _state_field_for(doctype, use_mapping, has_wf_field)
 
 	total = frappe.db.count(doctype, filters=filters)
-	_log("PCD: build_debug_raw_counts filters/total", f"filters={filters}\ntotal_matching_documents={total}")
+	_log(
+		"PCD: build_debug_raw_counts filters/total",
+		f"filters={filters}\ntotal_matching_documents={total}",
+	)
 
 	group_by = f"{state_field}, docstatus" if state_field else "docstatus"
 	fields = ([f"{state_field} as state"] if state_field else []) + ["docstatus", {"COUNT": "name"}]
@@ -863,7 +879,9 @@ def build_debug_raw_counts(settings, doctype, company=None, from_date=None, to_d
 	}
 
 
-def build_debug_line_items(settings, doctype, company=None, from_date=None, to_date=None, limit=200):
+def build_debug_line_items(
+	settings, doctype, company=None, from_date=None, to_date=None, limit=200
+):
 	"""One row per individual document, with the resolved bucket, so a
 	specific record can be traced. Scoped to the logged-in user, same as
 	the dashboard itself."""
@@ -916,7 +934,9 @@ def build_debug_line_items(settings, doctype, company=None, from_date=None, to_d
 	)
 	_log("PCD: build_debug_line_items raw row count", f"row_count={len(rows)}")
 	if not rows:
-		_log("PCD: build_debug_line_items ZERO ROWS", f"No {doctype} documents matched filters={filters}.")
+		_log(
+			"PCD: build_debug_line_items ZERO ROWS", f"No {doctype} documents matched filters={filters}."
+		)
 
 	pending_on_me = _my_pending_approval_names(doctype, frappe.session.user) if rows else set()
 
@@ -992,4 +1012,9 @@ def build_error_logs(doctype=None, from_date=None, to_date=None, limit=100):
 			}
 		)
 
-	return {"filters_applied": filters, "row_count": len(out), "hit_limit": len(out) == limit, "rows": out}
+	return {
+		"filters_applied": filters,
+		"row_count": len(out),
+		"hit_limit": len(out) == limit,
+		"rows": out,
+	}

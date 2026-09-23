@@ -13,10 +13,10 @@ def ensure_requisition_number(doc) -> None:
 	created against "New Requisition" that hasn't been assigned one yet.
 
 	Parameters:
-		doc (Document, required): The Supplier Quotation document.
+	        doc (Document, required): The Supplier Quotation document.
 
 	Returns:
-		None
+	        None
 	"""
 	if doc.custom_requisition_id != "New Requisition" or doc.custom_requisition_no:
 		return

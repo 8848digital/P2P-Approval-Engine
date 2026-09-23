@@ -20,12 +20,14 @@ from approval_engine.settlement.doc_events.itc_reversal_fiscal_year import (
 	classify_itc_requirement,
 	get_current_fiscal_year_doc,
 	get_cutoff_date,
-	get_or_create_log,
-	get_previous_fiscal_year_doc,
-	is_prior_fiscal_year,
 )
 from approval_engine.settlement.doc_events.itc_reversal_fiscal_year import (
 	get_fiscal_year_doc as _get_fiscal_year_doc,
+)
+from approval_engine.settlement.doc_events.itc_reversal_fiscal_year import (
+	get_or_create_log,
+	get_previous_fiscal_year_doc,
+	is_prior_fiscal_year,
 )
 from approval_engine.settlement.doc_events.itc_reversal_jv import create_itc_reversal_jv
 
@@ -62,11 +64,11 @@ def set_itc_status(doc, method=None) -> None:
 	reversal_status has actually become due.
 
 	Parameters:
-		doc (Document, required): The Purchase Invoice document being saved.
-		method (str, optional): The hook event name passed by Frappe.
+	        doc (Document, required): The Purchase Invoice document being saved.
+	        method (str, optional): The hook event name passed by Frappe.
 
 	Returns:
-		None
+	        None
 	"""
 	settings = get_settings()
 	if not settings or not cint(settings.enable_itc_reversal):
@@ -121,11 +123,11 @@ def handle_itc_reversal_on_submit(doc, method=None) -> None:
 	daily sweep to catch once that grace period actually expires.
 
 	Parameters:
-		doc (Document, required): The Purchase Invoice document being submitted.
-		method (str, optional): The hook event name passed by Frappe.
+	        doc (Document, required): The Purchase Invoice document being submitted.
+	        method (str, optional): The hook event name passed by Frappe.
 
 	Returns:
-		None
+	        None
 	"""
 	settings = get_settings()
 	if not settings or not cint(settings.enable_itc_reversal):
@@ -157,10 +159,10 @@ def run_daily_itc_reversal_sweep() -> None:
 	doesn't abort the rest of the batch.
 
 	Parameters:
-		None.
+	        None.
 
 	Returns:
-		None
+	        None
 	"""
 	settings = get_settings()
 	if not settings or not cint(settings.enable_itc_reversal):

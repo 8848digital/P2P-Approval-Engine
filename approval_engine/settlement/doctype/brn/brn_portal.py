@@ -29,10 +29,10 @@ def check_brn_portal_access(brn) -> None:
 	need a submitted YEXP Proposal BRN that lists one of their Suppliers.
 
 	Parameters:
-		brn (Document, required): The BRN being opened.
+	        brn (Document, required): The BRN being opened.
 
 	Returns:
-		None
+	        None
 	"""
 	if frappe.session.user == "Guest":
 		raise frappe.PermissionError(_("Please log in to view this BRN."))
@@ -50,10 +50,10 @@ def can_make_purchase_invoice(brn) -> bool:
 	Whether the portal "Create Purchase Invoice" action applies to this BRN.
 
 	Parameters:
-		brn (Document, required): The BRN shown on the portal page.
+	        brn (Document, required): The BRN shown on the portal page.
 
 	Returns:
-		bool: True for a submitted, not-Closed BRN.
+	        bool: True for a submitted, not-Closed BRN.
 	"""
 	return brn.docstatus == 1 and brn.status != "Closed"
 
@@ -71,13 +71,13 @@ def make_purchase_invoice_from_brn(
 	Purchase Invoices themselves -- safe only after the checks above.
 
 	Parameters:
-		brn_name (str, required): The BRN to invoice against.
-		items (str, required): JSON list of {item_code, qty, rate}.
-		supplier_invoice_no (str, optional): The supplier's own invoice number.
-		supplier_invoice_date (str, optional): The supplier's own invoice date.
+	        brn_name (str, required): The BRN to invoice against.
+	        items (str, required): JSON list of {item_code, qty, rate}.
+	        supplier_invoice_no (str, optional): The supplier's own invoice number.
+	        supplier_invoice_date (str, optional): The supplier's own invoice date.
 
 	Returns:
-		str: The new Purchase Invoice's name.
+	        str: The new Purchase Invoice's name.
 	"""
 	brn = frappe.get_doc("BRN", brn_name)
 	check_brn_portal_access(brn)
@@ -113,10 +113,10 @@ def get_portal_suppliers(brn) -> list[str]:
 	The session user's Suppliers that appear as a vendor on this BRN.
 
 	Parameters:
-		brn (Document, required): The BRN being checked.
+	        brn (Document, required): The BRN being checked.
 
 	Returns:
-		list[str]: Matching Supplier names; empty if none.
+	        list[str]: Matching Supplier names; empty if none.
 	"""
 	brn_vendors = {row.existing_vendor for row in brn.comparision if row.existing_vendor}
 	return [supplier for supplier in get_vendor_suppliers() if supplier in brn_vendors]
@@ -129,10 +129,10 @@ def _get_invoice_supplier(brn) -> str:
 	may act as any vendor on the BRN.
 
 	Parameters:
-		brn (Document, required): The BRN being invoiced.
+	        brn (Document, required): The BRN being invoiced.
 
 	Returns:
-		str: The Supplier name.
+	        str: The Supplier name.
 	"""
 	if is_website_user():
 		candidates = get_portal_suppliers(brn)
@@ -155,11 +155,11 @@ def _parse_invoice_items(brn, items: str) -> list[dict]:
 	leave it empty.
 
 	Parameters:
-		brn (Document, required): The BRN being invoiced.
-		items (str, required): JSON list of {item_code, qty, rate}.
+	        brn (Document, required): The BRN being invoiced.
+	        items (str, required): JSON list of {item_code, qty, rate}.
 
 	Returns:
-		list[dict]: Purchase Invoice Item rows.
+	        list[dict]: Purchase Invoice Item rows.
 	"""
 	lines = json.loads(items) if isinstance(items, str) else items
 	if not isinstance(lines, list) or not lines:
@@ -192,10 +192,10 @@ def _get_brn_item_limits(brn) -> dict:
 	the expense account of its first row.
 
 	Parameters:
-		brn (Document, required): The BRN being invoiced.
+	        brn (Document, required): The BRN being invoiced.
 
 	Returns:
-		dict: {item_code: {"qty": float, "rate": float, "expense_gl": str}}
+	        dict: {item_code: {"qty": float, "rate": float, "expense_gl": str}}
 	"""
 	limits = {}
 	for row in brn.items:
@@ -206,20 +206,22 @@ def _get_brn_item_limits(brn) -> dict:
 	return limits
 
 
-def _validate_line_limits(item_code: str, limit: dict, qty: float, rate: float, total_qty: float) -> None:
+def _validate_line_limits(
+	item_code: str, limit: dict, qty: float, rate: float, total_qty: float
+) -> None:
 	"""
 	Reject a line whose qty is not positive, whose rate exceeds the BRN's,
 	or that pushes the item's total qty over the BRN's approved qty.
 
 	Parameters:
-		item_code (str, required): The item being invoiced.
-		limit (dict, required): The item's limits from _get_brn_item_limits.
-		qty (float, required): Requested quantity on this line.
-		rate (float, required): Requested rate on this line.
-		total_qty (float, required): Requested quantity for this item so far.
+	        item_code (str, required): The item being invoiced.
+	        limit (dict, required): The item's limits from _get_brn_item_limits.
+	        qty (float, required): Requested quantity on this line.
+	        rate (float, required): Requested rate on this line.
+	        total_qty (float, required): Requested quantity for this item so far.
 
 	Returns:
-		None
+	        None
 	"""
 	if qty <= 0 or rate < 0:
 		frappe.throw(_("Item {0}: Qty must be positive and Rate cannot be negative.").format(item_code))

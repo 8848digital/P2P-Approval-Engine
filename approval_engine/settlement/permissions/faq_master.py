@@ -6,7 +6,9 @@
 # apps/approval_engine/approval_engine/settlement/permissions/faq_master.py
 import frappe
 
-VENDOR_FAQ_MANAGER_ROLE = "Vendor FAQ Manager"  # fallback if JFS Settings.faq_manager_role is unset
+VENDOR_FAQ_MANAGER_ROLE = (
+	"Vendor FAQ Manager"  # fallback if JFS Settings.faq_manager_role is unset
+)
 
 
 def _faq_manager_role():

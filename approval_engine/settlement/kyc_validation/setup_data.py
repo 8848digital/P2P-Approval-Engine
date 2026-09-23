@@ -20,11 +20,15 @@ CHECK_TYPES = [
 ]
 
 CREDENTIALS = {
-	"SurePass Sandbox": dict(provider="SurePass", base_url="https://sandbox.surepass.io", auth_type="Bearer"),
+	"SurePass Sandbox": dict(
+		provider="SurePass", base_url="https://sandbox.surepass.io", auth_type="Bearer"
+	),
 	"SurePass KYC API": dict(
 		provider="SurePass", base_url="https://kyc-api.surepass.app", auth_type="Bearer"
 	),
-	"FRSLab Prod": dict(provider="FRSLab", base_url="https://api.atlaskyc.com/v2/prod", auth_type="Basic"),
+	"FRSLab Prod": dict(
+		provider="FRSLab", base_url="https://api.atlaskyc.com/v2/prod", auth_type="Basic"
+	),
 }
 
 

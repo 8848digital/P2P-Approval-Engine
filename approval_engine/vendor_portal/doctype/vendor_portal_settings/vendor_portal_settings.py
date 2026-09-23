@@ -104,10 +104,10 @@ def seed_default_settings() -> None:
 	edit to Vendor Portal Settings afterwards is left alone.
 
 	Parameters:
-		None.
+	        None.
 
 	Returns:
-		None
+	        None
 	"""
 	settings = frappe.get_single("Vendor Portal Settings")
 	if settings.doctypes:

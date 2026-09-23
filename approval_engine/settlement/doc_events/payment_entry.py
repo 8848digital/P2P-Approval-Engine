@@ -25,11 +25,11 @@ def block_payment_without_msa_attachment(doc, method=None) -> None:
 	"Vendor Has MSA?" checked but no MSA Agreement Attachment.
 
 	Parameters:
-		doc (Document, required): The Payment Entry document being submitted.
-		method (str, optional): The hook event name passed by Frappe.
+	        doc (Document, required): The Payment Entry document being submitted.
+	        method (str, optional): The hook event name passed by Frappe.
 
 	Returns:
-		None
+	        None
 	"""
 	for row in doc.references:
 		if row.reference_doctype not in MSA_CHECKED_REFERENCE_DOCTYPES:
@@ -61,14 +61,14 @@ def _check_brn_msa_attachment(
 	already uses elsewhere to tie a BRN Comparision row back to a vendor.
 
 	Parameters:
-		brn (str, required): The BRN the referenced document is linked to.
-		supplier (str, required): The referenced document's Supplier.
-		supplier_name (str, required): The referenced document's Supplier Name.
-		reference_doctype (str, required): "Purchase Invoice" or "Purchase Order".
-		reference_name (str, required): The referenced document's name, for the error message.
+	        brn (str, required): The BRN the referenced document is linked to.
+	        supplier (str, required): The referenced document's Supplier.
+	        supplier_name (str, required): The referenced document's Supplier Name.
+	        reference_doctype (str, required): "Purchase Invoice" or "Purchase Order".
+	        reference_name (str, required): The referenced document's name, for the error message.
 
 	Returns:
-		None
+	        None
 	"""
 	rows = frappe.get_all(
 		"BRN Comparision",

@@ -31,14 +31,14 @@ def send_vendor_mail_logic(
 	the vendor if one doesn't already exist.
 
 	Parameters:
-		vendor_email (str, required): Vendor's primary email address (also the login).
-		vendor_name (str, optional): Vendor's display name.
-		reference_docname (str, optional): Name of the linked reference document.
-		email_2 (str, optional): Secondary recipient for the same invite link.
-		company (str, optional): Company the vendor is onboarding against.
+	        vendor_email (str, required): Vendor's primary email address (also the login).
+	        vendor_name (str, optional): Vendor's display name.
+	        reference_docname (str, optional): Name of the linked reference document.
+	        email_2 (str, optional): Secondary recipient for the same invite link.
+	        company (str, optional): Company the vendor is onboarding against.
 
 	Returns:
-		dict: {"status": "ignored"|"success"|"error", "message": str}
+	        dict: {"status": "ignored"|"success"|"error", "message": str}
 	"""
 	if not vendor_email:
 		return {"status": "ignored", "message": "Not a new vendor or invalid conditions"}
@@ -73,18 +73,20 @@ def send_vendor_mail_logic(
 	return {"status": "success", "message": f"Email sent to {recipients}"}
 
 
-def get_or_create_vendor_user(vendor_email: str, vendor_name: str | None) -> tuple[Document, str | None]:
+def get_or_create_vendor_user(
+	vendor_email: str, vendor_name: str | None
+) -> tuple[Document, str | None]:
 	"""
 	Fetch the existing website User for a vendor email, or create one.
 	Grants vendor-portal access on either path.
 
 	Parameters:
-		vendor_email (str, required): Vendor's email address, used as the User's name.
-		vendor_name (str, optional): Vendor's display name, used for a new User's first name.
+	        vendor_email (str, required): Vendor's email address, used as the User's name.
+	        vendor_name (str, optional): Vendor's display name, used for a new User's first name.
 
 	Returns:
-		tuple[Document, str | None]: The User document, and the newly
-		generated password (None if the User already existed).
+	        tuple[Document, str | None]: The User document, and the newly
+	        generated password (None if the User already existed).
 	"""
 	password = None
 	if not frappe.db.exists("User", vendor_email):
@@ -106,11 +108,11 @@ def create_website_user(vendor_email: str, vendor_name: str | None) -> Document:
 	vendor-login access.
 
 	Parameters:
-		vendor_email (str, required): Email address for the new User.
-		vendor_name (str, optional): First name to use; defaults to "Vendor".
+	        vendor_email (str, required): Email address for the new User.
+	        vendor_name (str, optional): First name to use; defaults to "Vendor".
 
 	Returns:
-		Document: The newly inserted User document.
+	        Document: The newly inserted User document.
 	"""
 	from approval_engine.settlement.doctype.vendor_email.utils import ensure_vendor_portal_role
 
@@ -145,12 +147,12 @@ def build_vendor_webform_link(
 	pre-filled via URL-encoded query params.
 
 	Parameters:
-		vendor_email (str, required): Vendor's email address.
-		reference_docname (str, optional): Name of the linked reference document.
-		company (str, optional): Company to pre-fill via `custom_company`.
+	        vendor_email (str, required): Vendor's email address.
+	        reference_docname (str, optional): Name of the linked reference document.
+	        company (str, optional): Company to pre-fill via `custom_company`.
 
 	Returns:
-		str: Full /vendor-login redirect URL.
+	        str: Full /vendor-login redirect URL.
 	"""
 	# Straight to the bare onboarding form, no portal shell -- a brand-new
 	# vendor isn't "in the portal" until onboarding is actually done (see
@@ -186,14 +188,14 @@ def prepare_vendor_mail(
 	Build the subject and HTML body for the vendor onboarding invite email.
 
 	Parameters:
-		vendor_email (str, required): Vendor's email address (the login).
-		webform_link (str, required): Onboarding form URL to include in the message.
-		password (str, optional): Generated password, included only for a brand-new User.
-		secondary_recipient (bool, optional): True when this copy is going to `email_2`,
-			to clarify that vendor_email (not this address) is the login. Defaults to False.
+	        vendor_email (str, required): Vendor's email address (the login).
+	        webform_link (str, required): Onboarding form URL to include in the message.
+	        password (str, optional): Generated password, included only for a brand-new User.
+	        secondary_recipient (bool, optional): True when this copy is going to `email_2`,
+	                to clarify that vendor_email (not this address) is the login. Defaults to False.
 
 	Returns:
-		tuple[str, str]: (subject, HTML message).
+	        tuple[str, str]: (subject, HTML message).
 	"""
 	subject = "Complete Your Vendor Registration"
 	# Only one User/login exists, against vendor_email -- when this same
@@ -224,12 +226,12 @@ def send_vendor_email(recipient: str, subject: str, message: str) -> dict:
 	failure.
 
 	Parameters:
-		recipient (str, required): Email address to send to.
-		subject (str, required): Email subject line.
-		message (str, required): HTML email body.
+	        recipient (str, required): Email address to send to.
+	        subject (str, required): Email subject line.
+	        message (str, required): HTML email body.
 
 	Returns:
-		dict: {"status": "success"|"error", "message": str}
+	        dict: {"status": "success"|"error", "message": str}
 	"""
 	try:
 		frappe.sendmail(recipients=[recipient], subject=subject, message=message, delayed=False)

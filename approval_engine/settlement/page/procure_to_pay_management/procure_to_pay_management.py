@@ -81,7 +81,10 @@ def debug_line_items(
 
 @frappe.whitelist()
 def get_error_logs(
-	doctype: str | None = None, from_date: str | None = None, to_date: str | None = None, limit: int = 100
+	doctype: str | None = None,
+	from_date: str | None = None,
+	to_date: str | None = None,
+	limit: int = 100,
 ):
 	settings = _get_settings()
 	_check_permission(settings)

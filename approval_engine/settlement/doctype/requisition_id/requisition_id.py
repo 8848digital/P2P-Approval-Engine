@@ -31,11 +31,11 @@ def block_requisition_id(doc: Document, method: str) -> None:
 	document.
 
 	Parameters:
-		doc (Document, required): The document being validated.
-		method (str, required): The hook event name passed by Frappe.
+	        doc (Document, required): The document being validated.
+	        method (str, required): The hook event name passed by Frappe.
 
 	Returns:
-		None
+	        None
 	"""
 	if doc.requisition_id:
 		existing_doc = frappe.get_all(

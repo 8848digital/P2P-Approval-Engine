@@ -23,10 +23,10 @@ def send_reminder_for_non_registered_vendors() -> None:
 	Intended to run as a scheduled task.
 
 	Parameters:
-		None
+	        None
 
 	Returns:
-		None
+	        None
 	"""
 	# Get vendors that are new vendors
 	vendors = frappe.get_all(

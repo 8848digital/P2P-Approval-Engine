@@ -49,7 +49,8 @@ approval_engine.build_activity_html = function (steps) {
 	const esc = frappe.utils.escape_html;
 	const rows = steps
 		.map((step) => {
-			const meta = approval_engine.WF_STATUS[step.status] || approval_engine.WF_STATUS.upcoming;
+			const meta =
+				approval_engine.WF_STATUS[step.status] || approval_engine.WF_STATUS.upcoming;
 			const owners = (step.owner || [])
 				.filter(Boolean)
 				.map((o) => esc(o.full_name || o.user))
@@ -67,7 +68,9 @@ approval_engine.build_activity_html = function (steps) {
 				const actor = esc(step.acted_by.full_name || step.acted_by.user);
 				acted_line = `<div>${__("Acted by")}: <b>${actor}</b></div>`;
 				if (step.time) {
-					time_line = `<div class="text-muted small">${frappe.datetime.str_to_user(step.time)}</div>`;
+					time_line = `<div class="text-muted small">${frappe.datetime.str_to_user(
+						step.time
+					)}</div>`;
 				}
 			}
 

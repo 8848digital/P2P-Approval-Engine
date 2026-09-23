@@ -32,15 +32,15 @@ def build_linked_documents(
 	instead of duplicating that config here.
 
 	Parameters:
-		doc (Document, required): The document being displayed.
-		row (PortalSectionConfig, required): Portal section config for
-			`doc`'s DocType; `linked_document_type`/
-			`linked_via_child_doctype`/`linked_via_fieldname` describe the
-			link.
+	        doc (Document, required): The document being displayed.
+	        row (PortalSectionConfig, required): Portal section config for
+	                `doc`'s DocType; `linked_document_type`/
+	                `linked_via_child_doctype`/`linked_via_fieldname` describe the
+	                link.
 
 	Returns:
-		tuple[list[dict], str | None]: `(linked_docs, label)`. `label` is
-		None only when there's nothing configured to link.
+	        tuple[list[dict], str | None]: `(linked_docs, label)`. `label` is
+	        None only when there's nothing configured to link.
 	"""
 	if not (row.linked_document_type and row.linked_via_child_doctype and row.linked_via_fieldname):
 		return [], None

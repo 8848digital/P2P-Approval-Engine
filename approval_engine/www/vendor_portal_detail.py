@@ -45,17 +45,17 @@ def get_context(context: frappe._dict) -> None:
 	invoice-attach uploader when configured).
 
 	Parameters:
-		context (frappe._dict, required): Website render context, mutated
-			in place. Expects `route` and `name` in `frappe.form_dict`.
+	        context (frappe._dict, required): Website render context, mutated
+	                in place. Expects `route` and `name` in `frappe.form_dict`.
 
 	Returns:
-		None
+	        None
 
 	Raises:
-		frappe.DoesNotExistError: If the route or document doesn't exist,
-			or the document is filtered out by its docstatus rule.
-		frappe.PermissionError: If the current user isn't allowed to view
-			this row/document.
+	        frappe.DoesNotExistError: If the route or document doesn't exist,
+	                or the document is filtered out by its docstatus rule.
+	        frappe.PermissionError: If the current user isn't allowed to view
+	                this row/document.
 	"""
 	suppliers = require_vendor_portal_access()
 

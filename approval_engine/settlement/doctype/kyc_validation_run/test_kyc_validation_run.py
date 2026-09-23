@@ -17,7 +17,9 @@ no site to verify against.
 import frappe
 from frappe.tests import UnitTestCase
 
-from approval_engine.settlement.doctype.kyc_validation_run.kyc_validation_run import KYCValidationRun
+from approval_engine.settlement.doctype.kyc_validation_run.kyc_validation_run import (
+	KYCValidationRun,
+)
 
 EXTRA_TEST_RECORD_DEPENDENCIES = []
 IGNORE_TEST_RECORD_DEPENDENCIES = []

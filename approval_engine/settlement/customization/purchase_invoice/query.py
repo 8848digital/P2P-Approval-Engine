@@ -18,12 +18,12 @@ def get_nature_of_service_options_for_supplier(txt: str, supplier: str | None):
 	Supplier's Nature of Services multiselect.
 
 	Parameters:
-		txt (str, required): The search text typed into the multiselect.
-		supplier (str, optional): The Supplier to restrict allowed services to.
-			Returns an empty list if not given.
+	        txt (str, required): The search text typed into the multiselect.
+	        supplier (str, optional): The Supplier to restrict allowed services to.
+	                Returns an empty list if not given.
 
 	Returns:
-		list[tuple]: Rows of (name, section_as_per_it_act_1961, tds_rate).
+	        list[tuple]: Rows of (name, section_as_per_it_act_1961, tds_rate).
 	"""
 	if not supplier:
 		return []

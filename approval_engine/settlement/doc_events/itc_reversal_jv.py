@@ -23,14 +23,14 @@ def create_itc_reversal_jv(pi_doc, log, settings, trigger="Real-Time (on submit)
 	notify_email_recipients if configured to.
 
 	Parameters:
-		pi_doc (Document, required): The submitted Purchase Invoice.
-		log (Document, required): Its ITC Reversal Log (mutated and saved here).
-		settings (Document, required): JFS Settings.
-		trigger (str, optional): Recorded on the log for audit -- which
-			code path triggered this reversal.
+	        pi_doc (Document, required): The submitted Purchase Invoice.
+	        log (Document, required): Its ITC Reversal Log (mutated and saved here).
+	        settings (Document, required): JFS Settings.
+	        trigger (str, optional): Recorded on the log for audit -- which
+	                code path triggered this reversal.
 
 	Returns:
-		str | None: The new Journal Entry's name, or None if pi_doc has no tax rows.
+	        str | None: The new Journal Entry's name, or None if pi_doc has no tax rows.
 	"""
 	if not pi_doc.taxes:
 		frappe.log_error(f"PI {pi_doc.name}: no tax rows found, cannot build ITC reversal JV")
@@ -139,8 +139,9 @@ def create_itc_reversal_jv(pi_doc, log, settings, trigger="Real-Time (on submit)
 	log.debit_accounts_summary = "\n".join(debit_summary)
 	if abs(shortfall) < 0.01:
 		log.remarks = (
-			log.remarks + "\n" if log.remarks else ""
-		) + "Credit and Debit tax rows netted off exactly (e.g. RCM) - no Expense Account line was needed."
+			(log.remarks + "\n" if log.remarks else "")
+			+ "Credit and Debit tax rows netted off exactly (e.g. RCM) - no Expense Account line was needed."
+		)
 	log.flags.ignore_permissions = True
 	log.save()
 	frappe.db.set_value("Purchase Invoice", pi_doc.name, "is_itc_reversed", 1)

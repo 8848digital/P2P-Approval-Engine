@@ -94,7 +94,11 @@ def parse_brn_data(tables):
 	# ------------------------------------------------------------------
 	proposal_header = _parse_proposal_header(tables)
 
-	if proposal_header["entity_name"] or proposal_header["transaction_date"] or proposal_header["valid_till"]:
+	if (
+		proposal_header["entity_name"]
+		or proposal_header["transaction_date"]
+		or proposal_header["valid_till"]
+	):
 		entity_name = proposal_header["entity_name"]
 		data["gstin"] = proposal_header["gstin"]
 		data["vendor_email"] = proposal_header["vendor_email"]
@@ -133,7 +137,13 @@ def _parse_proposal_header(tables):
 	Returns empty strings for anything not found, so the caller can fall
 	back to the older BRN "To Be Filled by Business Users" table instead.
 	"""
-	result = {"entity_name": "", "gstin": "", "vendor_email": "", "transaction_date": "", "valid_till": ""}
+	result = {
+		"entity_name": "",
+		"gstin": "",
+		"vendor_email": "",
+		"transaction_date": "",
+		"valid_till": "",
+	}
 
 	header_table = find_table(tables, ["Proposal From", "Proposal To"])
 	if not header_table or not header_table[0]:

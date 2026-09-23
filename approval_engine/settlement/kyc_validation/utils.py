@@ -2,8 +2,9 @@
 # Proprietary and confidential. Unauthorized copying, distribution, or use
 # of this file, via any medium, is strictly prohibited without prior
 # written permission from 8848 Digital LLP.
-import frappe
 from pypika import Order
+
+import frappe
 
 
 def evaluate_supplier_hold(supplier_name: str) -> None:
@@ -14,10 +15,10 @@ def evaluate_supplier_hold(supplier_name: str) -> None:
 	every validation run.
 
 	Parameters:
-		supplier_name (str, required): The Supplier document name.
+	        supplier_name (str, required): The Supplier document name.
 
 	Returns:
-		None
+	        None
 	"""
 	settings = frappe.get_single("JFS Settings")
 
@@ -46,12 +47,12 @@ def get_latest_statuses_for_types(supplier_name: str, kyc_types: list) -> dict:
 	every required type instead of one query per type.
 
 	Parameters:
-		supplier_name (str, required): The Supplier document name.
-		kyc_types (list, required): The KYC check types to look up.
+	        supplier_name (str, required): The Supplier document name.
+	        kyc_types (list, required): The KYC check types to look up.
 
 	Returns:
-		dict: {kyc_type: latest_status}. A kyc_type with no non-Error log
-			row is simply absent.
+	        dict: {kyc_type: latest_status}. A kyc_type with no non-Error log
+	                row is simply absent.
 	"""
 	if not kyc_types:
 		return {}
@@ -118,4 +119,6 @@ def _release_hold_if_ours(supplier):
 		)
 	else:
 		# not ours to release, but keep the visibility field accurate
-		frappe.db.set_value("Supplier", supplier.name, "custom_kyc_blocked_types", "", update_modified=False)
+		frappe.db.set_value(
+			"Supplier", supplier.name, "custom_kyc_blocked_types", "", update_modified=False
+		)

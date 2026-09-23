@@ -16,12 +16,12 @@ def calculate_brn_expiry_date(date, months):
 	Compute a BRN's service expiry date from its start date + duration.
 
 	Parameters:
-		date (str, required): The service start date.
-		months (int, required): Duration of service, in months.
+	        date (str, required): The service start date.
+	        months (int, required): Duration of service, in months.
 
 	Returns:
-		date: date + months, anchored to the day before date (matches the
-			existing "expires the day before the anniversary" convention).
+	        date: date + months, anchored to the day before date (matches the
+	                existing "expires the day before the anniversary" convention).
 	"""
 	return add_months(getdate(add_days(date, -1)), cint(months))
 
@@ -34,7 +34,7 @@ def decode_email(encoded_email: str) -> str:
 	**Endpoint:** `/api/method/approval_engine.settlement.doctype.brn.utils.decode_email`
 	**HTTP Method:** GET, POST
 	**Parameters:**
-		- encoded_email (str, required): The base64url-encoded "local@domain" string
+	        - encoded_email (str, required): The base64url-encoded "local@domain" string
 	**Response:** The decoded email address (str), serialized as JSON.
 	"""
 	encoded_local, encoded_domain = encoded_email.split("@")
@@ -55,12 +55,12 @@ def create_po_from_brn(source_name, vendor=None):
 	Map a submitted BRN into an unsaved Purchase Order.
 
 	Parameters:
-		source_name (str, required): The BRN document name to map from.
-		vendor (str, optional): An existing_vendor from the BRN's
-			Comparision table to set as the PO's supplier.
+	        source_name (str, required): The BRN document name to map from.
+	        vendor (str, optional): An existing_vendor from the BRN's
+	                Comparision table to set as the PO's supplier.
 
 	Returns:
-		Document: The mapped (unsaved) Purchase Order.
+	        Document: The mapped (unsaved) Purchase Order.
 	"""
 	doc = get_mapped_doc(
 		"BRN",
@@ -68,9 +68,7 @@ def create_po_from_brn(source_name, vendor=None):
 		{
 			"BRN": {
 				"doctype": "Purchase Order",
-				"postprocess": lambda source, target, source_parent=None: set_supplier(
-					source, target, vendor
-				),
+				"postprocess": lambda source, target, source_parent=None: set_supplier(source, target, vendor),
 			},
 			"BRN Item": {
 				"doctype": "Purchase Order Item",
@@ -87,12 +85,12 @@ def _create_pi_from_brn(source_name, vendor=None):
 	Map a submitted BRN into an unsaved Purchase Invoice.
 
 	Parameters:
-		source_name (str, required): The BRN document name to map from.
-		vendor (str, optional): An existing_vendor from the BRN's
-			Comparision table to set as the PI's supplier.
+	        source_name (str, required): The BRN document name to map from.
+	        vendor (str, optional): An existing_vendor from the BRN's
+	                Comparision table to set as the PI's supplier.
 
 	Returns:
-		Document: The mapped (unsaved) Purchase Invoice.
+	        Document: The mapped (unsaved) Purchase Invoice.
 	"""
 	doc = get_mapped_doc(
 		"BRN",
@@ -100,9 +98,7 @@ def _create_pi_from_brn(source_name, vendor=None):
 		{
 			"BRN": {
 				"doctype": "Purchase Invoice",
-				"postprocess": lambda source, target, source_parent=None: set_supplier(
-					source, target, vendor
-				),
+				"postprocess": lambda source, target, source_parent=None: set_supplier(source, target, vendor),
 			},
 			"BRN Item": {
 				"doctype": "Purchase Invoice Item",
@@ -133,13 +129,13 @@ def set_supplier(source, target, vendor=None) -> None:
 	checking it's actually one of the BRN's Comparision-table vendors.
 
 	Parameters:
-		source (Document, required): The source BRN document.
-		target (Document, required): The mapped Purchase Order/Invoice.
-		vendor (str, optional): An existing_vendor to set as the supplier;
-			leaves target.supplier unset if not given.
+	        source (Document, required): The source BRN document.
+	        target (Document, required): The mapped Purchase Order/Invoice.
+	        vendor (str, optional): An existing_vendor to set as the supplier;
+	                leaves target.supplier unset if not given.
 
 	Returns:
-		None
+	        None
 	"""
 	if not vendor:
 		target.supplier = None

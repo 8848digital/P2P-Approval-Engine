@@ -11,37 +11,39 @@ these functions inline before this endpoint consolidation).
 
 import frappe
 
+from approval_engine.settlement.vendor_portal_auth import attach_vendor_invoice_copy
 from approval_engine.settlement.vendor_portal_auth import (
-	attach_vendor_invoice_copy,
+	authenticate_vendor_login as _authenticate,
+)
+from approval_engine.settlement.vendor_portal_auth import (
 	change_vendor_password,
 	logout_vendor_user,
 )
-from approval_engine.settlement.vendor_portal_auth import authenticate_vendor_login as _authenticate
 
 
 # This IS the login endpoint -- no session exists yet, so it must allow Guest.
 @frappe.whitelist(allow_guest=True, methods=["POST"])  # nosemgrep: guest-whitelisted-method
 def vendor_login(usr: str, pwd: str):
 	"""
-		Custom login endpoint for the vendor portal.
+	        Custom login endpoint for the vendor portal.
 
-		Authenticates the given credentials, then additionally checks that the
-		account is actually a vendor before establishing the session. This keeps
-		the vendor portal separate from the standard Frappe /login flow, so an
-		arbitrary system user (or a vendor trying to use the wrong door) can't
-		just log in here.
+	        Authenticates the given credentials, then additionally checks that the
+	        account is actually a vendor before establishing the session. This keeps
+	        the vendor portal separate from the standard Frappe /login flow, so an
+	        arbitrary system user (or a vendor trying to use the wrong door) can't
+	        just log in here.
 
-		**Endpoint:** `/api/method/approval_engine.settlement.api.v1.vendor_portal.vendor_login`
-		**HTTP Method:** POST
-		**Parameters:**
-			- usr (str, required): The login email/username
-			- pwd (str, required): The login password
-		**Response:**
+	        **Endpoint:** `/api/method/approval_engine.settlement.api.v1.vendor_portal.vendor_login`
+	        **HTTP Method:** POST
+	        **Parameters:**
+	                - usr (str, required): The login email/username
+	                - pwd (str, required): The login password
+	        **Response:**
 	```json
-			{
-				"success": true,
-				"redirect_to": "/portal"
-			}
+	                {
+	                        "success": true,
+	                        "redirect_to": "/portal"
+	                }
 	```
 	"""
 	return _authenticate(usr, pwd)
@@ -73,8 +75,8 @@ def vendor_update_password(old_password: str, new_password: str):
 	**Endpoint:** `/api/method/approval_engine.settlement.api.v1.vendor_portal.vendor_update_password`
 	**HTTP Method:** POST
 	**Parameters:**
-		- old_password (str, required): The user's current password
-		- new_password (str, required): The new password to set
+	        - old_password (str, required): The user's current password
+	        - new_password (str, required): The new password to set
 	**Response:** `null` message body on success (raises on failure)
 	"""
 	change_vendor_password(old_password, new_password)
@@ -83,23 +85,23 @@ def vendor_update_password(old_password: str, new_password: str):
 @frappe.whitelist(methods=["POST"])
 def vendor_attach_invoice_copy(route: str, docname: str):
 	"""
-		Attach an uploaded invoice-copy file to a vendor-visible document.
+	        Attach an uploaded invoice-copy file to a vendor-visible document.
 
-		Lets a vendor upload their invoice copy straight from a record's own
-		detail page in the portal, for Portal Section Config rows with Allow
-		Attaching Invoice Copy enabled, while the record isn't fully billed yet.
+	        Lets a vendor upload their invoice copy straight from a record's own
+	        detail page in the portal, for Portal Section Config rows with Allow
+	        Attaching Invoice Copy enabled, while the record isn't fully billed yet.
 
-		**Endpoint:** `/api/method/approval_engine.settlement.api.v1.vendor_portal.vendor_attach_invoice_copy`
-		**HTTP Method:** POST
-		**Parameters:**
-			- route (str, required): The portal route identifying the section config row
-			- docname (str, required): The name of the document to attach the file to
-		**Response:**
+	        **Endpoint:** `/api/method/approval_engine.settlement.api.v1.vendor_portal.vendor_attach_invoice_copy`
+	        **HTTP Method:** POST
+	        **Parameters:**
+	                - route (str, required): The portal route identifying the section config row
+	                - docname (str, required): The name of the document to attach the file to
+	        **Response:**
 	```json
-			{
-				"file_name": "invoice.pdf",
-				"file_url": "/files/invoice.pdf"
-			}
+	                {
+	                        "file_name": "invoice.pdf",
+	                        "file_url": "/files/invoice.pdf"
+	                }
 	```
 	"""
 	return attach_vendor_invoice_copy(route, docname)

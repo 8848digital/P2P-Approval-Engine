@@ -20,12 +20,12 @@ def get_vendor_suppliers(user: str | None = None) -> list[str]:
 	so permissions stay consistent with core.
 
 	Parameters:
-		user (str, optional): User to look up. Defaults to the current
-			session user.
+	        user (str, optional): User to look up. Defaults to the current
+	                session user.
 
 	Returns:
-		list[str]: Names of Supplier documents this user is a Portal User
-		for.
+	        list[str]: Names of Supplier documents this user is a Portal User
+	        for.
 	"""
 	user = user or frappe.session.user
 	portal_user = frappe.qb.DocType("Portal User")
@@ -43,12 +43,12 @@ def get_primary_vendor_supplier(user: str | None = None) -> str | None:
 	single "current vendor" is needed rather than the full list.
 
 	Parameters:
-		user (str, optional): User to look up. Defaults to the current
-			session user.
+	        user (str, optional): User to look up. Defaults to the current
+	                session user.
 
 	Returns:
-		str | None: The first linked Supplier's name, or None if the user
-		has no linked Supplier.
+	        str | None: The first linked Supplier's name, or None if the user
+	        has no linked Supplier.
 	"""
 	suppliers = get_vendor_suppliers(user)
 	return suppliers[0] if suppliers else None
@@ -59,13 +59,13 @@ def get_primary_vendor_supplier_name(user: str | None = None) -> str | None:
 	Display name of the user's primary linked Supplier.
 
 	Parameters:
-		user (str, optional): User to look up. Defaults to the current
-			session user.
+	        user (str, optional): User to look up. Defaults to the current
+	                session user.
 
 	Returns:
-		str | None: The Supplier's `supplier_name`, falling back to its
-		`name` if `supplier_name` is unset, or None if the user has no
-		linked Supplier.
+	        str | None: The Supplier's `supplier_name`, falling back to its
+	        `name` if `supplier_name` is unset, or None if the user has no
+	        linked Supplier.
 	"""
 	supplier = get_primary_vendor_supplier(user)
 	if not supplier:

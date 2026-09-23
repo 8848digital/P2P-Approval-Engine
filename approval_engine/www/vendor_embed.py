@@ -29,16 +29,16 @@ def get_context(context: frappe._dict) -> None:
 	Portal Section Config row) inside the portal shell.
 
 	Parameters:
-		context (frappe._dict, required): Website render context, mutated
-			in place. Expects `web_form` and optional `name` in
-			`frappe.form_dict`.
+	        context (frappe._dict, required): Website render context, mutated
+	                in place. Expects `web_form` and optional `name` in
+	                `frappe.form_dict`.
 
 	Returns:
-		None
+	        None
 
 	Raises:
-		frappe.PermissionError: If `web_form` isn't a configured
-			edit_web_form the current user is allowed to see.
+	        frappe.PermissionError: If `web_form` isn't a configured
+	                edit_web_form the current user is allowed to see.
 	"""
 	# Lighter guard than require_vendor_portal_access(): a brand-new vendor
 	# invited by email has no Supplier yet -- that's only created once they
@@ -56,7 +56,11 @@ def get_context(context: frappe._dict) -> None:
 	# row's edit form being reachable by a user who can't see that row.
 	settings = frappe.get_cached_doc("Vendor Portal Settings")
 	matching_rows = [row for row in settings.doctypes if row.edit_web_form == web_form_route]
-	if not web_form_route or not matching_rows or not any(row_allowed_for_user(row) for row in matching_rows):
+	if (
+		not web_form_route
+		or not matching_rows
+		or not any(row_allowed_for_user(row) for row in matching_rows)
+	):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
 
 	context.update(base_portal_context(""))

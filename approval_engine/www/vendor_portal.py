@@ -23,11 +23,11 @@ def get_context(context: frappe._dict) -> None:
 	count tile per visible portal section.
 
 	Parameters:
-		context (frappe._dict, required): Website render context, mutated
-			in place.
+	        context (frappe._dict, required): Website render context, mutated
+	                in place.
 
 	Returns:
-		None
+	        None
 	"""
 	suppliers = require_vendor_portal_access()
 	seed_default_settings()

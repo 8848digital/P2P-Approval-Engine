@@ -16,7 +16,9 @@ class KYCCredential(Document):
 		self.base_url = (self.base_url or "").strip().rstrip("/")
 
 		if not self.base_url.startswith("http"):
-			frappe.throw(frappe._("Row #{0}: Base URL must start with http:// or https://").format(self.idx))
+			frappe.throw(
+				frappe._("Row #{0}: Base URL must start with http:// or https://").format(self.idx)
+			)
 
 		if self.auth_type != "None" and not self.token:
 			frappe.throw(

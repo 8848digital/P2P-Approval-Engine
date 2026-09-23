@@ -20,11 +20,11 @@ def get_context(context: frappe._dict) -> None:
 	record, read-only, with a link to its edit web form when configured.
 
 	Parameters:
-		context (frappe._dict, required): Website render context, mutated
-			in place.
+	        context (frappe._dict, required): Website render context, mutated
+	                in place.
 
 	Returns:
-		None
+	        None
 	"""
 	suppliers = require_vendor_portal_access()
 	# A vendor account is almost always linked to exactly one Supplier; if

@@ -16,9 +16,7 @@ import frappe
 from approval_engine.settlement.customization.procure_to_pay.utils import (
 	get_fiscal_year_and_validity as _get_fiscal_year_and_validity,
 )
-from approval_engine.settlement.customization.procure_to_pay.utils import (
-	validate_brn_dates,
-)
+from approval_engine.settlement.customization.procure_to_pay.utils import validate_brn_dates
 from approval_engine.settlement.customization.purchase_order.rate_comparison import (
 	get_rate_comparison_config,
 	get_rate_comparison_rows,
@@ -37,7 +35,7 @@ def send_po_to_vendor(purchase_order: str):
 	**Endpoint:** `/api/method/approval_engine.settlement.api.v1.purchase_order.send_po_to_vendor`
 	**HTTP Method:** POST
 	**Parameters:**
-		- purchase_order (str, required): The Purchase Order document name
+	        - purchase_order (str, required): The Purchase Order document name
 	**Response:** `true` on success, serialized as JSON.
 	"""
 	return send_po_mail_to_vendor(purchase_order)
@@ -56,13 +54,15 @@ def make_purchase_invoice_from_portal(
 	**Endpoint:** `/api/method/approval_engine.settlement.api.v1.purchase_order.make_purchase_invoice_from_portal`
 	**HTTP Method:** POST
 	**Parameters:**
-		- purchase_order_name (str, required): The source Purchase Order name
-		- items (str | list, optional): Items to bill, JSON-encoded or a list
-		- supplier_invoice_no (str, optional): The supplier's own invoice number
-		- supplier_invoice_date (str, optional): The supplier's own invoice date
+	        - purchase_order_name (str, required): The source Purchase Order name
+	        - items (str | list, optional): Items to bill, JSON-encoded or a list
+	        - supplier_invoice_no (str, optional): The supplier's own invoice number
+	        - supplier_invoice_date (str, optional): The supplier's own invoice date
 	**Response:** The created Purchase Invoice, serialized as JSON.
 	"""
-	return make_purchase_invoice(purchase_order_name, items, supplier_invoice_no, supplier_invoice_date)
+	return make_purchase_invoice(
+		purchase_order_name, items, supplier_invoice_no, supplier_invoice_date
+	)
 
 
 @frappe.whitelist(methods=["GET", "POST"])
@@ -73,8 +73,8 @@ def validate_transaction_date_with_brn_dates(brn: str, transaction_date: str):
 	**Endpoint:** `/api/method/approval_engine.settlement.api.v1.purchase_order.validate_transaction_date_with_brn_dates`
 	**HTTP Method:** GET, POST
 	**Parameters:**
-		- brn (str, required): The BRN document name
-		- transaction_date (str, required): The transaction date to validate
+	        - brn (str, required): The BRN document name
+	        - transaction_date (str, required): The transaction date to validate
 	**Response:** Validation result, serialized as JSON (raises on failure).
 	"""
 	return validate_brn_dates(brn, transaction_date)
@@ -88,8 +88,8 @@ def get_fiscal_year_and_validity(date: str, brn: str | None = None):
 	**Endpoint:** `/api/method/approval_engine.settlement.api.v1.purchase_order.get_fiscal_year_and_validity`
 	**HTTP Method:** GET, POST
 	**Parameters:**
-		- date (str, required): The date to resolve the fiscal year for
-		- brn (str, optional): A BRN document name to validate against
+	        - date (str, required): The date to resolve the fiscal year for
+	        - brn (str, optional): A BRN document name to validate against
 	**Response:** Fiscal year + validity info, serialized as JSON.
 	"""
 	return _get_fiscal_year_and_validity(date, brn)
@@ -110,15 +110,17 @@ def get_vendor_rate_comparison(
 	**Endpoint:** `/api/method/approval_engine.settlement.api.v1.purchase_order.get_vendor_rate_comparison`
 	**HTTP Method:** GET, POST
 	**Parameters:**
-		- supplier (str, required): The Supplier to compare rates for
-		- nature_of_services (str, required): The Nature of Service to filter by
-		- company (str, required): The Company context
-		- transaction_date (str, required): The reference transaction date
-		- brn (str, optional): A BRN to exclude/scope the comparison
-		- exclude_po (str, optional): A Purchase Order name to exclude from the comparison
+	        - supplier (str, required): The Supplier to compare rates for
+	        - nature_of_services (str, required): The Nature of Service to filter by
+	        - company (str, required): The Company context
+	        - transaction_date (str, required): The reference transaction date
+	        - brn (str, optional): A BRN to exclude/scope the comparison
+	        - exclude_po (str, optional): A Purchase Order name to exclude from the comparison
 	**Response:** List of rate comparison rows, serialized as JSON.
 	"""
-	return get_rate_comparison_rows(supplier, nature_of_services, company, transaction_date, brn, exclude_po)
+	return get_rate_comparison_rows(
+		supplier, nature_of_services, company, transaction_date, brn, exclude_po
+	)
 
 
 @frappe.whitelist(methods=["GET", "POST"])
