@@ -34,6 +34,15 @@ _TIER_FROM_STATE = {state: tier for tier, state in STATE_FOR_TIER.items()}
 
 
 def _managed(doctype):
+    """
+    Whether `doctype` currently runs on an active engine-generated workflow.
+
+    Parameters:
+        doctype (str, required): DocType to check.
+
+    Returns:
+        bool: True when its `<DocType> Approval` workflow exists and is active.
+    """
     return bool(frappe.db.get_value(
         "Workflow",
         {"document_type": doctype, "is_active": 1, "name": workflow_name(doctype)},
@@ -42,6 +51,15 @@ def _managed(doctype):
 
 
 def _status_of(to_state):
+    """
+    Sidebar status for a tier, from the state its action moved the document to.
+
+    Parameters:
+        to_state (str, required): State the document moved to.
+
+    Returns:
+        str: "rejected", "on_hold" or "approved".
+    """
     if to_state == "Rejected":
         return "rejected"
     if to_state and to_state.startswith("On Hold"):
@@ -50,6 +68,15 @@ def _status_of(to_state):
 
 
 def _owner(user):
+    """
+    Render one approver for the sidebar.
+
+    Parameters:
+        user (str, optional): User ID.
+
+    Returns:
+        dict | None: `{"user", "full_name"}`, or None when no user.
+    """
     return {"user": user, "full_name": get_fullname(user)} if user else None
 
 

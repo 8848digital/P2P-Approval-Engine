@@ -82,10 +82,29 @@ DEFAULT_AMOUNT_FIELDS = {
 # ---------------------------------------------------------------------------
 
 def role_name(document_type, level):
+    """
+    Name of the approver role for one tier of a DocType's generated workflow.
+
+    Parameters:
+        document_type (str, required): Target DocType.
+        level (int, required): Approver tier, 1..MAX_LEVELS.
+
+    Returns:
+        str: e.g. "Purchase Order - Approver 2".
+    """
     return f"{document_type} - Approver {level}"
 
 
 def workflow_name(document_type):
+    """
+    Name of the single Workflow this engine generates for a DocType.
+
+    Parameters:
+        document_type (str, required): Target DocType.
+
+    Returns:
+        str: e.g. "Purchase Order Approval".
+    """
     return f"{document_type} Approval"
 
 
@@ -117,15 +136,46 @@ def acting_tier(state):
 # ---------------------------------------------------------------------------
 
 def pool(row, level):
+    """
+    Users configured for one tier of one matrix row, in field order, blanks dropped.
+
+    Parameters:
+        row (Document, required): An Approval Matrix Detail row.
+        level (int, required): Approver tier, 1..MAX_LEVELS.
+
+    Returns:
+        list[str]: User IDs; empty when the tier is not configured.
+    """
     return [row.get(f"approver_{level}_user_{u}")
             for u in range(1, 6) if row.get(f"approver_{level}_user_{u}")]
 
 
 def configured_levels(row):
+    """
+    Tiers of a matrix row that have at least one approver.
+
+    Parameters:
+        row (Document, required): An Approval Matrix Detail row.
+
+    Returns:
+        list[int]: Ascending tier numbers, e.g. [1, 2].
+    """
     return [level for level in range(1, MAX_LEVELS + 1) if pool(row, level)]
 
 
 def amount_field_for(document_type):
+    """
+    Fieldname whose value the amount bands compare against for a DocType.
+
+    Prefers the explicit Approval Settings mapping, else a per-DocType default.
+    See `resolve_amount_field` for the same answer with its provenance.
+
+    Parameters:
+        document_type (str, required): Target DocType.
+
+    Returns:
+        str: Fieldname, e.g. "grand_total".
+    """
     settings = frappe.get_single("Approval Settings")
     for r in settings.amount_fields:
         if r.document_type == document_type:
@@ -182,6 +232,15 @@ def band_condition(amt_field, min_amount, max_amount):
 # ---------------------------------------------------------------------------
 
 def ensure_roles(document_type):
+    """
+    Create the `<DocType> - Approver 1..N` roles if they don't exist yet (idempotent).
+
+    Parameters:
+        document_type (str, required): Target DocType.
+
+    Returns:
+        None
+    """
     for level in range(1, MAX_LEVELS + 1):
         name = role_name(document_type, level)
         if not frappe.db.exists("Role", name):
@@ -255,6 +314,12 @@ def ensure_company_read(document_type):
 
 
 def ensure_actions():
+    """
+    Create the Workflow Action Masters the generated transitions use (Approve/Hold/Reject).
+
+    Returns:
+        None
+    """
     for action in ACTIONS:
         if not frappe.db.exists("Workflow Action Master", action):
             frappe.get_doc({
@@ -264,6 +329,12 @@ def ensure_actions():
 
 
 def ensure_workflow_states():
+    """
+    Create the Workflow State masters for every state in the engine's fixed state machine.
+
+    Returns:
+        None
+    """
     for name in STATE_ORDER:
         if not frappe.db.exists("Workflow State", name):
             frappe.get_doc({
@@ -274,6 +345,17 @@ def ensure_workflow_states():
 
 
 def ensure_amount_field(document_type):
+    """
+    Seed an Approval Settings amount-field row for this DocType if none exists.
+
+    Makes the resolved default visible and editable instead of leaving it implicit.
+
+    Parameters:
+        document_type (str, required): Target DocType.
+
+    Returns:
+        None
+    """
     settings = frappe.get_single("Approval Settings")
     if not any(r.document_type == document_type for r in settings.amount_fields):
         settings.append("amount_fields", {
@@ -356,6 +438,19 @@ def find_band_row(document_type, company, department, amount):
 # ---------------------------------------------------------------------------
 
 def _t(state, action, next_state, allowed, condition):
+    """
+    Build one Workflow Transition row.
+
+    Parameters:
+        state (str, required): State the transition acts from.
+        action (str, required): Workflow action name.
+        next_state (str, required): State the document moves to.
+        allowed (str, required): Role allowed to perform it.
+        condition (str, required): Python condition evaluated against the document.
+
+    Returns:
+        dict: Transition row for `Workflow.append("transitions", ...)`.
+    """
     return {
         "state": state,
         "action": action,
@@ -367,6 +462,18 @@ def _t(state, action, next_state, allowed, condition):
 
 
 def build_transitions(document_type):
+    """
+    Build every transition for a DocType from all submitted matrices (see module docstring).
+
+    One set per (company, department, band, tier): Approve (escalate and finalize), plus
+    Hold/Reject where that tier allows them.
+
+    Parameters:
+        document_type (str, required): Target DocType.
+
+    Returns:
+        list[dict]: Transition rows in generation order.
+    """
     amt = amount_field_for(document_type)
     transitions = []
 
@@ -436,11 +543,33 @@ def build_transitions(document_type):
 
 
 def _allow_edit(document_type, state):
+    """
+    Role allowed to edit a document sitting in `state`.
+
+    Parameters:
+        document_type (str, required): Target DocType.
+        state (str, required): Workflow state.
+
+    Returns:
+        str: "All", or the tier's approver role.
+    """
     v = ALLOW_EDIT[state]
     return "All" if v == "All" else role_name(document_type, v)
 
 
 def build_workflow(document_type):
+    """
+    Create or refresh the single Workflow for a DocType: states + generated transitions.
+
+    An existing workflow is rewritten in place (states and transitions cleared first), so
+    the live workflow always reflects the currently submitted matrices.
+
+    Parameters:
+        document_type (str, required): Target DocType.
+
+    Returns:
+        str: Name of the saved Workflow.
+    """
     existing = frappe.db.get_value("Workflow", {"document_type": document_type}, "name")
     if existing:
         wf = frappe.get_doc("Workflow", existing)
@@ -474,6 +603,18 @@ def build_workflow(document_type):
 # ---------------------------------------------------------------------------
 
 def reconcile_roles(document_type):
+    """
+    Align `<DocType> - Approver N` role holders with the users named in submitted matrices.
+
+    Grants the role to users newly added to a tier and revokes it from users no longer in
+    any row of that tier, so cancelling or editing a matrix cannot leave stale approvers.
+
+    Parameters:
+        document_type (str, required): Target DocType.
+
+    Returns:
+        None
+    """
     matrices = frappe.get_all(
         "Approval Matrix",
         filters={"document_type": document_type, "docstatus": 1},
@@ -498,12 +639,32 @@ def reconcile_roles(document_type):
 
 
 def _grant_role(user, role):
+    """
+    Give a user an approver role, skipping Administrator/Guest and unknown users.
+
+    Parameters:
+        user (str, required): User ID.
+        role (str, required): Role name.
+
+    Returns:
+        None
+    """
     if user in ("Administrator", "Guest") or not frappe.db.exists("User", user):
         return
     frappe.get_doc("User", user).add_roles(role)
 
 
 def _revoke_role(user, role):
+    """
+    Remove an approver role from a user, ignoring users that no longer exist.
+
+    Parameters:
+        user (str, required): User ID.
+        role (str, required): Role name.
+
+    Returns:
+        None
+    """
     if not frappe.db.exists("User", user):
         return
     frappe.get_doc("User", user).remove_roles(role)
@@ -514,6 +675,18 @@ def _revoke_role(user, role):
 # ---------------------------------------------------------------------------
 
 def setup_workflow(document_type):
+    """
+    Bring everything a governed DocType needs into line (idempotent; run on matrix submit).
+
+    Ensures masters, roles and permissions, the routing department field, then rebuilds the
+    workflow from all submitted matrices and reconciles role holders.
+
+    Parameters:
+        document_type (str, required): Target DocType.
+
+    Returns:
+        None
+    """
     ensure_workflow_states()
     ensure_actions()
     ensure_roles(document_type)
@@ -529,6 +702,18 @@ def setup_workflow(document_type):
 
 
 def on_matrix_cancel(document_type):
+    """
+    React to a cancelled matrix: rebuild the workflow without it, or deactivate it.
+
+    The workflow is deactivated (never deleted) when no submitted matrix remains for the
+    DocType, so in-flight documents keep their recorded state.
+
+    Parameters:
+        document_type (str, required): Target DocType.
+
+    Returns:
+        None
+    """
     reconcile_roles(document_type)
     remaining = frappe.db.count(
         "Approval Matrix", {"document_type": document_type, "docstatus": 1})
