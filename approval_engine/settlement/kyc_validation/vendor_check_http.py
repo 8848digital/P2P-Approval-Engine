@@ -18,42 +18,9 @@ import requests
 import frappe
 from frappe import _
 
+from approval_engine.settlement.kyc_validation.masking import mask_sensitive
+
 PLACEHOLDER_RE = re.compile(r"\{\{\s*([a-zA-Z0-9_]+)\s*\}\}")
-
-# Field names (by convention) that should be masked in stored logs even if an
-# admin forgets to list them explicitly - belt and suspenders for Aadhaar etc.
-SENSITIVE_KEY_HINTS = ("aadhaar", "aadhar", "adhar")
-
-
-def _mask(value: str) -> str:
-	"""Mask all but the last 4 characters of value with asterisks."""
-	value = str(value)
-	if len(value) <= 4:
-		return "*" * len(value)
-	return "*" * (len(value) - 4) + value[-4:]
-
-
-def _mask_sensitive(payload_str: str, field_map) -> str:
-	"""Best-effort masking of Aadhaar-like values inside a JSON string before it
-	is written to the log, controlled by KYC Settings.mask_sensitive_data_in_logs."""
-	try:
-		data = json.loads(payload_str)
-	except Exception:
-		return payload_str
-
-	def walk(obj):
-		if isinstance(obj, dict):
-			for k, v in obj.items():
-				if isinstance(v, str) and any(h in k.lower() for h in SENSITIVE_KEY_HINTS):
-					obj[k] = _mask(v)
-				elif isinstance(v, dict | list):
-					walk(v)
-		elif isinstance(obj, list):
-			for item in obj:
-				walk(item)
-
-	walk(data)
-	return json.dumps(data, indent=2)
 
 
 def _get_by_path(data, path):
@@ -195,8 +162,8 @@ def call_vendor_api(vendor_doc, supplier_doc, settings):
 	request_str = body_str
 
 	if settings.mask_sensitive_data_in_logs:
-		response_str = _mask_sensitive(response_str, vendor_doc.field_map)
-		request_str = _mask_sensitive(request_str, vendor_doc.field_map)
+		response_str = mask_sensitive(response_str, vendor_doc.field_map)
+		request_str = mask_sensitive(request_str, vendor_doc.field_map)
 
 	return {
 		"status": status,
