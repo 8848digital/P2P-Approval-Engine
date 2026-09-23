@@ -6,7 +6,9 @@
 # apps/approval_engine/approval_engine/patches/v1_0/add_vendor_faq_coc_fields.py
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
-from approval_engine.settlement.doc_events.faq_master import FAQ_SECTION_VISIBILITY_DEPENDS_ON
+from approval_engine.settlement.doctype.faq_master.faq_master_utils import (
+	FAQ_SECTION_VISIBILITY_DEPENDS_ON,
+)
 
 
 def execute():
@@ -15,7 +17,7 @@ def execute():
 	sustainable_goods_percentage and dependent attachments like
 	agreement_attachment, which are just FAQ Master rows with field_type
 	Attach and depends_on_question set) is now created dynamically from FAQ
-	Master rows via doc_events.faq_master — do NOT add question fields here.
+	Master rows via doctype/faq_master/faq_master_utils.py — do NOT add question fields here.
 	coc_section starts anchored to faq_section here and gets repositioned
 	after the real trailing question by _reposition_tail_fields() once FAQ
 	Master rows are seeded.

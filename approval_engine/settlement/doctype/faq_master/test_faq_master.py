@@ -6,14 +6,17 @@
 import frappe
 from frappe.tests import IntegrationTestCase, UnitTestCase
 
-from approval_engine.settlement.doc_events.faq_master import FIELDNAME_RE, _parse_options
+from approval_engine.settlement.doctype.faq_master.faq_master_utils import (
+	FIELDNAME_RE,
+	_parse_options,
+)
 
 EXTRA_TEST_RECORD_DEPENDENCIES = []
 IGNORE_TEST_RECORD_DEPENDENCIES = []
 
 
 class TestFAQMasterHelpers(UnitTestCase):
-	"""Pure-logic helpers from doc_events/faq_master.py -- no DB needed."""
+	"""Pure-logic helpers from faq_master_utils.py -- no DB needed."""
 
 	def test_parse_options_splits_and_drops_blanks(self):
 		self.assertEqual(_parse_options("Yes\nNo\n\n"), ["Yes", "No"])

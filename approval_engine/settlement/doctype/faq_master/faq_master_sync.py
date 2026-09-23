@@ -3,7 +3,6 @@
 # of this file, via any medium, is strictly prohibited without prior
 # written permission from 8848 Digital LLP.
 
-# apps/approval_engine/approval_engine/settlement/doc_events/faq_master_sync.py
 """Supplier Custom Field / vendor onboarding Web Form sync for FAQ Master.
 Split out of doc_events/faq_master.py (the doc_events hook file) to keep
 that file under the line-count cap - these are called from its hook

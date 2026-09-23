@@ -4,9 +4,9 @@
 # written permission from 8848 Digital LLP.
 """
 Patch: set the tds_reference link on Tax Withholding Category records that
-were auto-created by doc_events.tds_reference.create_tax_withholding_categories
+were auto-created by doctype/tds_reference/tds_reference_utils.py's create_tax_withholding_categories
 before the tds_reference custom field existed. Needed so
-doc_events.tds_reference.get_tax_withholding_category (used by the Purchase
+doctype/tds_reference/tds_reference_utils.py's get_tax_withholding_category (used by the Purchase
 Order/Invoice Item nature_of_service handler) can look categories up reliably.
 
 Idempotent - only fills in tds_reference where it's currently empty, using the
@@ -23,7 +23,7 @@ Registered in patches.txt as:
 
 import frappe
 
-from approval_engine.settlement.doc_events.tds_reference import (
+from approval_engine.settlement.doctype.tds_reference.tds_reference_utils import (
 	RATE_RE,
 	STANDARD_DUAL_RATE_REMARK,
 	_build_name,

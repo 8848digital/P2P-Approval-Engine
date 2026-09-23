@@ -5,15 +5,15 @@
 """Whitelisted endpoints resolving the Tax Withholding Category for a
 nature of service and supplier, used by Purchase Order/Invoice item rows.
 
-Thin wrappers only -- the logic lives in settlement/doc_events/tds_reference.py.
+Thin wrappers only -- the logic lives in settlement/doctype/tds_reference/tds_reference_utils.py.
 """
 
 import frappe
 
-from approval_engine.settlement.doc_events.tds_reference import (
+from approval_engine.settlement.doctype.tds_reference.tds_reference_utils import (
 	get_tax_withholding_categories as _get_tax_withholding_categories,
 )
-from approval_engine.settlement.doc_events.tds_reference import (
+from approval_engine.settlement.doctype.tds_reference.tds_reference_utils import (
 	get_tax_withholding_category as _get_tax_withholding_category,
 )
 

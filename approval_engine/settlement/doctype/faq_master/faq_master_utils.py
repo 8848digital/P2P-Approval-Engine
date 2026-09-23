@@ -3,14 +3,13 @@
 # of this file, via any medium, is strictly prohibited without prior
 # written permission from 8848 Digital LLP.
 
-# apps/approval_engine/approval_engine/settlement/doc_events/faq_master.py
 import re
 
 import frappe
 from frappe import _
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
-from approval_engine.settlement.doc_events.faq_master_sync import (
+from approval_engine.settlement.doctype.faq_master.faq_master_sync import (
 	delete_supplier_custom_field_row,
 	get_insert_after,
 	question_field_dict,
@@ -35,7 +34,18 @@ FIELDNAME_RE = re.compile(r"^[a-z][a-z0-9_]*$")
 
 
 def validate(doc, method=None):
-	"""doc_event: validate on FAQ Master."""
+	"""
+	FAQ Master validate: auto sort order on insert, Question Code must be a
+	valid fieldname, Select options/expected answer must be consistent, and
+	Depends On Question can't reference itself.
+
+	Parameters:
+	        doc (Document, required): The FAQ Master being validated.
+	        method (str, optional): Unused; kept for the old hook signature.
+
+	Returns:
+	        None
+	"""
 	_auto_set_sort_order(doc)
 
 	if not FIELDNAME_RE.match(doc.question_code or ""):
@@ -74,7 +84,17 @@ def _auto_set_sort_order(doc) -> None:
 
 
 def sync_supplier_custom_field(doc, method=None):
-	"""doc_event: after_insert / on_update on FAQ Master."""
+	"""
+	Sync this question onto the Supplier form (Custom Field) and the vendor
+	onboarding web form, or remove it when the question is inactive.
+
+	Parameters:
+	        doc (Document, required): The FAQ Master that was inserted/updated.
+	        method (str, optional): Unused; kept for the old hook signature.
+
+	Returns:
+	        None
+	"""
 	if not doc.is_active:
 		delete_supplier_custom_field_row(doc.question_code)
 		reposition_tail_fields()
@@ -88,9 +108,18 @@ def sync_supplier_custom_field(doc, method=None):
 
 
 def delete_supplier_custom_field(doc, method=None):
-	"""doc_event: on_trash on FAQ Master. Runs before the row is actually
-	removed from the DB, so any FAQ Master query here must exclude doc.name
-	itself or it'll still count as active."""
+	"""
+	Remove this question from the Supplier form and web form. Runs before
+	the row is removed from the DB, so any FAQ Master query here must
+	exclude doc.name itself or it'll still count as active.
+
+	Parameters:
+	        doc (Document, required): The FAQ Master being deleted.
+	        method (str, optional): Unused; kept for the old hook signature.
+
+	Returns:
+	        None
+	"""
 	delete_supplier_custom_field_row(doc.question_code)
 	reposition_tail_fields(exclude_name=doc.name)
 	rebuild_web_form_faq_fields(exclude_name=doc.name)

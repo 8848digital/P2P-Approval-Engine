@@ -5,13 +5,15 @@
 
 from frappe.model.document import Document
 
-from approval_engine.settlement.doc_events.tds_reference import create_tax_withholding_categories
+from approval_engine.settlement.doctype.tds_reference.tds_reference_utils import (
+	create_tax_withholding_categories,
+)
 
 
 class TDSReference(Document):
 	"""Master list of TDS rates per Nature of Service / IT Act section --
 	source of truth for the Tax Withholding Category records auto-created
-	on insert (see doc_events/tds_reference.py)."""
+	on insert (see doctype/tds_reference/tds_reference_utils.py)."""
 
 	def after_insert(self) -> None:
 		"""Auto-create the matching Tax Withholding Category record(s)."""

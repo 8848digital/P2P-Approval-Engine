@@ -8,7 +8,7 @@
 Patch: create the agreement_attachment FAQ Master row on sites where
 agreement_po_engagement_letter was already seeded before dependent
 attachments became their own FAQ Master rows (field_type Attach +
-depends_on_question, see doc_events.faq_master).
+depends_on_question, see doctype/faq_master/faq_master_utils.py).
 
 A fresh site's seed (create_faq_master.py) already creates this row
 directly, right after its trigger question - this patch only backfills

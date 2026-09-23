@@ -12,7 +12,7 @@ hooks.py also wires approval_engine.settlement.setup.create_custom_fields
 as an after_migrate hook, which is idempotent and safe to run again -- but
 after_migrate fires only after every patch in this file has already run.
 create_faq_master's FAQ Master.after_insert doc_event
-(doc_events.faq_master.sync_supplier_custom_field -> faq_master_sync.
+(doctype/faq_master/faq_master_utils.py's sync_supplier_custom_field -> faq_master_sync.
 rebuild_web_form_faq_fields) saves the "vendor-onboarding-form" Web Form,
 which validates that every field it references (gstin, pan, brn,
 workflow_state, ...) already exists as a Custom Field on Supplier -- on a

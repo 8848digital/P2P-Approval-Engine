@@ -5,7 +5,7 @@
 """
 Patch: create Tax Withholding Category records for TDS Reference rows that
 were already imported before the TDS Reference -> Tax Withholding Category
-after_insert hook (doc_events.tds_reference.create_tax_withholding_categories)
+after_insert hook (doctype/tds_reference/tds_reference_utils.py's create_tax_withholding_categories)
 was added.
 
 Idempotent - category creation is guarded by frappe.db.exists(), so re-running
@@ -24,7 +24,9 @@ Registered in patches.txt as:
 
 import frappe
 
-from approval_engine.settlement.doc_events.tds_reference import create_tax_withholding_categories
+from approval_engine.settlement.doctype.tds_reference.tds_reference_utils import (
+	create_tax_withholding_categories,
+)
 from approval_engine.settlement.setup import create_custom_fields
 
 

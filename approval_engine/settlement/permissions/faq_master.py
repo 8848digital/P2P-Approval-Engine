@@ -29,7 +29,7 @@ def _faq_section_enabled():
 def has_permission(doc, ptype, user):
 	"""has_permission hook for FAQ Master (per-document checks: read/write/
 	create/delete on a specific doc). Mirrors the Supplier form's Vendor
-	FAQs tab gate (doc_events.faq_master.FAQ_SECTION_VISIBILITY_DEPENDS_ON):
+	FAQs tab gate (doctype/faq_master/faq_master_utils.py's FAQ_SECTION_VISIBILITY_DEPENDS_ON):
 	the configured FAQ Manager Role only grants access while JFS
 	Settings.enable_faq_section is on, so "disabled" means nothing is
 	visible, not just that the Supplier tab is hidden. System Manager always

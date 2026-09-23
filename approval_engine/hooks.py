@@ -207,12 +207,6 @@ doc_events = {
 		"on_submit": "approval_engine.settlement.customization.purchase_invoice.purchase_invoice.on_submit",
 		"on_cancel": "approval_engine.settlement.customization.purchase_invoice.purchase_invoice.on_cancel",
 	},
-	"FAQ Master": {
-		"validate": "approval_engine.settlement.doc_events.faq_master.validate",
-		"after_insert": "approval_engine.settlement.doc_events.faq_master.sync_supplier_custom_field",
-		"on_update": "approval_engine.settlement.doc_events.faq_master.sync_supplier_custom_field",
-		"on_trash": "approval_engine.settlement.doc_events.faq_master.delete_supplier_custom_field",
-	},
 	"Supplier": {
 		"validate": "approval_engine.settlement.customization.supplier.supplier.validate",
 		"on_update": "approval_engine.settlement.customization.supplier.supplier.on_update",
