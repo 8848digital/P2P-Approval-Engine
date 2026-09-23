@@ -80,7 +80,6 @@ def create_tax_withholding_categories(doc, method=None):
 SUPPLIER_TYPE_TO_ENTITY = {"Individual": "Individual", "Hindu Undivided Family": "HUF"}
 
 
-@frappe.whitelist()
 def get_tax_withholding_category(nature_of_service: str, supplier: str | None = None):
 	"""Called from Purchase Order/Invoice Item's nature_of_service handler.
 
@@ -93,7 +92,6 @@ def get_tax_withholding_category(nature_of_service: str, supplier: str | None = 
 	return _resolve_category(nature_of_service, _entity_bucket_for_supplier(supplier))
 
 
-@frappe.whitelist()
 def get_tax_withholding_categories(nature_of_services: str | list, supplier: str | None = None):
 	"""Batched counterpart of get_tax_withholding_category - resolves every
 	nature_of_service value against one supplier in a single call, so a

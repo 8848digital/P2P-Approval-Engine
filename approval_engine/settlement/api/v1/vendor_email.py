@@ -2,14 +2,15 @@
 # Proprietary and confidential. Unauthorized copying, distribution, or use
 # of this file, via any medium, is strictly prohibited without prior
 # written permission from 8848 Digital LLP.
-"""Whitelisted endpoint for vendor onboarding invite emails.
+"""Whitelisted endpoints for vendor onboarding invite emails.
 
-Thin wrapper only -- the actual logic lives in
-settlement/doctype/vendor_email/utils.py.
+Thin wrappers only -- the actual logic lives in
+settlement/doctype/vendor_email/utils.py and settlement/doctype/brn/utils.py.
 """
 
 import frappe
 
+from approval_engine.settlement.doctype.brn.utils import decode_email as _decode_email
 from approval_engine.settlement.doctype.vendor_email.utils import create_vendor
 
 
@@ -42,3 +43,18 @@ def send_vendor_mail(
 	return create_vendor(
 		mail, reference_doctype, reference_docname, name, email_2=email_2, company=company
 	)
+
+
+@frappe.whitelist(methods=["GET", "POST"])
+def decode_email(encoded_email: str) -> str:
+	"""
+	Decode the vendor email carried in an onboarding invite link, so the
+	Vendor Onboarding web form can prefill it.
+
+	**Endpoint:** `/api/method/approval_engine.settlement.api.v1.vendor_email.decode_email`
+	**HTTP Method:** GET, POST
+	**Parameters:**
+	        - encoded_email (str, required): The base64url-encoded "local@domain" string from the invite link
+	**Response:** The decoded email address (str) in the standard envelope's `data`.
+	"""
+	return _decode_email(encoded_email)

@@ -42,14 +42,11 @@ def get_settings():
 	return frappe.get_cached_doc("JFS Settings")
 
 
-@frappe.whitelist()
 def get_fiscal_year_doc(for_date: str | date, company: str | None = None):
 	"""Returns the Fiscal Year document that contains the given date.
 
-	for_date accepts both a date string (HTTP callers pass JSON) and a
-	datetime.date (internal callers pass getdate(...) results directly) --
-	@frappe.whitelist() enforces this type hint at runtime for EVERY
-	caller, not just HTTP, so it must cover both shapes actually in use.
+	for_date accepts both a date string and a datetime.date (internal
+	callers pass getdate(...) results directly).
 	"""
 	return _get_fiscal_year_doc(for_date, company)
 

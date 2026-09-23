@@ -18,7 +18,7 @@ frappe.ready(function () {
 		// link -- no need to toggle it dynamically here any more, just
 		// decode and populate it when it did.
 		frappe.call({
-			method: "approval_engine.settlement.doctype.brn.utils.decode_email",
+			method: "approval_engine.settlement.api.v1.vendor_email.decode_email",
 			args: { encoded_email: email },
 			callback: function (r) {
 				frappe.web_form.set_value("email_id", r.data);

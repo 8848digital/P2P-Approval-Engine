@@ -3,11 +3,10 @@
 # of this file, via any medium, is strictly prohibited without prior
 # written permission from 8848 Digital LLP.
 
-"""Whitelisted entrypoints for Supplier Quotation / BRN creation and PDF
-import. Business logic lives in the sibling supplier_quotation_creation.py,
-supplier_quotation_extraction.py and supplier_quotation_parsing.py modules -
-kept as thin wrappers here so the dotted method paths below stay stable
-(client scripts call them by exact path).
+"""Supplier Quotation / BRN creation and PDF import. Exposed to the client
+through settlement/api/v1/supplier_quotation.py. Extraction/parsing helpers
+live in the sibling supplier_quotation_creation.py,
+supplier_quotation_extraction.py and supplier_quotation_parsing.py modules.
 """
 
 import frappe
@@ -18,7 +17,6 @@ from approval_engine.settlement.doc_events.supplier_quotation_creation import (
 )
 from approval_engine.settlement.doc_events.supplier_quotation_extraction import (
 	extract_tables,
-	extract_text,
 	parse_brn_data,
 )
 
@@ -26,7 +24,6 @@ from approval_engine.settlement.doc_events.supplier_quotation_extraction import 
 MULTI_MIN_COMPARISION_ROWS = 3
 
 
-@frappe.whitelist()
 def create_brn(supplier_quotation: str):
 	"""
 	Create a BRN record from a Supplier Quotation.
@@ -155,7 +152,6 @@ def _comparision_row_from_quotation(supplier_quotation, default_preferred: bool 
 # =====================================================================
 
 
-@frappe.whitelist()
 def create_supplier_quotation_from_file(file_id: str):
 	"""One BRN can propose several vendors in its comparison table
 	(existing + new). We create one Supplier Quotation per vendor row,
@@ -167,12 +163,7 @@ def create_supplier_quotation_from_file(file_id: str):
 
 		vendors = data.get("vendors") or []
 		if not vendors:
-			frappe.throw(
-				_(
-					"No vendors could be extracted from the PDF. "
-					"Run debug_raw_tables to inspect the extracted table layout."
-				)
-			)
+			frappe.throw(_("No vendors could be extracted from the PDF. " "Check the PDF's table layout."))
 
 		results = []
 		for vendor in vendors:
@@ -197,8 +188,16 @@ def create_supplier_quotation_from_file(file_id: str):
 # =====================================================================
 
 
-@frappe.whitelist()
 def extract_supplier_quotation_pdf(file_id: str):
+	"""
+	Extract BRN/vendor data from an uploaded proposal PDF.
+
+	Parameters:
+	        file_id (str, required): The File document name of the uploaded PDF.
+
+	Returns:
+	        dict: Parsed proposal data, including a "vendors" list.
+	"""
 	try:
 		if not frappe.db.exists("File", file_id):
 			frappe.throw(_("Invalid File"))
@@ -215,20 +214,3 @@ def extract_supplier_quotation_pdf(file_id: str):
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "Supplier Quotation PDF Extraction")
 		frappe.throw(_("Unable to extract PDF. Check Error Log for details."))
-
-
-@frappe.whitelist()
-def debug_raw_text(file_id: str):
-	"""Kept for backward compatibility / quick sanity checks."""
-	file_doc = frappe.get_doc("File", file_id)
-	file_path = file_doc.get_full_path()
-	return {"raw_text": extract_text(file_path)}
-
-
-@frappe.whitelist()
-def debug_raw_tables(file_id: str):
-	"""The BRN layout is table-driven, so this is the more useful debug
-	endpoint now - it shows exactly what pdfplumber's table detector sees."""
-	file_doc = frappe.get_doc("File", file_id)
-	file_path = file_doc.get_full_path()
-	return {"tables": extract_tables(file_path)}

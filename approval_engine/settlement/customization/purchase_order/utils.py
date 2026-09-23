@@ -65,7 +65,6 @@ def create_portal_invoice_log(purchase_invoice):
 	).insert(ignore_permissions=True)
 
 
-@frappe.whitelist()
 def send_po_mail_to_vendor(purchase_order: str):
 	"""Send Purchase Order email with PDF attachment to vendor"""
 	doc = frappe.get_doc("Purchase Order", purchase_order)

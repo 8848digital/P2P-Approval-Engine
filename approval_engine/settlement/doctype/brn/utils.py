@@ -26,16 +26,16 @@ def calculate_brn_expiry_date(date, months):
 	return add_months(getdate(add_days(date, -1)), cint(months))
 
 
-@frappe.whitelist()
 def decode_email(encoded_email: str) -> str:
 	"""
 	Decode an email address encoded by vendor_email_encoding.encode_email().
+	Exposed via settlement/api/v1/vendor_email.decode_email.
 
-	**Endpoint:** `/api/method/approval_engine.settlement.doctype.brn.utils.decode_email`
-	**HTTP Method:** GET, POST
-	**Parameters:**
-	        - encoded_email (str, required): The base64url-encoded "local@domain" string
-	**Response:** The decoded email address (str), serialized as JSON.
+	Parameters:
+	        encoded_email (str, required): The base64url-encoded "local@domain" string.
+
+	Returns:
+	        str: The decoded email address.
 	"""
 	encoded_local, encoded_domain = encoded_email.split("@")
 	decoded_local = decode_string_part(encoded_local)

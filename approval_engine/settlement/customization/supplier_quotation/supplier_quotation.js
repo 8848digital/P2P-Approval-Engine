@@ -132,7 +132,7 @@ function call_create_brn(frm) {
 
 	return frappe
 		.call({
-			method: "approval_engine.settlement.doc_events.supplier_quotation.create_brn",
+			method: "approval_engine.settlement.api.v1.supplier_quotation.create_brn",
 			args: {
 				supplier_quotation: frm.doc.name,
 			},

@@ -73,7 +73,7 @@ function set_po_tax_withholding_category(frm, cdt, cdn) {
 	// the supplier's legal type (Individual/HUF get their own category where
 	// one exists, everyone else falls back to "Others").
 	frappe.call({
-		method: "approval_engine.settlement.doc_events.tds_reference.get_tax_withholding_category",
+		method: "approval_engine.settlement.api.v1.tax_withholding.get_tax_withholding_category",
 		args: {
 			nature_of_service: row.nature_of_service,
 			supplier: frm.doc.supplier,
@@ -100,7 +100,7 @@ function refresh_all_tax_withholding_categories(frm) {
 
 	const nature_of_services = [...new Set(rows.map((row) => row.nature_of_service))];
 	frappe.call({
-		method: "approval_engine.settlement.doc_events.tds_reference.get_tax_withholding_categories",
+		method: "approval_engine.settlement.api.v1.tax_withholding.get_tax_withholding_categories",
 		args: {
 			nature_of_services: nature_of_services,
 			supplier: frm.doc.supplier,

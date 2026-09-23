@@ -16,7 +16,7 @@ frappe.listview_settings["Supplier Quotation"] = {
 					// file.file_url -> Uploaded file URL
 
 					frappe.call({
-						method: "approval_engine.settlement.doc_events.supplier_quotation.create_supplier_quotation_from_file",
+						method: "approval_engine.settlement.api.v1.supplier_quotation.create_supplier_quotation_from_file",
 						args: {
 							file_id: file.name,
 						},
