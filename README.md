@@ -5,48 +5,82 @@ of this file, via any medium, is strictly prohibited without prior
 written permission from 8848 Digital LLP.
 -->
 
-### Approval Engine
+# Approval Engine
 
-Config-driven P2P approval workflow engine (Approval Matrix -> auto Workflow).
+## Overview
 
-This repository also includes the `settlement` and `vendor_portal`
-modules, merged in from
-[p2p_customization](https://github.com/8848digital/p2p_customization).
+Approval Engine runs the procure-to-pay (P2P) approval and settlement process
+on ERPNext v16. Finance sets up an **Approval Matrix** per document type and
+company, and the app turns it into a standard ERPNext Workflow automatically.
+On top of that it handles the procurement side: **BRN** proposals that compare
+vendors before a Purchase Order or Invoice is raised, vendor onboarding and
+KYC, MSA and TDS/ITC compliance checks, a vendor self-service portal, and
+Procure to Pay dashboards.
 
-### Installation
+The Settlement and Vendor Portal parts were merged in from the retired
+`p2p_customization` app.
 
-You can install this app using the [bench](https://github.com/frappe/bench) CLI:
+## Key DocTypes
 
-```bash
-cd $PATH_TO_YOUR_BENCH
-bench get-app $URL_OF_THIS_REPO --branch develop
-bench install-app approval_engine
-```
+| DocType | Owned by this app? | Purpose |
+| ------- | ------------------ | ------- |
+| Approval Matrix | Yes | Amount bands and approver tiers per document type and company; generates the approval Workflow. |
+| Approval Settings | Yes | Which amount field each governed document type is banded on. |
+| Document Workflow Log | Yes | Audit trail of every approval state change. |
+| BRN | Yes | Business Requisition Note: a procurement proposal comparing vendors (Single, Multi or RPT), with one Preferred vendor. |
+| Requisition ID | Yes | Requisition numbers a BRN is raised against; blocked from reuse once used. |
+| KYC Vendor / KYC Validation Run | Yes | KYC checks (GSTIN, PAN, MSME, ...) run against a Supplier through external KYC providers. |
+| TDS Reference | Yes | TDS rates per nature of service; drives Tax Withholding Categories. |
+| ITC Reversal Log | Yes | Input Tax Credit reversal decisions on Purchase Invoices. |
+| Payments Compliance Settings | Yes | Dashboard access, MSME ageing buckets and workflow-state mapping. |
+| Vendor Portal Settings | Yes | Which documents vendors see on the portal and how. |
+| Purchase Order | No (ERPNext, customized) | Linked to a BRN; blocked outside the BRN's validity window or against a draft, cancelled or closed BRN. |
+| Purchase Invoice | No (ERPNext, customized) | Linked to a BRN; quantity/amount checks, TDS and ITC handling. |
+| Supplier | No (ERPNext, customized) | Onboarding, FAQ answers, KYC status and MSA agreement. |
+| Supplier Quotation | No (ERPNext, customized) | Vendor proposals, PDF import, and creating a BRN from a quotation. |
+| Payment Entry | No (ERPNext, customized) | Payment blocked while a vendor's MSA attachment is missing. |
 
-### Contributing
+## Features
 
-This app uses `pre-commit` for code formatting and linting. Please [install pre-commit](https://pre-commit.com/#installation) and enable it for this repository:
+- Generate and keep ERPNext approval Workflows in sync from an Approval Matrix.
+- Finance Overview dashboard of pending, on-hold and approved values.
+- BRN vendor comparison: Single (one vendor) or Multi/RPT (at least three
+  vendors, with three quotes when RPT or a related-party vendor is involved);
+  exactly one Preferred vendor, whose email and justification are required
+  on submit.
+- Create a Purchase Order or Invoice from an approved BRN; POs are only
+  allowed on a submitted, open BRN within its service dates.
+- MSA tracking per BRN vendor: payment (including advances against a PO) is
+  blocked until the MSA attachment is uploaded; the attachment can be added
+  after the BRN is submitted.
+- Vendor onboarding web form, onboarding FAQs, and KYC validation.
+- TDS allowance and ITC reversal handling on Purchase Invoices.
+- Vendor portal: approved proposals, orders and invoices, and invoice
+  creation from a BRN within its approved quantities and rates.
+- Procure to Pay dashboards for users and management.
 
-```bash
-cd apps/approval_engine
-pre-commit install
-```
+## Integrations
 
-Pre-commit is configured to use the following tools for checking and formatting your code:
+- **KYC providers** (GSTIN, PAN, MSME checks) — configured through KYC Vendor
+  and KYC Credential records; see [SETUP.md](./SETUP.md).
 
-- ruff
-- eslint
-- prettier
-- pyupgrade
+## Installation
 
-### CI
+    bench get-app approval_engine <repo_url> --branch develop
+    bench --site <site_name> install-app approval_engine
 
-This app can use GitHub Actions for CI. The following workflows are configured:
+Sites moving over from `p2p_customization` must follow the migration order in
+[SETUP.md](./SETUP.md#migrating-a-site-from-p2p_customization).
 
-- CI: Installs this app and runs unit tests on every push to `develop` branch.
-- Linters: Runs [Frappe Semgrep Rules](https://github.com/frappe/semgrep-rules) and [pip-audit](https://pypi.org/project/pip-audit/) on every pull request.
+## App Structure
 
-### License
+See [CLAUDE.md](./CLAUDE.md) for internal module/folder layout and coding conventions.
+
+## Maintainers
+
+8848 Digital — dhaval@8848digital.com
+
+## License
 
 Proprietary — Copyright (c) 2026 8848 Digital LLP. All rights reserved.
 See [license.txt](license.txt) for details.
