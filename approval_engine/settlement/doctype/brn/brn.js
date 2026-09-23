@@ -26,36 +26,8 @@ frappe.ui.form.on("BRN", {
 	refresh: function (frm) {
 		add_onboard_vendor_button(frm);
 		create_purchase_order_button(frm);
-		// frm.trigger("is_new_vendor");
-		// frm.trigger("is_existing_vendor");
 		frm.trigger("requisition_type");
 	},
-
-	// is_new_vendor: function(frm){
-	// 	if(frm.doc.is_new_vendor){
-	// 		frm.set_df_property("is_existing_vendor", "hidden", 1);
-	// 		frm.set_value("existing_vendor", "");
-	// 	}
-	// 	else{
-	// 		frm.set_df_property("is_existing_vendor", "hidden", 0);
-	// 	}
-	// },
-
-	// is_existing_vendor: function(frm){
-	// 	if(frm.doc.is_existing_vendor){
-	// 		frm.set_df_property("is_new_vendor", "hidden", 1);
-	// 		frm.set_value("new_vendor", "");
-	// 	}
-	// 	else{
-	// 		frm.set_df_property("is_new_vendor", "hidden", 0);
-	// 	}
-	// },
-
-	// existing_vendor: function(frm){
-	// 	if(frm.doc.existing_vendor){
-	// 		msa_agreement(frm);
-	// 	}
-	// },
 
 	requisition_type: function (frm) {
 		if (frm.doc.requisition_type != "Service") {
@@ -102,21 +74,6 @@ function add_empty_comparision_rows(frm, count) {
 	}
 	frm.refresh_field("comparision");
 }
-
-// function msa_agreement(frm) {
-// 	frappe.db.get_value(
-// 		"Supplier",
-// 		frm.doc.existing_vendor,
-// 		"custom_msa_agreement"
-// 	).then((r) => {
-
-// 		if (r.message.custom_msa_agreement === "Yes") {
-// 			frm.set_value("msa_agreement", 1);
-// 		} else {
-// 			frm.set_value("msa_agreement", 0);
-// 		}
-// 	});
-// }
 
 frappe.ui.form.on("BRN Item", {
 	qty: function (frm, cdt, cdn) {

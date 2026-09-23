@@ -8,7 +8,7 @@ import base64
 import frappe
 from frappe import _
 from frappe.model.mapper import get_mapped_doc
-from frappe.utils import add_days, add_months, cint, getdate, today
+from frappe.utils import add_days, add_months, cint, getdate
 
 
 def calculate_brn_expiry_date(date, months):
@@ -26,65 +26,10 @@ def calculate_brn_expiry_date(date, months):
 	return add_months(getdate(add_days(date, -1)), cint(months))
 
 
-def send_reminder_for_non_registered_vendors() -> None:
-	"""Send a reminder email to each new-vendor BRN whose onboarding
-	webform was sent 2 days ago and still has no Supplier created."""
-	vendors = frappe.get_all(
-		"BRN",
-		filters={"is_new_vendor": 1, "docstatus": 1, "sent_mail_on": add_days(today(), -2)},
-		fields=["name", "new_vendor", "vendor_email"],
-	)
-
-	for vendor in vendors:
-		if not vendor.vendor_email:
-			continue
-
-		# Check if Supplier already exists for this BRN
-		exists = frappe.db.exists("Supplier", {"brn": vendor.name})
-		if exists:
-			continue  # skip reminder
-
-		try:
-			# Pre-fill both BRN and email in the webform
-			webform_link = (
-				f"{frappe.utils.get_url()}/vendor-onboarding-form/new?"
-				f"brn={vendor.name}&email_id={encode_email(vendor.vendor_email)}"
-			)
-
-			subject = "Reminder: Complete Your Vendor Registration"
-			message = f"""
-			Hello {vendor.new_vendor},
-
-			This is a reminder to complete your vendor registration.
-
-			<a href="{webform_link}">Fill Vendor Details</a>
-			"""
-
-			frappe.sendmail(recipients=[vendor.vendor_email], subject=subject, message=message)
-
-		except Exception as e:
-			frappe.log_error(str(e), "Vendor Reminder Error")
-
-
-def encode_email(email: str) -> str:
-	"""Encode an email address's local/domain parts separately as
-	URL-safe base64, so it can ride in a query string (see
-	send_reminder_for_non_registered_vendors's webform_link)."""
-	local, domain = email.split("@")
-	encoded_local = encode_string_part(local)
-	encoded_domain = encode_string_part(domain)
-	return f"{encoded_local}@{encoded_domain}"
-
-
-def encode_string_part(part: str) -> str:
-	"""Base64url-encode one string part (local or domain), padding stripped."""
-	return base64.urlsafe_b64encode(part.encode()).decode().rstrip("=")
-
-
 @frappe.whitelist()
 def decode_email(encoded_email: str) -> str:
 	"""
-	Decode an email address previously encoded by encode_email().
+	Decode an email address encoded by vendor_email_encoding.encode_email().
 
 	**Endpoint:** `/api/method/approval_engine.settlement.doctype.brn.utils.decode_email`
 	**HTTP Method:** GET, POST
@@ -99,7 +44,7 @@ def decode_email(encoded_email: str) -> str:
 
 
 def decode_string_part(encoded_part: str) -> str:
-	"""Base64url-decode one string part encoded by encode_string_part()."""
+	"""Base64url-decode one part encoded by vendor_email_encoding.encode_string_part()."""
 	padding = "=" * (4 - len(encoded_part) % 4)
 	encoded_part += padding
 	return base64.urlsafe_b64decode(encoded_part.encode()).decode()

@@ -67,5 +67,4 @@ def get_expiry_date(date: str, months: int):
 		- months (int, required): Duration of service, in months
 	**Response:** The computed expiry date (ISO date string), serialized as JSON.
 	"""
-	print(f"Calculating expiry date for start date {date} and duration {months} months")
 	return calculate_brn_expiry_date(date, months)
