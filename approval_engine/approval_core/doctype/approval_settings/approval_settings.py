@@ -19,6 +19,6 @@ class ApprovalSettings(Document):
 		Validate settings before save.
 
 		Returns:
-		        None
+			None
 		"""
 		validate_link_validity(self)

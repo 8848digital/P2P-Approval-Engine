@@ -78,10 +78,7 @@ function show_amount_field_hint(frm) {
 			const field = `<b>${frappe.utils.escape_html(info.amount_field)}</b>`;
 			if (!info.exists) {
 				frm.set_intro(
-					__(
-						"Amount field {0} does not exist on {1}. Set the correct field in Approval Settings before submitting — the bands need it.",
-						[field, dt]
-					),
+					__("Amount field {0} does not exist on {1}. Set the correct field in Approval Settings before submitting — the bands need it.", [field, dt]),
 					"red"
 				);
 			} else {

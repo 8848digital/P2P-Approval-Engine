@@ -17,7 +17,7 @@ def execute():
 	and auditable in the form.
 
 	Returns:
-	        None
+		None
 	"""
 	if not frappe.db.get_single_value("Approval Settings", "email_link_validity_hours"):
 		frappe.db.set_single_value(
