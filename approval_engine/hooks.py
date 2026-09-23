@@ -44,7 +44,10 @@ app_include_css = [
 	"workflow_activity.bundle.css",
 	"/assets/approval_engine/css/kyc_validation.css",
 ]
-app_include_js = "workflow_activity.bundle.js"
+app_include_js = [
+	"workflow_activity.bundle.js",
+	"vendor_mail.bundle.js",
+]
 
 # include js, css files in header of web template
 # web_include_css = "/assets/approval_engine/css/approval_engine.css"
@@ -66,16 +69,12 @@ doctype_js = {
 	"Purchase Invoice": "settlement/customization/purchase_invoice/purchase_invoice.js",
 	"Supplier": [
 		"settlement/customization/supplier/supplier.js",
-		"settlement/public/js/supplier_kyc.js",
+		"settlement/customization/supplier/supplier_kyc.js",
 	],
 	"Supplier Quotation": "settlement/customization/supplier_quotation/supplier_quotation.js",
-	"BRN": "settlement/public/js/vendor_mail.js",
 }
 doctype_list_js = {
-	"Supplier": [
-		"settlement/customization/supplier/supplier_list.js",
-		"settlement/public/js/vendor_mail.js",
-	],
+	"Supplier": "settlement/customization/supplier/supplier_list.js",
 	"Supplier Quotation": "settlement/customization/supplier_quotation/supplier_quotation_list.js",
 	"Purchase Invoice": "settlement/customization/purchase_invoice/purchase_invoice_list.js",
 }
