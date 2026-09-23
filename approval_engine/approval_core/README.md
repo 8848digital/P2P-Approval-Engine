@@ -12,8 +12,7 @@ written permission from 8848 Digital LLP.
 Owns the entire config-driven approval engine: the Approval Matrix
 configuration, the generation of standard ERPNext Workflows from it, the
 runtime gating/audit of governed documents, approving from email without
-signing in, and the Finance Overview dashboard. This is the app's single
-module.
+signing in, and the Finance Overview dashboard.
 
 ## DocTypes
 
@@ -52,11 +51,11 @@ Whitelisted endpoints (versioned under `api/v1/`):
 ## Runtime
 
 - `runtime.py` — `validate` and `on_update` hooks (registered for all DocTypes via `doc_events["*"]`); blocks saves with no matching matrix band, records every state change into Document Workflow Log with its remarks, and on a state change retires open email links and queues the next tier's emails.
-- `generator.py` — builds/rebuilds the ERPNext Workflow from submitted Approval Matrix records.
+- `generator.py` — builds/rebuilds the ERPNext Workflow from submitted Approval Matrix records; the work is split across `workflow_config.py`, `workflow_setup.py`, `workflow_builder.py` and `role_sync.py`, which it re-exports.
 - `activity.py` — reconstructs the approver chain for a single document (backs `api/v1/activity.py`).
 - `remarks.py` — approver remarks attached to a transition; enforces the mandatory rejection reason for every channel.
 - `tasks.py` — background/scheduled jobs: send approval-link emails after a state change, expire old links daily.
-- `email_action/` — the email-link flow: issuing and validating links (`action_link.py`), one-time codes (`otp.py`), emailing the approvers who must act next (`notify.py`), and what the guest page may do (`link_actions.py`). See root `SETUP.md` for what must be configured.
+- `email_action/` — the email-link flow: issuing and retiring links (`action_link.py`), validating them (`approval_link.py`), one-time codes (`otp.py`), emailing the approvers who must act next (`notify.py`), and what the guest page may do (`link_actions.py`). See root `SETUP.md` for what must be configured.
 
 ## Email Templates
 

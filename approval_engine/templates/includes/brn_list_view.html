@@ -1,0 +1,34 @@
+{% if sub_title %}
+<h4 class="text-muted">{{ sub_title }}</h4>
+{% endif %}
+
+{% if not result %}
+	<div class="empty-apps-state text-center py-5">
+		<svg class="icon icon-xl" style="stroke: var(--text-light);">
+			<use href="#icon-small-file"></use>
+		</svg>
+
+		<div class="mt-4 text-muted">
+			{{ no_result_message or _("No Data Found") }}
+		</div>
+	</div>
+{% else %}
+	<div class="website-list"
+		data-doctype="{{ doctype }}"
+		data-txt="{{ (txt or '')|e }}">
+
+		<div class="result">
+			{% for item in result %}
+				{{ item }}
+			{% endfor %}
+		</div>
+
+		{% if show_more %}
+		<div class="more-block py-4 text-center">
+			<button class="btn btn-light btn-more btn-sm">
+				{{ _("More") }}
+			</button>
+		</div>
+		{% endif %}
+	</div>
+{% endif %}

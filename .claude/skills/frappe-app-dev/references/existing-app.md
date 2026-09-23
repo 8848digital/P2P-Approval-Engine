@@ -103,6 +103,18 @@ ls apps/<app-name>/README.md apps/<app-name>/license.txt apps/<app-name>/SETUP.m
   in the skills repo, and wiring `custom_fixtures` + `commands` in
   `hooks.py` per that folder's `README.md` — see
   [bench-operations.md](./bench-operations.md).
+- **Missing `<app_name>/utils/api_handlers/`** (and you are adding or
+  touching a whitelisted endpoint) — add it now, copying `envelope.py`,
+  `error_messages.py`, and `response_formatter.py` **verbatim** from
+  [`project_base_template/api_handlers/`](https://github.com/8848digital/skills/tree/8848-skills/project_base_template/api_handlers)
+  in the skills repo into `<app_name>/utils/api_handlers/`. These are
+  canonical shared files — **do not hand-write your own response envelope.**
+  After copying, replace the `<app_name>` token inside the files (the
+  `Wired in hooks.py:` docstring line and the `/api/method/<app_name>` path
+  check in `response_formatter.py`) and wire the formatter in `hooks.py`:
+  `after_request = ["<app_name>.utils.api_handlers.response_formatter.format_frappe_response_to_custom"]`.
+  Full steps: `project_base_template/custom_app_setup.md` §4.9; usage:
+  [api.md](./api.md).
 - Don't let a missing file block the actual task — create a minimal
   version and continue, rather than treating this as a blocker to raise
   with the user first.

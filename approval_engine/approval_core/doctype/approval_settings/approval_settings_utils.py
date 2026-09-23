@@ -12,22 +12,22 @@ MAX_VALIDITY_HOURS = 720  # 30 days: long enough for any approval, short enough 
 
 
 def validate_link_validity(doc):
-    """
-    Keep the emailed-link lifetime within a sane range.
+	"""
+	Keep the emailed-link lifetime within a sane range.
 
-    Blank falls back to the default (the value is stored, so the form shows what is
-    actually used); anything beyond 30 days is refused, since a link that outlives the
-    document it approves defeats the expiry.
+	Blank falls back to the default (the value is stored, so the form shows what is
+	actually used); anything beyond 30 days is refused, since a link that outlives the
+	document it approves defeats the expiry.
 
-    Parameters:
-        doc (Document, required): The Approval Settings single being saved.
+	Parameters:
+	    doc (Document, required): The Approval Settings single being saved.
 
-    Returns:
-        None
-    """
-    if not doc.email_link_validity_hours:
-        doc.email_link_validity_hours = DEFAULT_VALIDITY_HOURS
-        return
+	Returns:
+	    None
+	"""
+	if not doc.email_link_validity_hours:
+		doc.email_link_validity_hours = DEFAULT_VALIDITY_HOURS
+		return
 
-    if not 1 <= doc.email_link_validity_hours <= MAX_VALIDITY_HOURS:
-        throw(_("Email Link Validity must be between 1 and {0} hours.").format(MAX_VALIDITY_HOURS))
+	if not 1 <= doc.email_link_validity_hours <= MAX_VALIDITY_HOURS:
+		throw(_("Email Link Validity must be between 1 and {0} hours.").format(MAX_VALIDITY_HOURS))

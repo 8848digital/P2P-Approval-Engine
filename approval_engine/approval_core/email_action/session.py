@@ -16,29 +16,29 @@ import frappe
 
 @contextmanager
 def acting_as(user):
-    """
-    Temporarily switch the request's session user, restoring it afterwards.
+	"""
+	Temporarily switch the request's session user, restoring it afterwards.
 
-    `frappe.set_user` also resets the session id, session data and form_dict; all
-    three are put back so the rest of the (guest) request is unaffected.
+	`frappe.set_user` also resets the session id, session data and form_dict; all
+	three are put back so the rest of the (guest) request is unaffected.
 
-    Example:
-        with acting_as("approver@example.com"):
-            apply_workflow(doc, "Approve")
+	Example:
+	    with acting_as("approver@example.com"):
+	        apply_workflow(doc, "Approve")
 
-    Parameters:
-        user (str, required): User to act as.
+	Parameters:
+	    user (str, required): User to act as.
 
-    Returns:
-        Iterator[None]: Context manager; yields nothing.
-    """
-    previous_session = frappe._dict(frappe.local.session)
-    previous_form_dict = frappe.local.form_dict
+	Returns:
+	    Iterator[None]: Context manager; yields nothing.
+	"""
+	previous_session = frappe._dict(frappe.local.session)
+	previous_form_dict = frappe.local.form_dict
 
-    frappe.set_user(user)
-    try:
-        yield
-    finally:
-        frappe.set_user(previous_session.user)
-        frappe.local.session.update(previous_session)
-        frappe.local.form_dict = previous_form_dict
+	frappe.set_user(user)
+	try:
+		yield
+	finally:
+		frappe.set_user(previous_session.user)
+		frappe.local.session.update(previous_session)
+		frappe.local.form_dict = previous_form_dict

@@ -283,7 +283,7 @@ module, never one shared copy at the app root.
 | `<module_name>/README.md` | Short summary of what this module contains — DocTypes, reports, workspaces, customizations, print formats, web forms, dashboards — see [module-readme.md](./.claude/skills/frappe-app-dev/references/module-readme.md). |
 | `utils/` | App-wide utility package. Holds plain, non-whitelisted business logic and helpers shared across modules. The only top-level "generic helpers" location — there is no separate root `utils.py`. |
 | `utils/common.py` | Truly generic, cross-cutting helpers with no more specific home (e.g. Jinja method/filter targets for `hooks.py`'s `jinja` key). Prefer a more specific file/folder before adding here — see the `utils.py`/`utils/` anti-pattern below. |
-| `utils/api_handlers/` | Cross-cutting helpers **used by** whitelisted endpoints across every module's `api/` — centralised exception handling, pre-request guards, and the standard response-envelope helper. These files are never whitelisted themselves; they're imported by thin wrappers under `<module_name>/api/`. |
+| `utils/api_handlers/` | Cross-cutting helpers **used by** whitelisted endpoints across every module's `api/` — the standard response envelope (`envelope.py`), error-message cleanup (`error_messages.py`), and the `after_request` response formatter (`response_formatter.py`). Copied **verbatim** from [`project_base_template/api_handlers/`](https://github.com/8848digital/skills/tree/8848-skills/project_base_template/api_handlers) in the skills repo — then replace the `<app_name>` token inside the copied files and wire `after_request` in `hooks.py`, per [`project_base_template/custom_app_setup.md`](https://github.com/8848digital/skills/tree/8848-skills/project_base_template/custom_app_setup.md) §4.9 and [api.md](./.claude/skills/frappe-app-dev/references/api.md). Do **not** hand-write these. These files are never whitelisted themselves; they're imported by thin wrappers under `<module_name>/api/`. |
 | `commands/` | Custom `bench` CLI commands for this app. Copied verbatim from [`project_base_template/commands/`](https://github.com/8848digital/skills/tree/8848-skills/project_base_template/commands) in the skills repo — see that folder's `README.md` for setup and [bench-operations.md](./.claude/skills/frappe-app-dev/references/bench-operations.md) for usage. Ships the `8848-export-fixtures` command by default. |
 | `config/` | App config (desktop icons, module config). |
 | `fixtures/` | Data exported via `fixtures` in `hooks.py`, synced across sites/environments. |
@@ -412,9 +412,18 @@ surface, not just one module's:
 
 - Each resource gets its own file under `v1/` (or the current version).
 - Cross-cutting concerns (`response_formatter.py`, `envelope.py`, `error_messages.py`) live in `utils/api_handlers/` at the app root —
-  never duplicated per module, and never inside `api/` itself.
-- `response_formatter.py` is where the `api_response(...)` helper belongs;
-  import it into any `api/vN/*.py` file that needs to shape a response.
+  never duplicated per module, and never inside `api/` itself. They are
+  **copied verbatim** from `project_base_template/api_handlers/` (not
+  hand-written) — see [api.md](./.claude/skills/frappe-app-dev/references/api.md)
+  and `project_base_template/custom_app_setup.md` §4.9.
+- `response_formatter.py` also registers the `after_request` hook
+  (`format_frappe_response_to_custom`) that rewrites every
+  `/api/method/<app_name>…` response into the standard envelope globally —
+  so wiring `after_request` in `hooks.py` is part of adopting these files,
+  not optional.
+- `envelope.py` is where the `api_response(...)` helper belongs;
+  import it (re-exported from `response_formatter.py`) into any `api/vN/*.py`
+  file that needs to shape a response explicitly.
 - When introducing `v2/`, keep `v1/` working — do not break existing clients.
 - No folder in the app other than `<module_name>/api/` (not `doctype/`,
   `customization/`, module root, or app root) may contain an `api/` folder

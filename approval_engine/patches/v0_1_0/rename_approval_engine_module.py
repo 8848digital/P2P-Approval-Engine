@@ -26,7 +26,9 @@ def execute():
 	for doctype in __doctypes_linked_to_module():
 		__repoint_module(doctype)
 
-	frappe.delete_doc("Module Def", OLD_MODULE, force=True, ignore_missing=True, ignore_permissions=True)
+	frappe.delete_doc(
+		"Module Def", OLD_MODULE, force=True, ignore_missing=True, ignore_permissions=True
+	)
 
 
 def __doctypes_linked_to_module() -> list[str]:

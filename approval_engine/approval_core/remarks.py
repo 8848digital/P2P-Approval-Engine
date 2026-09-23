@@ -30,148 +30,148 @@ MAX_REMARKS_LENGTH = 1000
 
 
 def stash_remarks(doctype, name, action, remarks, via_email_link=False, user=None):
-    """
-    Hold the remarks for the next workflow action `user` takes on this document.
+	"""
+	Hold the remarks for the next workflow action `user` takes on this document.
 
-    Parameters:
-        doctype (str, required): Target document's DocType.
-        name (str, required): Target document's name.
-        action (str, required): Workflow action the remarks belong to (Approve/Hold/Reject).
-        remarks (str, required): Approver's note; may be empty for Approve/Hold.
-        via_email_link (bool, optional): True when the action comes from the email page.
-        user (str, optional): Acting user. Defaults to the session user.
+	Parameters:
+	    doctype (str, required): Target document's DocType.
+	    name (str, required): Target document's name.
+	    action (str, required): Workflow action the remarks belong to (Approve/Hold/Reject).
+	    remarks (str, required): Approver's note; may be empty for Approve/Hold.
+	    via_email_link (bool, optional): True when the action comes from the email page.
+	    user (str, optional): Acting user. Defaults to the session user.
 
-    Returns:
-        None
-    """
-    user = user or frappe.session.user
-    # Also proves the document exists; a stash for a document the user can't see is refused.
-    frappe.has_permission(doctype, "read", doc=name, user=user, throw=True)
+	Returns:
+	    None
+	"""
+	user = user or frappe.session.user
+	# Also proves the document exists; a stash for a document the user can't see is refused.
+	frappe.has_permission(doctype, "read", doc=name, user=user, throw=True)
 
-    cleaned = clean_remarks(remarks)
-    if action_needs_reason(action) and not cleaned:
-        frappe.throw(_("Please provide a reason for rejecting this document."))
+	cleaned = clean_remarks(remarks)
+	if action_needs_reason(action) and not cleaned:
+		frappe.throw(_("Please provide a reason for rejecting this document."))
 
-    frappe.cache.set_value(
-        __stash_key(doctype, name, user),
-        {"action": action, "remarks": cleaned, "via_email_link": bool(via_email_link)},
-        expires_in_sec=STASH_TTL_SECONDS,
-    )
+	frappe.cache.set_value(
+		__stash_key(doctype, name, user),
+		{"action": action, "remarks": cleaned, "via_email_link": bool(via_email_link)},
+		expires_in_sec=STASH_TTL_SECONDS,
+	)
 
 
 def pop_transition_remarks(doc, new_state):
-    """
-    Take (and clear) the remarks stashed for the transition `doc` is making now.
+	"""
+	Take (and clear) the remarks stashed for the transition `doc` is making now.
 
-    A stash made for a different action (e.g. a note typed for Hold, then Approve
-    clicked instead) is discarded rather than attached to the wrong transition.
+	A stash made for a different action (e.g. a note typed for Hold, then Approve
+	clicked instead) is discarded rather than attached to the wrong transition.
 
-    Parameters:
-        doc (Document, required): Target document being transitioned.
-        new_state (str, required): The workflow state it is moving to.
+	Parameters:
+	    doc (Document, required): Target document being transitioned.
+	    new_state (str, required): The workflow state it is moving to.
 
-    Returns:
-        frappe._dict: `{"remarks": str, "via_email_link": bool}` (empty remarks when
-        nothing matching was stashed).
-    """
-    key = __stash_key(doc.doctype, doc.name, frappe.session.user)
-    stashed = frappe.cache.get_value(key) or {}
-    frappe.cache.delete_value(key)
+	Returns:
+	    frappe._dict: `{"remarks": str, "via_email_link": bool}` (empty remarks when
+	    nothing matching was stashed).
+	"""
+	key = __stash_key(doc.doctype, doc.name, frappe.session.user)
+	stashed = frappe.cache.get_value(key) or {}
+	frappe.cache.delete_value(key)
 
-    if stashed.get("action") != action_for_state(new_state):
-        return frappe._dict(remarks="", via_email_link=False)
-    return frappe._dict(
-        remarks=stashed.get("remarks") or "",
-        via_email_link=bool(stashed.get("via_email_link")),
-    )
+	if stashed.get("action") != action_for_state(new_state):
+		return frappe._dict(remarks="", via_email_link=False)
+	return frappe._dict(
+		remarks=stashed.get("remarks") or "",
+		via_email_link=bool(stashed.get("via_email_link")),
+	)
 
 
 def validate_reject_reason(new_state, remarks):
-    """
-    Refuse a move to Rejected that carries no reason.
+	"""
+	Refuse a move to Rejected that carries no reason.
 
-    Parameters:
-        new_state (str, required): The workflow state the document is moving to.
-        remarks (str, required): Remarks attached to the transition (may be empty).
+	Parameters:
+	    new_state (str, required): The workflow state the document is moving to.
+	    remarks (str, required): Remarks attached to the transition (may be empty).
 
-    Returns:
-        None
-    """
-    if new_state == REJECTED_STATE and not remarks:
-        frappe.throw(
-            _("A reason is mandatory when rejecting. Use the Reject action again and enter one."),
-            title=_("Reason Required"),
-        )
+	Returns:
+	    None
+	"""
+	if new_state == REJECTED_STATE and not remarks:
+		frappe.throw(
+			_("A reason is mandatory when rejecting. Use the Reject action again and enter one."),
+			title=_("Reason Required"),
+		)
 
 
 def add_timeline_comment(doc, new_state, remarks):
-    """
-    Mirror the remarks onto the document's timeline, authored by the acting approver.
+	"""
+	Mirror the remarks onto the document's timeline, authored by the acting approver.
 
-    Parameters:
-        doc (Document, required): Target document being transitioned.
-        new_state (str, required): The workflow state it moved to.
-        remarks (str, required): The (already cleaned) remarks text.
+	Parameters:
+	    doc (Document, required): Target document being transitioned.
+	    new_state (str, required): The workflow state it moved to.
+	    remarks (str, required): The (already cleaned) remarks text.
 
-    Returns:
-        None
-    """
-    doc.add_comment("Comment", f"<b>{escape_html(_(new_state))}</b>: {escape_html(remarks)}")
+	Returns:
+	    None
+	"""
+	doc.add_comment("Comment", f"<b>{escape_html(_(new_state))}</b>: {escape_html(remarks)}")
 
 
 def action_for_state(state):
-    """
-    Workflow action that leads into `state`, from the engine's fixed state names.
+	"""
+	Workflow action that leads into `state`, from the engine's fixed state names.
 
-    Parameters:
-        state (str, required): Target workflow state.
+	Parameters:
+	    state (str, required): Target workflow state.
 
-    Returns:
-        str: "Reject", "Hold" or "Approve".
-    """
-    if state == REJECTED_STATE:
-        return "Reject"
-    if state and state.startswith("On Hold"):
-        return "Hold"
-    return "Approve"
+	Returns:
+	    str: "Reject", "Hold" or "Approve".
+	"""
+	if state == REJECTED_STATE:
+		return "Reject"
+	if state and state.startswith("On Hold"):
+		return "Hold"
+	return "Approve"
 
 
 def action_needs_reason(action):
-    """
-    Whether this workflow action must carry remarks.
+	"""
+	Whether this workflow action must carry remarks.
 
-    Parameters:
-        action (str, required): Workflow action name.
+	Parameters:
+	    action (str, required): Workflow action name.
 
-    Returns:
-        bool: True only for Reject.
-    """
-    return action == "Reject"
+	Returns:
+	    bool: True only for Reject.
+	"""
+	return action == "Reject"
 
 
 def clean_remarks(remarks):
-    """
-    Normalise user-entered remarks: trimmed, capped length, empty string if blank.
+	"""
+	Normalise user-entered remarks: trimmed, capped length, empty string if blank.
 
-    Parameters:
-        remarks (str, optional): Raw remarks text.
+	Parameters:
+	    remarks (str, optional): Raw remarks text.
 
-    Returns:
-        str: Cleaned remarks.
-    """
-    return (remarks or "").strip()[:MAX_REMARKS_LENGTH]
+	Returns:
+	    str: Cleaned remarks.
+	"""
+	return (remarks or "").strip()[:MAX_REMARKS_LENGTH]
 
 
 def __stash_key(doctype, name, user):
-    """
-    Redis key holding one user's pending remarks for one document.
+	"""
+	Redis key holding one user's pending remarks for one document.
 
-    Parameters:
-        doctype (str, required): Target document's DocType.
-        name (str, required): Target document's name.
-        user (str, required): Acting user.
+	Parameters:
+	    doctype (str, required): Target document's DocType.
+	    name (str, required): Target document's name.
+	    user (str, required): Acting user.
 
-    Returns:
-        str: Cache key.
-    """
-    return f"approval_engine:transition_remarks:{user}:{doctype}:{name}"
+	Returns:
+	    str: Cache key.
+	"""
+	return f"approval_engine:transition_remarks:{user}:{doctype}:{name}"

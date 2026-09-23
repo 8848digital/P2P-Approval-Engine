@@ -19,21 +19,21 @@ sitemap = 0
 
 
 def get_context(context):
-    """
-    Build the page context from the link token in the query string.
+	"""
+	Build the page context from the link token in the query string.
 
-    Parameters:
-        context (frappe._dict, required): Page context supplied by Frappe's website renderer.
+	Parameters:
+	    context (frappe._dict, required): Page context supplied by Frappe's website renderer.
 
-    Returns:
-        None
-    """
-    context.no_header = 1
-    context.no_breadcrumbs = 1
-    context.token = frappe.form_dict.get("token") or ""
-    context.summary = get_link_summary(context.token)
-    context.title = (
-        _("{0} · Approval request").format(context.summary["document"]["name"])
-        if context.summary["valid"]
-        else _("Approval request")
-    )
+	Returns:
+	    None
+	"""
+	context.no_header = 1
+	context.no_breadcrumbs = 1
+	context.token = frappe.form_dict.get("token") or ""
+	context.summary = get_link_summary(context.token)
+	context.title = (
+		_("{0} · Approval request").format(context.summary["document"]["name"])
+		if context.summary["valid"]
+		else _("Approval request")
+	)

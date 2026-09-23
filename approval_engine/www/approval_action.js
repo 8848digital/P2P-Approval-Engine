@@ -126,7 +126,9 @@
 	 */
 	function selectAction(button) {
 		state.action = button.dataset.action;
-		el.actions.forEach((other) => other.setAttribute("aria-checked", String(other === button)));
+		el.actions.forEach((other) =>
+			other.setAttribute("aria-checked", String(other === button))
+		);
 
 		const required = reasonRequired.includes(state.action);
 		el.remarksLabel.textContent = required
@@ -176,10 +178,10 @@
 			showError(result.message);
 			return;
 		}
-		el.otpHint.textContent = __("We sent a 6-digit code to {0}. It is valid for {1} minutes.", [
-			result.data.sent_to,
-			result.data.validity_minutes,
-		]);
+		el.otpHint.textContent = __(
+			"We sent a 6-digit code to {0}. It is valid for {1} minutes.",
+			[result.data.sent_to, result.data.validity_minutes]
+		);
 		showStep("verify");
 		startResendCooldown();
 		el.otp.value = "";
@@ -214,10 +216,10 @@
 			return;
 		}
 		el.state.textContent = result.data.workflow_state;
-		el.doneMessage.textContent = __("{0} recorded. The document is now {1}. You can close this page.", [
-			__(state.action),
-			result.data.workflow_state,
-		]);
+		el.doneMessage.textContent = __(
+			"{0} recorded. The document is now {1}. You can close this page.",
+			[__(state.action), result.data.workflow_state]
+		);
 		showStep("done");
 	}
 

@@ -1,0 +1,83 @@
+{% extends "templates/web.html" %}
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+{% block title %}{{ _("Onboarding Details") }}{% endblock %}
+
+{% block page_content %}
+{% include "templates/includes/vendor_portal/style.html" %}
+<div class="vp-app">
+	{% include "templates/includes/vendor_portal/nav.html" %}
+	<div class="vp-main">
+		<div class="vp-shell">
+			<div class="vp-page-header">
+				<div>
+					<div class="vp-page-title">{{ _("Onboarding Details") }}</div>
+					<div class="vp-page-subtitle">{{ _("Your company details on file") }}</div>
+				</div>
+				{% if edit_web_form_name %}
+				<a class="vp-btn" href="/vendor-embed?web_form={{ edit_web_form_name }}&name={{ doc.name }}">
+					<svg><use href="#icon-file-text"></use></svg>
+					{{ _("View Details") }}
+				</a>
+				{% endif %}
+			</div>
+
+			<div class="vp-card">
+				<div class="vp-detail-header">
+					<div style="display:flex; align-items:center; gap:1rem;">
+						<span class="vp-avatar">{{ (doc.supplier_name or doc.name)[0] | upper }}</span>
+						<div>
+							<div class="vp-detail-title">{{ doc.supplier_name }}</div>
+							<div class="vp-detail-sub">{{ doc.name }}</div>
+						</div>
+					</div>
+					{% if doc.get("custom_msa_agreement") %}
+					<span class="vp-pill vp-pill-{{ 'green' if doc.custom_msa_agreement == 'Yes' else 'orange' }}">
+						{{ _("MSA Agreement") }}: {{ _(doc.custom_msa_agreement) }}
+					</span>
+					{% endif %}
+				</div>
+
+				<div class="vp-kv-grid">
+					{% if doc.supplier_group %}
+					<div>
+						<div class="vp-kv-label">{{ _("Supplier Group") }}</div>
+						<div class="vp-kv-value">{{ doc.supplier_group }}</div>
+					</div>
+					{% endif %}
+					{% if doc.country %}
+					<div>
+						<div class="vp-kv-label">{{ _("Country") }}</div>
+						<div class="vp-kv-value">{{ doc.country }}</div>
+					</div>
+					{% endif %}
+					{% if doc.tax_id %}
+					<div>
+						<div class="vp-kv-label">{{ _("GSTIN / Tax ID") }}</div>
+						<div class="vp-kv-value">{{ doc.tax_id }}</div>
+					</div>
+					{% endif %}
+					{% if doc.email_id %}
+					<div>
+						<div class="vp-kv-label">{{ _("Email") }}</div>
+						<div class="vp-kv-value">{{ doc.email_id }}</div>
+					</div>
+					{% endif %}
+					{% if doc.mobile_no %}
+					<div>
+						<div class="vp-kv-label">{{ _("Mobile") }}</div>
+						<div class="vp-kv-value">{{ doc.mobile_no }}</div>
+					</div>
+					{% endif %}
+					{% if doc.get("custom_last_kyc_status") %}
+					<div>
+						<div class="vp-kv-label">{{ _("KYC Status") }}</div>
+						<div class="vp-kv-value">{{ _(doc.custom_last_kyc_status) }}</div>
+					</div>
+					{% endif %}
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}

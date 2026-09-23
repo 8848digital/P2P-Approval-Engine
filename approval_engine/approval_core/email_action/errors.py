@@ -8,9 +8,9 @@ import frappe
 
 
 class ApprovalLinkError(frappe.ValidationError):
-    """An emailed approval link (or its OTP) can't be used: invalid, expired, used or superseded.
+	"""An emailed approval link (or its OTP) can't be used: invalid, expired, used or superseded.
 
-    Messages are shown to an unauthenticated visitor, so they never reveal internal details.
-    """
+	Messages are shown to an unauthenticated visitor, so they never reveal internal details.
+	"""
 
-    http_status_code = 400
+	http_status_code = 400

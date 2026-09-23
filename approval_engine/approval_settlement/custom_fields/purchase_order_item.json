@@ -1,0 +1,35 @@
+{
+    "Purchase Order Item": [
+        {
+            "default": "1",
+            "fieldname": "apply_tds",
+            "fieldtype": "Check",
+            "label": "Consider for Tax Withholding",
+            "insert_after": "is_free_item",
+            "module": "Approval Settlement"
+        },
+        {
+            "fieldname": "custom_tds_section",
+            "fieldtype": "Section Break",
+            "insert_after": "cess_non_advol_rate",
+            "label": "TDS Section",
+            "module": "Approval Settlement"
+        },
+        {
+            "fieldname": "nature_of_service",
+            "fieldtype": "Link",
+            "insert_after": "custom_tds_section",
+            "label": "Nature of Service",
+            "options": "TDS Reference",
+            "module": "Approval Settlement"
+        },
+        {
+            "fieldname": "tax_withholding_category",
+            "fieldtype": "Link",
+            "options": "Tax Withholding Category",
+            "insert_after": "nature_of_service",
+            "label": "Tax Withholding Category",
+            "module": "Approval Settlement"
+        }
+    ]
+}

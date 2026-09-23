@@ -52,7 +52,9 @@ class FinanceDashboard {
 	}
 
 	initials(name) {
-		const parts = String(name || "").trim().split(/\s+/);
+		const parts = String(name || "")
+			.trim()
+			.split(/\s+/);
 		const chars = parts.length > 1 ? parts[0][0] + parts[1][0] : (name || "").slice(0, 2);
 		return (chars || "?").toUpperCase();
 	}
@@ -63,7 +65,10 @@ class FinanceDashboard {
 		if (key === "week") return [m().startOf("week"), m().endOf("week")];
 		if (key === "month") return [m().startOf("month"), m().endOf("month")];
 		if (key === "lastmonth")
-			return [m().subtract(1, "month").startOf("month"), m().subtract(1, "month").endOf("month")];
+			return [
+				m().subtract(1, "month").startOf("month"),
+				m().subtract(1, "month").endOf("month"),
+			];
 		return [null, null];
 	}
 
@@ -215,11 +220,17 @@ class FinanceDashboard {
 			const from = this.date_from.get_value();
 			const to = this.date_to.get_value();
 			if (!from || !to) {
-				frappe.show_alert({ message: __("Pick both a from and to date"), indicator: "orange" });
+				frappe.show_alert({
+					message: __("Pick both a from and to date"),
+					indicator: "orange",
+				});
 				return;
 			}
 			if (from > to) {
-				frappe.show_alert({ message: __("From date must be before To date"), indicator: "orange" });
+				frappe.show_alert({
+					message: __("From date must be before To date"),
+					indicator: "orange",
+				});
 				return;
 			}
 			this.load_detail(from, to);
@@ -258,7 +269,11 @@ class FinanceDashboard {
 		// (a normal Custom DocPerm, admin-visible/editable in Role Permission Manager) --
 		// so a plain client-side list call works for any approver, not just business roles.
 		frappe.db
-			.get_list("Company", { fields: ["name", "abbr", "tax_id"], limit: 0, order_by: "name asc" })
+			.get_list("Company", {
+				fields: ["name", "abbr", "tax_id"],
+				limit: 0,
+				order_by: "name asc",
+			})
 			.then((companies) => {
 				this.companies = companies || [];
 				this.render_company_dropdown();
@@ -272,7 +287,9 @@ class FinanceDashboard {
 	render_company_dropdown() {
 		const $dd = this.$("companyDropdown").empty();
 		if (!this.companies.length) {
-			$dd.append(`<div class="company-option"><div class="company-meta"><span class="name">No companies</span></div></div>`);
+			$dd.append(
+				`<div class="company-option"><div class="company-meta"><span class="name">No companies</span></div></div>`
+			);
 			return;
 		}
 		this.companies.forEach((c) => {
@@ -321,14 +338,18 @@ class FinanceDashboard {
 			const pill =
 				Number(m.amount) === 0
 					? ""
-					: `<span class="count-pill">Count <span class="num">${m.records || 0}</span></span>`;
+					: `<span class="count-pill">Count <span class="num">${
+							m.records || 0
+					  }</span></span>`;
 			// Clickable only when the cell has documents behind it: clicking opens the target
 			// DocType list filtered to exactly those documents (data-bucket/-doctype resolve the
 			// stored name list at click time). A zero-doc cell stays inert.
 			const has_docs = (m.records || 0) > 0;
 			const link_attrs = has_docs
 				? ` class="cell-metric ${cls} is-link" role="link" tabindex="0"` +
-				  ` data-doctype="${frappe.utils.escape_html(col.doctype)}" data-bucket="${bucket}"`
+				  ` data-doctype="${frappe.utils.escape_html(
+						col.doctype
+				  )}" data-bucket="${bucket}"`
 				: ` class="cell-metric ${cls}"`;
 			return `<td>
 				<div${link_attrs}>
@@ -348,8 +369,16 @@ class FinanceDashboard {
 			callback: (r) => {
 				const data = (r && r.data) || {};
 				this.overview_data = data;
-				const pending = this.cells((dt) => (data[dt] || {}).pending, "is-pending", "pending");
-				const onhold = this.cells((dt) => (data[dt] || {}).on_hold, "is-onhold", "on_hold");
+				const pending = this.cells(
+					(dt) => (data[dt] || {}).pending,
+					"is-pending",
+					"pending"
+				);
+				const onhold = this.cells(
+					(dt) => (data[dt] || {}).on_hold,
+					"is-onhold",
+					"on_hold"
+				);
 				$body.removeClass("is-loading").html(`
 					<tr><td><span class="row-tag pending"><span class="dot"></span>Pending</span></td>${pending}</tr>
 					<tr><td><span class="row-tag onhold"><span class="dot"></span>On hold</span></td>${onhold}</tr>`);
@@ -380,9 +409,11 @@ class FinanceDashboard {
 				const data = (r && r.data) || {};
 				this.detail_data = data;
 				const approved = this.cells((dt) => data[dt], "is-approved", "approved");
-				$body.removeClass("is-loading").html(
-					`<tr><td><span class="row-tag approved"><span class="dot"></span>Approved</span></td>${approved}</tr>`
-				);
+				$body
+					.removeClass("is-loading")
+					.html(
+						`<tr><td><span class="row-tag approved"><span class="dot"></span>Approved</span></td>${approved}</tr>`
+					);
 			},
 		});
 	}

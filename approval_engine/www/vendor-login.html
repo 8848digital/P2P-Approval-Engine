@@ -1,0 +1,168 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ _("Vendor Login") }}{% endblock %}
+
+{% block page_content %}
+<div class="vendor-login-wrapper">
+	<div class="vendor-login-card">
+		<div class="vendor-login-header">
+			<img src="/assets/your_app/images/logo.png" alt="Logo" class="vendor-login-logo"
+				onerror="this.style.display='none'">
+			<h2>{{ _("Vendor Portal Login") }}</h2>
+			<p class="text-muted">{{ _("Sign in to manage your orders, invoices and documents") }}</p>
+		</div>
+
+		<form id="vendor-login-form" novalidate>
+			<div class="form-group">
+				<label for="usr">{{ _("Email") }}</label>
+				<input type="email" class="form-control" id="usr" name="usr"
+					placeholder="vendor@example.com" required autofocus>
+			</div>
+
+			<div class="form-group">
+				<label for="pwd">{{ _("Password") }}</label>
+				<div class="vp-password-field">
+					<input type="password" class="form-control" id="pwd" name="pwd"
+						placeholder="••••••••" required>
+					<button type="button" class="vp-password-toggle" data-target="pwd" aria-label="{{ _('Show password') }}">
+						<svg width="17" height="17"><use href="#icon-eye"></use></svg>
+					</button>
+				</div>
+			</div>
+
+			<div id="vendor-login-error" class="alert alert-danger" style="display:none;"></div>
+
+			<button type="submit" class="btn btn-primary btn-block" id="vendor-login-btn">
+				{{ _("Login") }}
+			</button>
+
+			<!-- <div class="vendor-login-footer">
+				<a href="/vendor-forgot-password">{{ _("Forgot Password?") }}</a>
+			</div> -->
+		</form>
+	</div>
+</div>
+
+<style>
+	.vendor-login-wrapper {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 80vh;
+		padding: 2rem 1rem;
+	}
+	.vendor-login-card {
+		width: 100%;
+		max-width: 400px;
+		background: var(--card-bg, #fff);
+		border: 1px solid var(--border-color, #e0e0e0);
+		border-radius: 10px;
+		padding: 2.5rem 2rem;
+		box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+	}
+	.vendor-login-header {
+		text-align: center;
+		margin-bottom: 1.75rem;
+	}
+	.vendor-login-logo {
+		max-height: 48px;
+		margin-bottom: 1rem;
+	}
+	.vendor-login-header h2 {
+		margin: 0 0 0.25rem 0;
+		font-size: 1.4rem;
+	}
+	.vendor-login-footer {
+		text-align: center;
+		margin-top: 1rem;
+		font-size: 0.9rem;
+	}
+	#vendor-login-btn {
+		width: 100%;
+		margin-top: 0.5rem;
+	}
+	.form-group {
+		margin-bottom: 1rem;
+	}
+	.vp-password-field {
+		position: relative;
+	}
+	.vp-password-field input.form-control {
+		padding-right: 2.5rem;
+	}
+	.vp-password-toggle {
+		position: absolute;
+		top: 0;
+		right: 0;
+		height: 100%;
+		width: 2.5rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: none;
+		border: none;
+		padding: 0;
+		color: var(--text-muted, #6b7280);
+		cursor: pointer;
+	}
+	.vp-password-toggle:hover {
+		color: var(--text-color, #1f272e);
+	}
+</style>
+
+<script>
+document.querySelectorAll(".vp-password-toggle").forEach(function (btn) {
+	btn.addEventListener("click", function () {
+		var input = document.getElementById(btn.getAttribute("data-target"));
+		var showing = input.type === "text";
+		input.type = showing ? "password" : "text";
+		btn.querySelector("use").setAttribute("href", showing ? "#icon-eye" : "#icon-eye-off");
+		btn.setAttribute("aria-label", showing ? "{{ _('Show password') }}" : "{{ _('Hide password') }}");
+	});
+});
+
+document.getElementById("vendor-login-form").addEventListener("submit", function (e) {
+	e.preventDefault();
+
+	var usr = document.getElementById("usr").value.trim();
+	var pwd = document.getElementById("pwd").value;
+	var errorBox = document.getElementById("vendor-login-error");
+	var btn = document.getElementById("vendor-login-btn");
+
+	errorBox.style.display = "none";
+	btn.disabled = true;
+	btn.innerText = "{{ _('Logging in...') }}";
+
+	fetch("/api/method/approval_engine.approval_settlement.api.v1.vendor_portal.vendor_login", {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			"X-Frappe-CSRF-Token": frappe.csrf_token || ""
+		},
+		body: JSON.stringify({ usr: usr, pwd: pwd })
+	})
+		.then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+		.then(function (result) {
+			if (result.ok && result.data.message && result.data.message.success) {
+				var params = new URLSearchParams(window.location.search);
+				var redirectTo = params.get("redirect-to");
+				window.location.href = redirectTo || result.data.message.redirect_to || "/";
+			}else {
+				var msg = (result.data.message && result.data.message.error)
+					|| result.data._server_messages
+					|| "{{ _('Invalid email or password') }}";
+				errorBox.innerText = msg;
+				errorBox.style.display = "block";
+				btn.disabled = false;
+				btn.innerText = "{{ _('Login') }}";
+			}
+		})
+		.catch(function () {
+			errorBox.innerText = "{{ _('Something went wrong. Please try again.') }}";
+			errorBox.style.display = "block";
+			btn.disabled = false;
+			btn.innerText = "{{ _('Login') }}";
+		});
+});
+</script>
+{% endblock %}

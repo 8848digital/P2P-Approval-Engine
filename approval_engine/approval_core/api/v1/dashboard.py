@@ -17,110 +17,110 @@ from approval_engine.utils.api_handlers.response_formatter import api_response
 
 
 def _resolve_user(user):
-    """Resolve the effective user for a summary request.
+	"""Resolve the effective user for a summary request.
 
-    A caller may only request another user's summary if they are a System
-    Manager; otherwise the request is scoped to the session user.
+	A caller may only request another user's summary if they are a System
+	Manager; otherwise the request is scoped to the session user.
 
-    Parameters:
-        user (str, optional): Requested user. Defaults to the session user.
+	Parameters:
+	    user (str, optional): Requested user. Defaults to the session user.
 
-    Returns:
-        str: The user the summary should be built for.
-    """
-    if user and user != frappe.session.user:
-        frappe.only_for("System Manager")
-    return user or frappe.session.user
+	Returns:
+	    str: The user the summary should be built for.
+	"""
+	if user and user != frappe.session.user:
+		frappe.only_for("System Manager")
+	return user or frappe.session.user
 
 
 @frappe.whitelist()
 def get_pending_summary(company, user=None):
-    """Per-DocType count + amount of documents pending on a user in a company.
+	"""Per-DocType count + amount of documents pending on a user in a company.
 
-    Path: approval_engine.approval_core.api.v1.dashboard.get_pending_summary
-    Method: GET
+	Path: approval_engine.approval_core.api.v1.dashboard.get_pending_summary
+	Method: GET
 
-    Parameters:
-        company (str, required): Company to scope the summary to.
-        user (str, optional): User to build the summary for; defaults to the
-            session user. Only a System Manager may request another user.
+	Parameters:
+	    company (str, required): Company to scope the summary to.
+	    user (str, optional): User to build the summary for; defaults to the
+	        session user. Only a System Manager may request another user.
 
-    Returns:
-        dict: Envelope whose ``data`` maps each target DocType to
-        ``{records, amount, names}``.
-    """
-    return api_response(
-        data=fd.pending_summary(company, _resolve_user(user)),
-        message="Pending summary fetched successfully",
-    )
+	Returns:
+	    dict: Envelope whose ``data`` maps each target DocType to
+	    ``{records, amount, names}``.
+	"""
+	return api_response(
+		data=fd.pending_summary(company, _resolve_user(user)),
+		message="Pending summary fetched successfully",
+	)
 
 
 @frappe.whitelist()
 def get_on_hold_summary(company, user=None):
-    """Per-DocType count + amount of documents on hold by a user in a company.
+	"""Per-DocType count + amount of documents on hold by a user in a company.
 
-    Path: approval_engine.approval_core.api.v1.dashboard.get_on_hold_summary
-    Method: GET
+	Path: approval_engine.approval_core.api.v1.dashboard.get_on_hold_summary
+	Method: GET
 
-    Parameters:
-        company (str, required): Company to scope the summary to.
-        user (str, optional): User to build the summary for; defaults to the
-            session user. Only a System Manager may request another user.
+	Parameters:
+	    company (str, required): Company to scope the summary to.
+	    user (str, optional): User to build the summary for; defaults to the
+	        session user. Only a System Manager may request another user.
 
-    Returns:
-        dict: Envelope whose ``data`` maps each target DocType to
-        ``{records, amount, names}``.
-    """
-    return api_response(
-        data=fd.on_hold_summary(company, _resolve_user(user)),
-        message="On-hold summary fetched successfully",
-    )
+	Returns:
+	    dict: Envelope whose ``data`` maps each target DocType to
+	    ``{records, amount, names}``.
+	"""
+	return api_response(
+		data=fd.on_hold_summary(company, _resolve_user(user)),
+		message="On-hold summary fetched successfully",
+	)
 
 
 @frappe.whitelist()
 def get_approved_summary(company, from_date=None, to_date=None, user=None):
-    """Per-DocType count + amount of documents a user approved in a date range.
+	"""Per-DocType count + amount of documents a user approved in a date range.
 
-    Path: approval_engine.approval_core.api.v1.dashboard.get_approved_summary
-    Method: GET
+	Path: approval_engine.approval_core.api.v1.dashboard.get_approved_summary
+	Method: GET
 
-    Parameters:
-        company (str, required): Company to scope the summary to.
-        from_date (str, optional): Inclusive start date (YYYY-MM-DD).
-        to_date (str, optional): Inclusive end date (YYYY-MM-DD).
-        user (str, optional): User to build the summary for; defaults to the
-            session user. Only a System Manager may request another user.
+	Parameters:
+	    company (str, required): Company to scope the summary to.
+	    from_date (str, optional): Inclusive start date (YYYY-MM-DD).
+	    to_date (str, optional): Inclusive end date (YYYY-MM-DD).
+	    user (str, optional): User to build the summary for; defaults to the
+	        session user. Only a System Manager may request another user.
 
-    Returns:
-        dict: Envelope whose ``data`` maps each target DocType to
-        ``{records, amount, names}``.
-    """
-    return api_response(
-        data=fd.approved_summary(company, _resolve_user(user), from_date, to_date),
-        message="Approved summary fetched successfully",
-    )
+	Returns:
+	    dict: Envelope whose ``data`` maps each target DocType to
+	    ``{records, amount, names}``.
+	"""
+	return api_response(
+		data=fd.approved_summary(company, _resolve_user(user), from_date, to_date),
+		message="Approved summary fetched successfully",
+	)
 
 
 @frappe.whitelist()
 def get_dashboard_summary(company, user=None):
-    """Per-DocType {pending, on_hold} summary for a user in a company.
+	"""Per-DocType {pending, on_hold} summary for a user in a company.
 
-    The single call the dashboard needs — both rows per DocType column in one
-    round trip.
+	The single call the dashboard needs — both rows per DocType column in one
+	round trip.
 
-    Path: approval_engine.approval_core.api.v1.dashboard.get_dashboard_summary
-    Method: GET
+	Path: approval_engine.approval_core.api.v1.dashboard.get_dashboard_summary
+	Method: GET
 
-    Parameters:
-        company (str, required): Company to scope the summary to.
-        user (str, optional): User to build the summary for; defaults to the
-            session user. Only a System Manager may request another user.
+	Parameters:
+	    company (str, required): Company to scope the summary to.
+	    user (str, optional): User to build the summary for; defaults to the
+	        session user. Only a System Manager may request another user.
 
-    Returns:
-        dict: Envelope whose ``data`` maps each target DocType to
-        ``{pending, on_hold}``.
-    """
-    return api_response(
-        data=fd.dashboard_summary(company, _resolve_user(user)),
-        message="Dashboard summary fetched successfully",
-    )
+	Returns:
+	    dict: Envelope whose ``data`` maps each target DocType to
+	    ``{pending, on_hold}``.
+	"""
+	return api_response(
+		data=fd.dashboard_summary(company, _resolve_user(user)),
+		message="Dashboard summary fetched successfully",
+	)
