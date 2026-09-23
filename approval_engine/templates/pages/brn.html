@@ -156,9 +156,9 @@ frappe.ready(function() {
 	const items = [
 		{% for d in doc.items %}
 		{
-			item_code: "{{ d.item_code }}",
-			qty: {{ d.qty }},
-			rate: {{ d.rate }}
+			item_code: {{ d.item_code | tojson }},
+			qty: {{ d.qty or 0 }},
+			rate: {{ d.rate or 0 }}
 		}
 		{% if not loop.last %},{% endif %}
 		{% endfor %}
@@ -224,17 +224,19 @@ frappe.ready(function() {
 		}
 
 		frappe.call({
-			method: "approval_engine.templates.pages.brn.make_purchase_invoice_from_brn",
+			method: "approval_engine.settlement.api.v1.brn.make_purchase_invoice_from_brn",
 			args: {
-				brn_name: "{{ doc.name }}",
+				brn_name: {{ doc.name | tojson }},
 				items: JSON.stringify(updated),
 				supplier_invoice_no: $('#supplier_invoice_no').val(),
 				supplier_invoice_date: $('#supplier_invoice_date').val()
 			},
 
 			callback: function(r) {
-				if (r.message) {
-					window.location.href = "/purchase-invoices/" + r.message;
+				// approval_engine's after_request envelope puts the return
+				// value in r.data; r.message is a human-readable string.
+				if (r.data) {
+					window.location.href = "/purchase-invoices/" + encodeURIComponent(r.data);
 				}
 			}
 		});

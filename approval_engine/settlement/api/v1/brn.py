@@ -5,11 +5,14 @@
 """Whitelisted endpoints for creating Purchase Order/Invoice from a BRN.
 
 Thin wrappers only -- the actual mapping/calculation logic lives in
-settlement/doctype/brn/utils.py.
+settlement/doctype/brn/utils.py and brn_portal.py.
 """
 
 import frappe
 
+from approval_engine.settlement.doctype.brn.brn_portal import (
+	make_purchase_invoice_from_brn as _make_portal_purchase_invoice,
+)
 from approval_engine.settlement.doctype.brn.utils import (
 	_create_pi_from_brn,
 	calculate_brn_expiry_date,
@@ -68,3 +71,27 @@ def get_expiry_date(date: str, months: int):
 	**Response:** The computed expiry date (ISO date string), serialized as JSON.
 	"""
 	return calculate_brn_expiry_date(date, months)
+
+
+@frappe.whitelist(methods=["POST"])
+def make_purchase_invoice_from_brn(
+	brn_name: str,
+	items: str,
+	supplier_invoice_no: str | None = None,
+	supplier_invoice_date: str | None = None,
+):
+	"""
+	Create a draft Purchase Invoice from a BRN on the vendor portal
+	(/brn/<name>). Only a supplier listed on the BRN may call it, and each
+	line's item must be on the BRN with qty/rate within what it approved.
+
+	**Endpoint:** `/api/method/approval_engine.settlement.api.v1.brn.make_purchase_invoice_from_brn`
+	**HTTP Method:** POST
+	**Parameters:**
+		- brn_name (str, required): The BRN document name to invoice against
+		- items (str, required): JSON-encoded list of {item_code, qty, rate}
+		- supplier_invoice_no (str, optional): The supplier's own invoice number
+		- supplier_invoice_date (str, optional): The supplier's own invoice date
+	**Response:** The new Purchase Invoice's name (str), in the standard envelope's `data`.
+	"""
+	return _make_portal_purchase_invoice(brn_name, items, supplier_invoice_no, supplier_invoice_date)
