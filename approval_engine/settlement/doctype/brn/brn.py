@@ -11,7 +11,12 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils.user import is_website_user
 
-from .doc_events import block_requisition_id, set_total_amount, validate_comparision_rows
+from .doc_events import (
+	block_requisition_id,
+	set_total_amount,
+	validate_comparision_rows,
+	validate_preferred_row_details,
+)
 from .utils import calculate_brn_expiry_date
 
 
@@ -25,6 +30,10 @@ class BRN(Document):
 		self.expiry_date = calculate_brn_expiry_date(self.service_start_date, self.duration_of_service_months)
 		set_total_amount(self)
 		validate_comparision_rows(self)
+
+	def before_submit(self):
+		"""Require Email ID and Justification on the Preferred Comparision row."""
+		validate_preferred_row_details(self)
 
 	def on_submit(self):
 		"""Mark the source Requisition ID (if any) as consumed by this BRN."""

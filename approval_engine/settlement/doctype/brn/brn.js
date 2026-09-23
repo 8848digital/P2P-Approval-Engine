@@ -48,31 +48,117 @@ frappe.ui.form.on("BRN", {
 	},
 
 	multi: function (frm) {
-		frm.set_value("comparision", []);
-		if (frm.doc.multi) {
-			add_empty_comparision_rows(frm, 3);
-		}
+		const toggled_by_rpt = frm._comparision_toggled_by_rpt;
+		frm._comparision_toggled_by_rpt = false;
+		reset_comparision_rows(
+			frm,
+			toggled_by_rpt ? ["multi", "rpt"] : ["multi"],
+			frm.doc.multi ? 3 : 0
+		);
 	},
 
 	rpt: function (frm) {
-		// Triggers the multi handler above (which clears/repopulates the
-		// Comparision table), since RPT drives Multi, not the other way round.
-		frm.set_value("multi", frm.doc.rpt ? 1 : 0);
+		if (frm._reverting_comparision_mode) return;
+
+		if (frm.doc.rpt && frm.doc.single) {
+			frappe.msgprint(__("Untick Single before ticking RPT."));
+			revert_comparision_mode(frm, ["rpt"]);
+			return;
+		}
+
+		// RPT drives Multi, not the other way round; the multi handler above
+		// then clears/repopulates the Comparision table.
+		if (frm.doc.multi !== frm.doc.rpt) {
+			frm._comparision_toggled_by_rpt = true;
+			frm.set_value("multi", frm.doc.rpt ? 1 : 0);
+		}
 	},
 
 	single: function (frm) {
-		frm.set_value("comparision", []);
-		if (frm.doc.single) {
-			add_empty_comparision_rows(frm, 1);
-		}
+		reset_comparision_rows(frm, ["single"], frm.doc.single ? 1 : 0);
 	},
 });
 
-function add_empty_comparision_rows(frm, count) {
-	for (let i = 0; i < count; i++) {
+// Comparision fields that count as "the user already entered something".
+const COMPARISION_DATA_FIELDS = [
+	"pan",
+	"existing_vendor",
+	"vendor_name",
+	"rate",
+	"amount",
+	"email_id",
+	"justification",
+	"msa_agreement_attachment",
+];
+
+/**
+ * Replace the Comparision table with `empty_row_count` blank rows after a
+ * Single/Multi/RPT toggle. If any row already holds data, ask first; on
+ * cancel, put the toggled checkbox(es) back instead of clearing.
+ *
+ * @param {object} frm - The BRN form instance.
+ * @param {string[]} fieldnames - The checkbox(es) the user just toggled.
+ * @param {number} empty_row_count - Blank rows to add after clearing.
+ * @returns {void}
+ */
+function reset_comparision_rows(frm, fieldnames, empty_row_count) {
+	if (frm._reverting_comparision_mode) return;
+
+	if (!has_filled_comparision_rows(frm)) {
+		replace_comparision_rows(frm, empty_row_count);
+		return;
+	}
+
+	frappe.confirm(
+		__("Changing this will clear the Comparision table. Continue?"),
+		() => replace_comparision_rows(frm, empty_row_count),
+		() => revert_comparision_mode(frm, fieldnames)
+	);
+}
+
+/**
+ * Whether any Comparision row already has user-entered data.
+ *
+ * @param {object} frm - The BRN form instance.
+ * @returns {boolean} True if at least one row has a filled data field.
+ */
+function has_filled_comparision_rows(frm) {
+	return (frm.doc.comparision || []).some((row) =>
+		COMPARISION_DATA_FIELDS.some((fieldname) => row[fieldname])
+	);
+}
+
+/**
+ * Clear the Comparision table and add `count` blank rows.
+ *
+ * @param {object} frm - The BRN form instance.
+ * @param {number} count - Blank rows to add.
+ * @returns {void}
+ */
+function replace_comparision_rows(frm, count) {
+	frm.clear_table("comparision");
+	for (let row_index = 0; row_index < count; row_index++) {
 		frm.add_child("comparision");
 	}
 	frm.refresh_field("comparision");
+}
+
+/**
+ * Flip the given checkbox(es) back to their previous value without
+ * re-triggering the clear/confirm flow.
+ *
+ * @param {object} frm - The BRN form instance.
+ * @param {string[]} fieldnames - The checkbox(es) to flip back.
+ * @returns {Promise} Resolves once all values are set.
+ */
+function revert_comparision_mode(frm, fieldnames) {
+	frm._reverting_comparision_mode = true;
+	const reverts = fieldnames.map((fieldname) =>
+		frm.set_value(fieldname, frm.doc[fieldname] ? 0 : 1)
+	);
+	return Promise.all(reverts).finally(() => {
+		frm._reverting_comparision_mode = false;
+	});
 }
 
 frappe.ui.form.on("BRN Item", {
