@@ -1,0 +1,236 @@
+/*
+Copyright (c) 2026 8848 Digital LLP. All rights reserved.
+Proprietary and confidential. Unauthorized copying, distribution, or use
+of this file, via any medium, is strictly prohibited without prior
+written permission from 8848 Digital LLP.
+*/
+
+/* Guest approval page (/approval_action). One narrow column, readable on a phone. */
+
+.aa-page {
+	display: flex;
+	justify-content: center;
+	min-height: 100vh;
+	padding: 72px 16px 64px;
+}
+
+.aa-panel {
+	display: flex;
+	flex-direction: column;
+	gap: 24px;
+	width: 100%;
+	max-width: 520px;
+}
+
+/* Spacing comes from flex gaps only; drop the website theme's default block margins. */
+.aa-panel :is(h1, h2, p, dl, dd) {
+	margin: 0;
+}
+
+.aa-header {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.aa-eyebrow {
+	font-size: 13px;
+	line-height: 18px;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--text-muted, #6b7280);
+}
+
+.aa-title {
+	font-size: 24px;
+	line-height: 30px;
+	font-weight: 600;
+	color: var(--heading-color, #111827);
+}
+
+.aa-amount {
+	font-size: 20px;
+	line-height: 28px;
+	font-weight: 500;
+	color: var(--text-color, #1f2937);
+}
+
+.aa-facts {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 16px 24px;
+	padding: 16px 0;
+	border-top: 1px solid var(--border-color, #e5e7eb);
+	border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.aa-fact dt {
+	font-size: 13px;
+	line-height: 18px;
+	font-weight: 400;
+	color: var(--text-muted, #6b7280);
+}
+
+.aa-fact dd {
+	font-size: 15px;
+	line-height: 22px;
+	color: var(--text-color, #1f2937);
+	overflow-wrap: anywhere;
+}
+
+.aa-lead,
+.aa-muted,
+.aa-warning,
+.aa-error {
+	font-size: 15px;
+	line-height: 24px;
+}
+
+.aa-lead {
+	color: var(--text-color, #1f2937);
+}
+
+.aa-muted {
+	color: var(--text-muted, #6b7280);
+}
+
+.aa-warning {
+	padding: 12px 16px;
+	border-radius: 8px;
+	background: var(--bg-yellow, #fef9c3);
+	color: var(--text-on-yellow, #713f12);
+}
+
+.aa-error {
+	padding: 12px 16px;
+	border-radius: 8px;
+	background: var(--bg-red, #fee2e2);
+	color: var(--text-on-red, #991b1b);
+}
+
+.aa-footnote {
+	padding-top: 16px;
+	border-top: 1px solid var(--border-color, #e5e7eb);
+	font-size: 13px;
+	line-height: 20px;
+	color: var(--text-muted, #6b7280);
+}
+
+.aa-step {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+.aa-step[hidden],
+.aa-error[hidden] {
+	display: none;
+}
+
+/* Action choice: a segmented group; the selected one is the only filled button. */
+.aa-actions {
+	display: flex;
+	gap: 8px;
+}
+
+.aa-action {
+	flex: 1;
+	padding: 10px 12px;
+	border: 1px solid var(--border-color, #d1d5db);
+	border-radius: 8px;
+	background: transparent;
+	font-size: 15px;
+	line-height: 20px;
+	font-weight: 500;
+	color: var(--text-color, #1f2937);
+	cursor: pointer;
+}
+
+.aa-action[aria-checked="true"] {
+	border-color: var(--text-color, #1f2937);
+	background: var(--text-color, #1f2937);
+	color: var(--fg-color, #ffffff);
+}
+
+.aa-action[data-action="Reject"][aria-checked="true"] {
+	border-color: var(--red-600, #dc2626);
+	background: var(--red-600, #dc2626);
+}
+
+.aa-field {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.aa-label {
+	font-size: 14px;
+	line-height: 20px;
+	font-weight: 500;
+	color: var(--text-color, #1f2937);
+}
+
+.aa-input {
+	width: 100%;
+	padding: 10px 12px;
+	border: 1px solid var(--border-color, #d1d5db);
+	border-radius: 8px;
+	background: var(--control-bg, #ffffff);
+	font-size: 16px; /* >= 16px stops iOS zooming into the field */
+	line-height: 24px;
+	color: var(--text-color, #1f2937);
+}
+
+.aa-otp {
+	max-width: 200px;
+	font-size: 22px;
+	letter-spacing: 0.3em;
+	font-variant-numeric: tabular-nums;
+}
+
+.aa-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 16px;
+}
+
+.aa-primary {
+	align-self: flex-start;
+	padding: 10px 20px;
+	border: none;
+	border-radius: 8px;
+	background: var(--primary, #171717);
+	font-size: 15px;
+	line-height: 20px;
+	font-weight: 500;
+	color: #ffffff;
+	cursor: pointer;
+}
+
+.aa-primary:disabled,
+.aa-link:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+
+.aa-link {
+	padding: 0;
+	border: none;
+	background: none;
+	font-size: 15px;
+	line-height: 20px;
+	color: var(--text-muted, #4b5563);
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+@media (max-width: 480px) {
+	.aa-page {
+		padding-top: 32px;
+	}
+
+	.aa-facts {
+		grid-template-columns: 1fr;
+	}
+}
