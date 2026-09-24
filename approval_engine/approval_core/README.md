@@ -25,6 +25,7 @@ module.
 | Approval Settings | Single DocType holding the DocType → amount-field mappings. See root `SETUP.md`. |
 | Document Workflow Log | Full audit trail of every workflow state transition — who moved which document from which state to which, when, their remarks, and whether the action came from an email link. |
 | Approval Action Token | One emailed approval link: the approver it was issued to, the state it was issued for, its status (Active / Used / Superseded / Expired) and how it was used. Stores only hashes of the link token and OTP. |
+| Additional Approver | One ad-hoc approver injected into a single document's live chain by an eligible approver, at the current juncture, without touching the shared matrix. Carries the target reference, the approver, the captured `insert_state`, per-record `can_hold`/`can_reject`/`action_via_email` flags, and `active`/`completed` lifecycle flags. |
 
 ## Portal Pages
 
@@ -48,11 +49,13 @@ Whitelisted endpoints (versioned under `api/v1/`):
 - `api/v1/activity.py` — managed DocTypes + per-document workflow-activity reconstruction for the form sidebar.
 - `api/v1/workflow.py` — amount-field resolution for the Approval Matrix form, and the remarks stash used by the Desk workflow-action dialog.
 - `api/v1/email_action.py` — guest (`allow_guest`) endpoints behind the approval page: request an OTP, submit an action. POST-only and rate limited.
+- `api/v1/additional_approver.py` — inject an ad-hoc additional approver into one document (`add`), and resolve whether the current user may do so right now (`can_add`, drives the form button).
 
 ## Runtime
 
-- `runtime.py` — `validate` and `on_update` hooks (registered for all DocTypes via `doc_events["*"]`); blocks saves with no matching matrix band, records every state change into Document Workflow Log with its remarks, and on a state change retires open email links and queues the next tier's emails.
-- `generator.py` — builds/rebuilds the ERPNext Workflow from submitted Approval Matrix records.
+- `runtime.py` — `validate` and `on_update` hooks (registered for all DocTypes via `doc_events["*"]`); blocks saves with no matching matrix band, records every state change into Document Workflow Log with its remarks, retires open email links and queues the next actor's emails, and keeps the active Additional Approver record in step (marks it completed on entering `Additionally Approved`, retires it once the chain moves past the review).
+- `generator.py` — builds/rebuilds the ERPNext Workflow from submitted Approval Matrix records, including the generic `Additionally Approved` states/transitions that route a document through an ad-hoc reviewer when one is inserted.
+- `doctype/additional_approver/` — the ad-hoc reviewer's data model, eligibility/one-at-a-time rules, per-record role grant/revoke, and reviewer notification.
 - `activity.py` — reconstructs the approver chain for a single document (backs `api/v1/activity.py`).
 - `remarks.py` — approver remarks attached to a transition; enforces the mandatory rejection reason for every channel.
 - `tasks.py` — background/scheduled jobs: send approval-link emails after a state change, expire old links daily.

@@ -22,6 +22,8 @@ in the Document Workflow Log work — approvals-only history could not attribute
 import frappe
 from frappe.utils import add_days, getdate
 
+from approval_engine.approval_core.generator import ADDITIONAL_APPROVAL_STATE
+
 # Current in-flight state -> the approver-pool column prefix that must contain the user.
 STATE_TIER_POOL = {
     "Pending": "approver_1_user_",
@@ -57,13 +59,46 @@ def amount_field_for(document_type):
     )
 
 
-def _pending_condition():
-    """Build the state/tier-pool OR-block of the WHERE clause."""
+def _pool_condition(state_column):
+    """Build the state/tier-pool OR-block of a WHERE clause, keyed on `state_column`.
+
+    `state_column` is the SQL expression holding the state to map to a tier — the document's
+    own `p.workflow_state` (normal pending), or an inserted reviewer's captured
+    `r.insert_state` (the tier resuming after an ad-hoc review).
+
+    Parameters:
+        state_column (str, required): SQL column/expression holding the waiting state.
+
+    Returns:
+        str: An OR-joined SQL boolean block.
+    """
     clauses = []
     for state, prefix in STATE_TIER_POOL.items():
         pool = ", ".join(f"d.`{prefix}{i}`" for i in range(1, 6))
-        clauses.append(f"(p.workflow_state = {frappe.db.escape(state)} AND %(user)s IN ({pool}))")
+        clauses.append(f"({state_column} = {frappe.db.escape(state)} AND %(user)s IN ({pool}))")
     return "\n     OR ".join(clauses)
+
+
+def _matrix_join(amount_field):
+    """The band-matching join onto the Approval Matrix for a target document `p`.
+
+    Parameters:
+        amount_field (str, required): The DocType's amount fieldname (already validated).
+
+    Returns:
+        str: SQL join clause matching `p` to its Approval Matrix Detail band row (`d`).
+    """
+    return f"""
+        INNER JOIN `tabApproval Matrix` m
+                ON m.document_type = %(doctype)s
+               AND m.company       = p.company
+               AND m.docstatus     = 1
+        INNER JOIN `tabApproval Matrix Detail` d
+                ON d.parent      = m.name
+               AND d.department  = p.department
+               AND p.`{amount_field}` >= d.min_amount
+               AND (d.max_amount = 0 OR p.`{amount_field}` <= d.max_amount)
+    """
 
 
 def _aggregate(rows):
@@ -75,47 +110,128 @@ def _aggregate(rows):
     return {"records": len(names), "amount": amount, "names": names}
 
 
+def _dedupe_by_name(rows):
+    """Keep one row per document name — the pending sources can, in principle, overlap.
+
+    Parameters:
+        rows (list, required): Row dicts each carrying at least `name`.
+
+    Returns:
+        list: One row per distinct name (first occurrence wins).
+    """
+    seen = {}
+    for row in rows:
+        seen.setdefault(row.name, row)
+    return list(seen.values())
+
+
 def pending_for_doctype(document_type, company, user):
-    """Return {records, amount, names} of docs of `document_type` pending on `user` in `company`."""
+    """Return {records, amount, names} of docs of `document_type` pending on `user` in `company`.
+
+    "Pending on me" spans three cases, unioned and de-duplicated by document:
+    - the document's current tier awaits me (and it is not paused for an ad-hoc reviewer),
+    - I am the ad-hoc reviewer currently inserted into the chain, or
+    - the document is in `Additionally Approved` and I am the tier resuming after that review.
+    """
     amount_field = amount_field_for(document_type)
     if not amount_field:
         # No amount field configured -> DocType isn't set up for the engine; report zero.
         return {"records": 0, "amount": 0.0, "names": []}
 
-    # GROUP BY p.name collapses the row to one per document: a doc could otherwise join more
-    # than one matrix band if bands overlap, which would double-count it in COUNT/SUM.
-    query = """
-        SELECT
-            p.name         AS name,
-            p.`{amt}`      AS amount
-        FROM `tab{dt}` p
-        INNER JOIN `tabApproval Matrix` m
-                ON m.document_type = %(doctype)s
-               AND m.company       = p.company
-               AND m.docstatus     = 1
-        INNER JOIN `tabApproval Matrix Detail` d
-                ON d.parent      = m.name
-               AND d.department  = p.department
-               AND p.`{amt}`    >= d.min_amount
-               AND (d.max_amount = 0 OR p.`{amt}` <= d.max_amount)
+    params = {"doctype": document_type, "company": company, "user": user}
+    rows = (
+        _pending_tier_rows(document_type, amount_field, params)
+        + _pending_resume_rows(document_type, amount_field, params)
+        + _pending_reviewer_rows(document_type, amount_field, params)
+    )
+    return _aggregate(_dedupe_by_name(rows))
+
+
+def _pending_tier_rows(document_type, amount_field, params):
+    """Docs whose current tier awaits the user — excluding any paused for an ad-hoc reviewer
+    (those are attributed to the reviewer, who must act first).
+
+    Parameters:
+        document_type (str, required): Target DocType.
+        amount_field (str, required): The DocType's amount fieldname.
+        params (dict, required): Bind values {doctype, company, user}.
+
+    Returns:
+        list: Row dicts {name, amount}.
+    """
+    # GROUP BY p.name collapses overlapping bands so a doc is never double-counted.
+    query = f"""
+        SELECT p.name AS name, p.`{amount_field}` AS amount
+        FROM `tab{document_type}` p
+        {_matrix_join(amount_field)}
         WHERE p.docstatus = 0
           AND p.company   = %(company)s
-          AND (
-                {pending_condition}
+          AND ({_pool_condition("p.workflow_state")})
+          AND NOT EXISTS (
+                SELECT 1 FROM `tabAdditional Approver` r
+                 WHERE r.reference_doctype = %(doctype)s
+                   AND r.reference_name    = p.name
+                   AND r.active = 1 AND r.completed = 0
               )
-        GROUP BY p.name, p.`{amt}`
-    """.format(
-        amt=amount_field,
-        dt=document_type,
-        pending_condition=_pending_condition(),
-    )
+        GROUP BY p.name, p.`{amount_field}`
+    """
+    return frappe.db.sql(query, params, as_dict=True)
 
-    rows = frappe.db.sql(
-        query,
-        {"doctype": document_type, "company": company, "user": user},
-        as_dict=True,
-    )
-    return _aggregate(rows)
+
+def _pending_resume_rows(document_type, amount_field, params):
+    """Docs in `Additionally Approved` (reviewer done) awaiting the resuming tier's pool member.
+
+    The resuming tier is derived from the reviewer's captured `insert_state`.
+
+    Parameters:
+        document_type (str, required): Target DocType.
+        amount_field (str, required): The DocType's amount fieldname.
+        params (dict, required): Bind values {doctype, company, user}.
+
+    Returns:
+        list: Row dicts {name, amount}.
+    """
+    query = f"""
+        SELECT p.name AS name, p.`{amount_field}` AS amount
+        FROM `tab{document_type}` p
+        {_matrix_join(amount_field)}
+        INNER JOIN `tabAdditional Approver` r
+                ON r.reference_doctype = %(doctype)s
+               AND r.reference_name    = p.name
+               AND r.active = 1 AND r.completed = 1
+        WHERE p.docstatus = 0
+          AND p.company   = %(company)s
+          AND p.workflow_state = {frappe.db.escape(ADDITIONAL_APPROVAL_STATE)}
+          AND ({_pool_condition("r.insert_state")})
+        GROUP BY p.name, p.`{amount_field}`
+    """
+    return frappe.db.sql(query, params, as_dict=True)
+
+
+def _pending_reviewer_rows(document_type, amount_field, params):
+    """Docs paused for an ad-hoc reviewer who is the user (their turn, before the tier resumes).
+
+    Parameters:
+        document_type (str, required): Target DocType.
+        amount_field (str, required): The DocType's amount fieldname.
+        params (dict, required): Bind values {doctype, company, user}.
+
+    Returns:
+        list: Row dicts {name, amount}.
+    """
+    query = f"""
+        SELECT p.name AS name, p.`{amount_field}` AS amount
+        FROM `tab{document_type}` p
+        INNER JOIN `tabAdditional Approver` r
+                ON r.reference_doctype = %(doctype)s
+               AND r.reference_name    = p.name
+               AND r.active = 1 AND r.completed = 0
+               AND r.approver = %(user)s
+        WHERE p.docstatus = 0
+          AND p.company   = %(company)s
+        GROUP BY p.name, p.`{amount_field}`
+    """
+    return frappe.db.sql(query, params, as_dict=True)
 
 
 def on_hold_for_doctype(document_type, company, user):
