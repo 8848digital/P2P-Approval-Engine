@@ -148,6 +148,45 @@ class UnitTestAdditionalApprover(UnitTestCase):
         self.assertEqual(activity._logged_tier("Approved 1", "Approved"), 2)
         self.assertEqual(activity._logged_tier("Pending", "Rejected"), 1)
 
+    # ---------------- sidebar reviewer step (activity._reviewer_step) ----------------
+
+    @staticmethod
+    def _reviewer(active=1, completed=0, acted_on=None):
+        """A minimal `Additional Approver` record stand-in for the sidebar renderer."""
+        return SimpleNamespace(
+            approver="rev@example.com", active=active, completed=completed,
+            insert_state="Approved 1", acted_on=acted_on)
+
+    def test_reviewer_step_held_shows_on_hold_from_log(self):
+        """A held reviewer shows on_hold, with actor/time/remarks taken from the hold log."""
+        hold_log = SimpleNamespace(
+            creation="2026-09-24 10:00:00", remarks="parking this", via_email_link=1)
+        step = activity._reviewer_step(self._reviewer(), ADDITIONAL_HOLD_STATE, hold_log)
+        self.assertEqual(step["status"], "on_hold")
+        self.assertEqual(step["acted_by"]["user"], "rev@example.com")
+        self.assertEqual(step["time"], "2026-09-24 10:00:00")
+        self.assertEqual(step["remarks"], "parking this")
+        self.assertTrue(step["via_email_link"])
+
+    def test_reviewer_step_active_but_not_held_is_pending(self):
+        """An active reviewer whose document is NOT in the hold state stays pending."""
+        step = activity._reviewer_step(self._reviewer(), "Approved 1", None)
+        self.assertEqual(step["status"], "pending")
+        self.assertIsNone(step["acted_by"])
+
+    def test_reviewer_step_completed_is_approved(self):
+        """A completed reviewer shows approved, timed from the record's acted_on."""
+        step = activity._reviewer_step(
+            self._reviewer(completed=1, acted_on="2026-09-24 09:00:00"),
+            ADDITIONAL_APPROVAL_STATE, None)
+        self.assertEqual(step["status"], "approved")
+        self.assertEqual(step["time"], "2026-09-24 09:00:00")
+
+    def test_reviewer_step_retired_is_rejected(self):
+        """A retired-without-completing reviewer shows rejected."""
+        step = activity._reviewer_step(self._reviewer(active=0), "Rejected", None)
+        self.assertEqual(step["status"], "rejected")
+
     # ---------------- eligibility (mocked) ----------------
 
     def test_manager_role_is_eligible(self):
