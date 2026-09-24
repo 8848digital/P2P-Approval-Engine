@@ -1,0 +1,157 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-09-23 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "reference_doctype",
+  "reference_name",
+  "approver",
+  "insert_state",
+  "column_break_flags",
+  "can_hold",
+  "can_reject",
+  "action_via_email",
+  "section_break_status",
+  "active",
+  "completed",
+  "acted_on",
+  "added_by"
+ ],
+ "fields": [
+  {
+   "fieldname": "reference_doctype",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Reference Document Type",
+   "options": "DocType",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "reference_name",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Reference Name",
+   "options": "reference_doctype",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "approver",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Additional Approver",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "description": "Workflow state the document sat in when this approver was inserted. The reviewer acts before the tier that acts from this state; the chain then resumes.",
+   "fieldname": "insert_state",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Insert State",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_flags",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "can_hold",
+   "fieldtype": "Check",
+   "label": "Can Hold"
+  },
+  {
+   "default": "0",
+   "fieldname": "can_reject",
+   "fieldtype": "Check",
+   "label": "Can Reject"
+  },
+  {
+   "default": "0",
+   "fieldname": "action_via_email",
+   "fieldtype": "Check",
+   "label": "Action via Email"
+  },
+  {
+   "fieldname": "section_break_status",
+   "fieldtype": "Section Break",
+   "label": "Status"
+  },
+  {
+   "default": "1",
+   "description": "Cleared once the reviewer's step is finished and the chain has moved past it.",
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "in_standard_filter": 1,
+   "label": "Active",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Set when the reviewer has approved (the document has entered the Additional Approval state).",
+   "fieldname": "completed",
+   "fieldtype": "Check",
+   "in_standard_filter": 1,
+   "label": "Completed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "acted_on",
+   "fieldtype": "Datetime",
+   "label": "Acted On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "added_by",
+   "fieldtype": "Link",
+   "label": "Added By",
+   "options": "User",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-09-23 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Approval Core",
+ "name": "Additional Approver",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Approval Manager",
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

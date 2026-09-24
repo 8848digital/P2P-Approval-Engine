@@ -32,9 +32,18 @@ STATE_DOCSTATUS = {
     "On Hold by Approver 2": "0",
     "On Hold by Approver 3": "0",
     "On Hold by Approver 4": "0",
+    "Additionally Approved": "0",
+    "On Hold by Additional Approver": "0",
     "Rejected": "1",
 }
 STATE_ORDER = list(STATE_DOCSTATUS.keys())
+
+# Ad-hoc reviewer states (see doctype/additional_approver). A document routes through
+# `Additionally Approved` when an eligible approver injects an extra approver at the current
+# juncture; the configured tier then resumes. `On Hold by Additional Approver` backs the
+# reviewer's optional Hold.
+ADDITIONAL_APPROVAL_STATE = "Additionally Approved"
+ADDITIONAL_HOLD_STATE = "On Hold by Additional Approver"
 
 # Workflow State master styles
 WORKFLOW_STATE_STYLES = {
@@ -47,6 +56,8 @@ WORKFLOW_STATE_STYLES = {
     "On Hold by Approver 2": "Inverse",
     "On Hold by Approver 3": "Inverse",
     "On Hold by Approver 4": "Inverse",
+    "Additionally Approved": "Warning",
+    "On Hold by Additional Approver": "Inverse",
     "Rejected": "Danger",
 }
 
@@ -61,6 +72,8 @@ ALLOW_EDIT = {
     "On Hold by Approver 2": 2,
     "On Hold by Approver 3": 3,
     "On Hold by Approver 4": 4,
+    "Additionally Approved": "All",
+    "On Hold by Additional Approver": "All",
     "Rejected": "All",
 }
 
@@ -93,6 +106,22 @@ def role_name(document_type, level):
         str: e.g. "Purchase Order - Approver 2".
     """
     return f"{document_type} - Approver {level}"
+
+
+def additional_role_name(document_type):
+    """
+    Name of the coarse role held by ad-hoc additional approvers of a DocType.
+
+    Unlike the tier roles, this is granted/revoked per `Additional Approver` record
+    (not by `reconcile_roles`), so a matrix rebuild never strips an ad-hoc reviewer.
+
+    Parameters:
+        document_type (str, required): Target DocType.
+
+    Returns:
+        str: e.g. "Purchase Order - Additional Approver".
+    """
+    return f"{document_type} - Additional Approver"
 
 
 def workflow_name(document_type):
@@ -241,8 +270,9 @@ def ensure_roles(document_type):
     Returns:
         None
     """
-    for level in range(1, MAX_LEVELS + 1):
-        name = role_name(document_type, level)
+    names = [role_name(document_type, level) for level in range(1, MAX_LEVELS + 1)]
+    names.append(additional_role_name(document_type))
+    for name in names:
         if not frappe.db.exists("Role", name):
             frappe.get_doc({"doctype": "Role", "role_name": name, "desk_access": 1}).insert(
                 ignore_permissions=True)
@@ -252,8 +282,9 @@ def ensure_role_permissions(document_type):
     """Grant read/write/submit on the target DocType to each approver role,
     so approvers can open and act on the document."""
     from frappe.permissions import add_permission, update_permission_property
-    for level in range(1, MAX_LEVELS + 1):
-        role = role_name(document_type, level)
+    roles = [role_name(document_type, level) for level in range(1, MAX_LEVELS + 1)]
+    roles.append(additional_role_name(document_type))
+    for role in roles:
         has_perm = frappe.db.exists(
             "Custom DocPerm", {"parent": document_type, "role": role, "permlevel": 0}
         )
@@ -273,6 +304,7 @@ def _grant_read_to_flow_roles(target_doctype, document_type):
     from frappe.permissions import add_permission, update_permission_property
 
     roles = {role_name(document_type, level) for level in range(1, MAX_LEVELS + 1)}
+    roles.add(additional_role_name(document_type))
     for perm_dt in ("DocPerm", "Custom DocPerm"):
         roles.update(frappe.get_all(
             perm_dt, filters={"parent": document_type, "create": 1, "permlevel": 0},
@@ -433,6 +465,84 @@ def find_band_row(document_type, company, department, amount):
     return None
 
 
+def resuming_tier(doc):
+    """Tier that must act once the ad-hoc reviewer on `doc` has completed.
+
+    Only meaningful while `doc` sits in `Additionally Approved` (the reviewer approved,
+    the configured chain has not yet resumed). Read from the active reviewer's captured
+    `insert_state`. Used by the email notifier to reach the right approver pool.
+
+    Parameters:
+        doc (Document, required): The governed document in the review state.
+
+    Returns:
+        int | None: The resuming approver tier, or None when no reviewer applies.
+    """
+    state = frappe.db.get_value("Additional Approver", {
+        "reference_doctype": doc.doctype, "reference_name": doc.name,
+        "active": 1, "completed": 1,
+    }, "insert_state")
+    return acting_tier(state) if state else None
+
+
+# ---------------------------------------------------------------------------
+# ad-hoc reviewer condition fragments (evaluated live against the document)
+#
+# Only `frappe.db.get_value`/`get_list` and `frappe.session` are exposed to workflow
+# condition eval (see frappe.model.workflow.get_workflow_safe_globals), so every
+# per-document reviewer check is a `get_value` returning the record name (truthy) or
+# None (falsy) — the same technique the escalate/finalize `next` check already uses.
+# ---------------------------------------------------------------------------
+
+def _pending_reviewer_cond(state, extra=""):
+    """
+    Condition fragment: an active, not-yet-acted reviewer sits at `state` for this doc.
+
+    Parameters:
+        state (str, required): The reviewer's captured `insert_state`.
+        extra (str, optional): Extra filter clause(s), e.g. pinning the approver.
+
+    Returns:
+        str: A `frappe.db.get_value(...)` expression usable in a transition condition.
+    """
+    return ("frappe.db.get_value('Additional Approver', "
+            "{'reference_doctype': doc.doctype, 'reference_name': doc.name, "
+            f"'insert_state': {state!r}, 'active': 1, 'completed': 0{extra}}}, 'name')")
+
+
+def _reviewer_can_act_cond(state, flag=None):
+    """
+    Condition fragment: the session user is the pending reviewer at `state` (optionally
+    only when their record permits `flag`, e.g. `can_reject`).
+
+    Parameters:
+        state (str, required): The reviewer's captured `insert_state`.
+        flag (str, optional): A permission checkbox that must be set (`can_hold`/`can_reject`).
+
+    Returns:
+        str: A `frappe.db.get_value(...)` expression usable in a transition condition.
+    """
+    extra = ", 'approver': frappe.session.user"
+    if flag:
+        extra += f", {flag!r}: 1"
+    return _pending_reviewer_cond(state, extra)
+
+
+def _reviewer_done_cond(state):
+    """
+    Condition fragment: the reviewer inserted at `state` has approved and the chain may resume.
+
+    Parameters:
+        state (str, required): The reviewer's captured `insert_state`.
+
+    Returns:
+        str: A `frappe.db.get_value(...)` expression usable in a transition condition.
+    """
+    return ("frappe.db.get_value('Additional Approver', "
+            "{'reference_doctype': doc.doctype, 'reference_name': doc.name, "
+            f"'insert_state': {state!r}, 'active': 1, 'completed': 1}}, 'name')")
+
+
 # ---------------------------------------------------------------------------
 # transitions (literal, per row)
 # ---------------------------------------------------------------------------
@@ -459,6 +569,89 @@ def _t(state, action, next_state, allowed, condition):
         "condition": condition,
         "allow_self_approval": 1,
     }
+
+
+def _approve_transitions(origin, guard, level, base, role, next_configured):
+    """
+    Approve transitions (escalate + finalize) from one origin state for a tier.
+
+    Escalate vs finalize is chosen at runtime by the live `next_configured` check; the
+    top tier always finalizes. `guard` is a reviewer-related condition suffix ("", the
+    block suffix, or the resume suffix) appended to the tier's base condition.
+
+    Parameters:
+        origin (str, required): State the transition acts from.
+        guard (str, required): Extra condition suffix (may be empty).
+        level (int, required): Approver tier, 1..MAX_LEVELS.
+        base (str, required): Company/department/band/pool condition for the tier.
+        role (str, required): Tier approver role.
+        next_configured (str | None, required): Live "next tier configured?" expression
+            (None for the top tier).
+
+    Returns:
+        list[dict]: One or two transition rows.
+    """
+    if level < MAX_LEVELS:
+        return [
+            _t(origin, "Approve", f"Approved {level}", role, f"{base}{guard} and {next_configured}"),
+            _t(origin, "Approve", "Approved", role, f"{base}{guard} and not {next_configured}"),
+        ]
+    return [_t(origin, "Approve", "Approved", role, f"{base}{guard}")]
+
+
+def _hold_reject_transitions(origin, guard, base, role, hold_state, can_hold, can_reject):
+    """
+    Hold/Reject transitions from one origin state, only where the tier permits them.
+
+    Parameters:
+        origin (str, required): State the transition acts from.
+        guard (str, required): Extra condition suffix (may be empty).
+        base (str, required): Company/department/band/pool condition for the tier.
+        role (str, required): Tier approver role.
+        hold_state (str, required): The tier's On Hold state.
+        can_hold (int, required): Whether the tier may hold.
+        can_reject (int, required): Whether the tier may reject.
+
+    Returns:
+        list[dict]: Zero to two transition rows.
+    """
+    out = []
+    if can_hold:
+        out.append(_t(origin, "Hold", hold_state, role, f"{base}{guard}"))
+    if can_reject:
+        out.append(_t(origin, "Reject", "Rejected", role, f"{base}{guard}"))
+    return out
+
+
+def _reviewer_intercepts(document_type):
+    """
+    Generic transitions that let an inserted ad-hoc reviewer act on any governed document.
+
+    Emitted once per DocType, independent of matrix rows: the reviewer is pinned by the
+    `Additional Approver` record and the session user, not by any band/pool. Each per-record
+    `can_hold`/`can_reject` flag is honoured live inside the condition, so the transition can
+    exist yet stay unavailable when the record doesn't permit it.
+
+    Parameters:
+        document_type (str, required): Target DocType.
+
+    Returns:
+        list[dict]: Reviewer intercept/resume transition rows.
+    """
+    role = additional_role_name(document_type)
+    out = []
+    for src in STATE_FOR_TIER.values():
+        approve_cond = _reviewer_can_act_cond(src)
+        reject_cond = _reviewer_can_act_cond(src, "can_reject")
+        hold_cond = _reviewer_can_act_cond(src, "can_hold")
+        # From the tier's waiting state: reviewer approves into review, or rejects/holds.
+        out.append(_t(src, "Approve", ADDITIONAL_APPROVAL_STATE, role, approve_cond))
+        out.append(_t(src, "Reject", "Rejected", role, reject_cond))
+        out.append(_t(src, "Hold", ADDITIONAL_HOLD_STATE, role, hold_cond))
+        # From the reviewer's own hold: resume into review, or reject.
+        out.append(_t(ADDITIONAL_HOLD_STATE, "Approve", ADDITIONAL_APPROVAL_STATE, role, approve_cond))
+        out.append(_t(ADDITIONAL_HOLD_STATE, "Reject", "Rejected", role, reject_cond))
+    return out
 
 
 def build_transitions(document_type):
@@ -506,39 +699,41 @@ def build_transitions(document_type):
                 can_reject = row.get(f"approver_{level}_can_reject")
                 hold_state = f"On Hold by Approver {level}"
 
-                # --- Approve: escalate vs finalize decided at RUNTIME by reading the
-                # matrix row live (is the NEXT approver tier configured?). Both
-                # transitions are emitted; the condition selects which one fires. ---
+                # Escalate vs finalize is decided at RUNTIME by reading the matrix row live
+                # (is the NEXT approver tier configured?). Only defined below the top tier;
+                # readable-filter form identifies the row by matrix + department + band.
+                next_configured = None
                 if level < MAX_LEVELS:
-                    # readable-filter form: identify the matrix row by
-                    # matrix + department + band (matches the client's Excel intent)
                     next_configured = (
                         "frappe.db.get_value('Approval Matrix Detail', "
                         f"{{'parent': {m.name!r}, 'department': {row.department!r}, "
                         f"'min_amount': {row.min_amount or 0}, 'max_amount': {row.max_amount or 0}}}, "
                         f"'approver_{level + 1}_user_1')"
                     )
-                    esc_cond = f"{base} and {next_configured}"          # next tier exists -> escalate
-                    fin_cond = f"{base} and not {next_configured}"      # next tier blank  -> finalize
-                    transitions.append(_t(src, "Approve", f"Approved {level}", role, esc_cond))
-                    transitions.append(_t(src, "Approve", "Approved", role, fin_cond))
-                    if can_hold:
-                        transitions.append(_t(hold_state, "Approve", f"Approved {level}", role, esc_cond))
-                        transitions.append(_t(hold_state, "Approve", "Approved", role, fin_cond))
-                else:
-                    # top tier (4): no next approver -> always finalize
-                    transitions.append(_t(src, "Approve", "Approved", role, base))
-                    if can_hold:
-                        transitions.append(_t(hold_state, "Approve", "Approved", role, base))
 
-                # --- Hold / Reject (company + dept + band + pool + no-repeat) ---
+                # An ad-hoc reviewer inserted at `src` blocks the tier from acting there until
+                # it clears; the SAME tier transitions are mirrored FROM `Additionally Approved`
+                # so the chain resumes once the reviewer has approved (see doctype/additional_approver).
+                block_guard = f" and not {_pending_reviewer_cond(src)}"
+                resume_guard = f" and {_reviewer_done_cond(src)}"
+
+                # Normal path (blocked while a reviewer is pending) + resumed path (after review).
+                transitions += _approve_transitions(src, block_guard, level, base, role, next_configured)
+                transitions += _approve_transitions(
+                    ADDITIONAL_APPROVAL_STATE, resume_guard, level, base, role, next_configured)
+                transitions += _hold_reject_transitions(
+                    src, block_guard, base, role, hold_state, can_hold, can_reject)
+                transitions += _hold_reject_transitions(
+                    ADDITIONAL_APPROVAL_STATE, resume_guard, base, role, hold_state, can_hold, can_reject)
+
+                # Resume from the tier's OWN hold — unreachable while a reviewer is pending
+                # (you cannot insert a reviewer once a document is on hold), so no reviewer guard.
                 if can_hold:
-                    transitions.append(_t(src, "Hold", hold_state, role, base))
+                    transitions += _approve_transitions(hold_state, "", level, base, role, next_configured)
                     if can_reject:
                         transitions.append(_t(hold_state, "Reject", "Rejected", role, base))
-                if can_reject:
-                    transitions.append(_t(src, "Reject", "Rejected", role, base))
 
+    transitions += _reviewer_intercepts(document_type)
     return transitions
 
 
