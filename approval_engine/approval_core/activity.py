@@ -19,6 +19,8 @@ import frappe
 from frappe.utils import flt, get_fullname
 
 from approval_engine.approval_core.generator import (
+    ADDITIONAL_APPROVAL_STATE,
+    ADDITIONAL_HOLD_STATE,
     MAX_LEVELS,
     STATE_FOR_TIER,
     acting_tier,
@@ -31,6 +33,38 @@ from approval_engine.approval_core.generator import (
 
 # from_state -> the tier that acts FROM it (inverse of STATE_FOR_TIER)
 _TIER_FROM_STATE = {state: tier for tier, state in STATE_FOR_TIER.items()}
+
+# to_state -> the tier whose approval lands there (an escalation credits that tier)
+_APPROVED_STATE_TIER = {"Approved 1": 1, "Approved 2": 2, "Approved 3": 3}
+_HOLD_PREFIX = "On Hold by Approver "
+
+
+def _logged_tier(from_state, to_state):
+    """
+    The configured approver tier a logged transition belongs to, or None.
+
+    Attributes by DESTINATION where it is unambiguous — an escalation into `Approved N`
+    or a tier hold `On Hold by Approver N` credits tier N, which also correctly credits a
+    tier that resumed after an ad-hoc review (its `from_state` is `Additionally Approved`).
+    A move INTO an additional-approver state is the reviewer's own action, not a tier's.
+    Finalize (`Approved`) and `Rejected` name no tier in the destination, so the acting
+    tier is read from `from_state`.
+
+    Parameters:
+        from_state (str, optional): State the transition acted from.
+        to_state (str, optional): State the transition moved to.
+
+    Returns:
+        int | None: The configured tier, or None when the move is not a tier action.
+    """
+    if to_state in (ADDITIONAL_APPROVAL_STATE, ADDITIONAL_HOLD_STATE):
+        return None
+    if to_state in _APPROVED_STATE_TIER:
+        return _APPROVED_STATE_TIER[to_state]
+    if to_state and to_state.startswith(_HOLD_PREFIX):
+        suffix = to_state[len(_HOLD_PREFIX):]
+        return int(suffix) if suffix.isdigit() else None
+    return acting_tier(from_state)
 
 
 def _managed(doctype):
@@ -80,6 +114,76 @@ def _owner(user):
     return {"user": user, "full_name": get_fullname(user)} if user else None
 
 
+def _active_reviewer(doctype, name):
+    """
+    The document's live ad-hoc reviewer record (pending or just-completed), if any.
+
+    Parameters:
+        doctype (str, required): Target document's DocType.
+        name (str, required): Target document's name.
+
+    Returns:
+        dict | None: {approver, insert_state, completed, acted_on}, or None.
+    """
+    return frappe.db.get_value(
+        "Additional Approver",
+        {"reference_doctype": doctype, "reference_name": name, "active": 1},
+        ["approver", "insert_state", "completed", "acted_on"],
+        as_dict=True,
+    )
+
+
+def _all_reviewers(doctype, name):
+    """
+    Every ad-hoc reviewer ever added to a document, oldest first, for the sidebar.
+
+    Parameters:
+        doctype (str, required): Target document's DocType.
+        name (str, required): Target document's name.
+
+    Returns:
+        list[dict]: Reviewer records with {approver, insert_state, completed, active, acted_on}.
+    """
+    return frappe.get_all(
+        "Additional Approver",
+        filters={"reference_doctype": doctype, "reference_name": name},
+        fields=["approver", "insert_state", "completed", "active", "acted_on"],
+        order_by="creation asc",
+    )
+
+
+def _reviewer_step(reviewer):
+    """
+    Render one ad-hoc reviewer as a sidebar step, mirroring a tier step's shape.
+
+    Status: approved once they have approved (`completed`), pending while still their
+    turn (`active`, not completed), rejected once retired without completing.
+
+    Parameters:
+        reviewer (dict, required): An `Additional Approver` record's fields.
+
+    Returns:
+        dict: A step dict flagged `additional` for the sidebar renderer.
+    """
+    if reviewer.completed:
+        status = "approved"
+    elif reviewer.active:
+        status = "pending"
+    else:
+        status = "rejected"
+    acted = status in ("approved", "rejected")
+    return {
+        "level": None,
+        "additional": True,
+        "owner": [_owner(reviewer.approver)],
+        "acted_by": _owner(reviewer.approver) if acted else None,
+        "status": status,
+        "time": str(reviewer.acted_on) if reviewer.acted_on else None,
+        "remarks": None,
+        "via_email_link": False,
+    }
+
+
 def managed_doctypes():
     """Target DocTypes that currently have an active engine-generated workflow.
     Used by the client to register the sidebar renderer only where relevant."""
@@ -122,12 +226,19 @@ def workflow_activity(doctype, name):
         order_by="creation asc",
     )
 
-    # Final action per tier from the log (later entries win, so a hold that was
-    # later approved correctly ends up "approved"; an unresolved hold stays "on_hold").
+    # Final action per tier from the log (later entries win, so a hold that was later
+    # approved correctly ends up "approved"; an unresolved hold stays "on_hold"). Tier is
+    # read from the DESTINATION where unambiguous, so an ad-hoc reviewer's move into the
+    # review state is never miscredited to the tier it precedes, and a tier that resumes
+    # after a review (acting from Additionally Approved) is still credited correctly.
     tier_action = {}
     for log in logs:
-        tier = acting_tier(log.from_state)
+        tier = _logged_tier(log.from_state, log.workflow_state)
         if not tier:
+            continue
+        # Finalize/Reject name no tier in the destination, so a reviewer acting from a
+        # tier state could masquerade as that tier — keep only its real pool members.
+        if log.workflow_state in ("Approved", "Rejected") and log.user not in pool(row, tier):
             continue
         tier_action[tier] = {
             "status": _status_of(log.workflow_state),
@@ -141,6 +252,17 @@ def workflow_activity(doctype, name):
     # None when Approved/Rejected, and None when On Hold since that tier is already
     # captured in tier_action).
     current_tier = _TIER_FROM_STATE.get(current)
+
+    # An ad-hoc reviewer shifts "who acts now": while they are pending the tier they
+    # precede is blocked, and while the document sits in Additionally Approved that tier
+    # is the one now resuming.
+    active_reviewer = _active_reviewer(doctype, name)
+    if active_reviewer:
+        tier_before = acting_tier(active_reviewer.insert_state)
+        if current == ADDITIONAL_APPROVAL_STATE:
+            current_tier = tier_before
+        elif not active_reviewer.completed and current == active_reviewer.insert_state:
+            current_tier = None
 
     steps = []
     for level in levels:
@@ -167,5 +289,13 @@ def workflow_activity(doctype, name):
         else:
             step["status"] = "pending" if level == current_tier else "upcoming"
         steps.append(step)
+
+    # Every reviewer (past and present) shows as a step just before the tier it precedes,
+    # in the order they were added, so an approved reviewer stays visible after the chain
+    # resumes past them.
+    for reviewer in _all_reviewers(doctype, name):
+        tier_before = acting_tier(reviewer.insert_state)
+        insert_at = next((i for i, s in enumerate(steps) if s["level"] == tier_before), len(steps))
+        steps.insert(insert_at, _reviewer_step(reviewer))
 
     return {"managed": True, "current_state": current, "steps": steps}

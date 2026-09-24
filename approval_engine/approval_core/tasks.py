@@ -7,7 +7,13 @@
 import frappe
 
 from approval_engine.approval_core.email_action.action_link import expire_stale_links
-from approval_engine.approval_core.email_action.notify import ActionRequestNotifier
+from approval_engine.approval_core.email_action.notify import (
+    ActionRequestNotifier,
+    send_reviewer_request,
+)
+from approval_engine.approval_core.doctype.additional_approver.additional_approver_utils import (
+    pending_reviewer,
+)
 
 
 def send_action_emails(doctype, name, workflow_state):
@@ -32,6 +38,26 @@ def send_action_emails(doctype, name, workflow_state):
     if doc.docstatus != 0 or doc.get("workflow_state") != workflow_state:
         return
     ActionRequestNotifier(doc).run()
+
+
+def send_reviewer_email(reference_doctype, reference_name, approver):
+    """
+    Email an ad-hoc additional approver their action link (enqueued after commit).
+
+    Skips quietly when the reviewer is no longer the document's pending reviewer — e.g. the
+    insertion was undone or already actioned before the job ran.
+
+    Parameters:
+        reference_doctype (str, required): Target document's DocType.
+        reference_name (str, required): Target document's name.
+        approver (str, required): The reviewer to email.
+
+    Returns:
+        None
+    """
+    if not pending_reviewer(reference_doctype, reference_name):
+        return
+    send_reviewer_request(reference_doctype, reference_name, approver)
 
 
 def expire_action_links():

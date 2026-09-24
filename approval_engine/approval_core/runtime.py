@@ -20,12 +20,19 @@ from frappe import _
 from frappe.utils import flt
 
 from approval_engine.approval_core.generator import (
-    workflow_name, amount_field_for, find_band_row, acting_tier,
+    workflow_name, amount_field_for, find_band_row,
+    ADDITIONAL_APPROVAL_STATE, ADDITIONAL_HOLD_STATE,
+)
+from approval_engine.approval_core.doctype.additional_approver.additional_approver_utils import (
+    mark_reviewer_completed, close_reviewer,
 )
 from approval_engine.approval_core.email_action.action_link import supersede_links
 from approval_engine.approval_core.remarks import (
     add_timeline_comment, pop_transition_remarks, validate_reject_reason,
 )
+
+# States in which no one is emailed on entry: terminal, or the reviewer's own hold.
+NO_EMAIL_STATES = ("Approved", "Rejected", ADDITIONAL_HOLD_STATE)
 
 
 def _managed(doctype):
@@ -82,8 +89,9 @@ def target_on_update(doc, method=None):
     if not _managed(doc.doctype):
         return
     supersede_links(doc.doctype, doc.name)
-    if not acting_tier(doc.workflow_state):
-        return  # Approved / Rejected: nobody left to email
+    _sync_additional_reviewer(doc)
+    if doc.workflow_state in NO_EMAIL_STATES:
+        return  # nobody to email (terminal, or the reviewer resumes from their own hold)
     frappe.enqueue(
         "approval_engine.approval_core.tasks.send_action_emails",
         queue="short",
@@ -92,6 +100,31 @@ def target_on_update(doc, method=None):
         name=doc.name,
         workflow_state=doc.workflow_state,
     )
+
+
+def _sync_additional_reviewer(doc):
+    """
+    Keep the active `Additional Approver` record in step with the document's state.
+
+    Marks the reviewer completed when the document enters `Additionally Approved` (they just
+    approved), and retires the reviewer once the chain has moved past the review step or the
+    document is rejected. Driven here because the state change lives on the target document,
+    not on the reviewer record.
+
+    Parameters:
+        doc (Document, required): The governed document that changed state.
+
+    Returns:
+        None
+    """
+    before = doc.get_doc_before_save()
+    old_state = before.get("workflow_state") if before else None
+    new_state = doc.workflow_state
+
+    if new_state == ADDITIONAL_APPROVAL_STATE:
+        mark_reviewer_completed(doc.doctype, doc.name)
+    elif old_state == ADDITIONAL_APPROVAL_STATE or new_state == "Rejected":
+        close_reviewer(doc.doctype, doc.name)
 
 
 def _block_if_no_band(doc):

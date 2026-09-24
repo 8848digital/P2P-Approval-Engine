@@ -20,10 +20,12 @@ from approval_engine.approval_core.email_action.action_link import (
     link_validity_hours,
 )
 from approval_engine.approval_core.generator import (
+    ADDITIONAL_APPROVAL_STATE,
     acting_tier,
     amount_field_for,
     find_band_row,
     pool,
+    resuming_tier,
 )
 
 REQUEST_EMAIL_TEMPLATE = "approval_action_request"
@@ -43,7 +45,10 @@ class ActionRequestNotifier:
             None
         """
         self.doc = doc
-        self.tier = acting_tier(doc.get("workflow_state"))
+        state = doc.get("workflow_state")
+        # In `Additionally Approved` the reviewer has already acted; the tier that must resume
+        # is derived from the reviewer's captured insert_state, not the state name itself.
+        self.tier = resuming_tier(doc) if state == ADDITIONAL_APPROVAL_STATE else acting_tier(state)
         self.amount = flt(doc.get(amount_field_for(doc.doctype)))
 
     def run(self):
@@ -136,3 +141,52 @@ class ActionRequestNotifier:
             reference_doctype=doc.doctype,
             reference_name=doc.name,
         )
+
+
+def send_reviewer_request(reference_doctype, reference_name, approver):
+    """
+    Email a newly-inserted ad-hoc reviewer their personal action link and the document PDF.
+
+    Mirrors the tier action-request email, but for a single `Additional Approver` who acts
+    before the chain resumes. Skips quietly when the reviewer has no email or is disabled.
+
+    Parameters:
+        reference_doctype (str, required): Target document's DocType.
+        reference_name (str, required): Target document's name.
+        approver (str, required): The reviewer to email.
+
+    Returns:
+        int: 1 when an email was queued, else 0.
+    """
+    doc = frappe.get_doc(reference_doctype, reference_name)
+    email = frappe.db.get_value("User", {"name": approver, "enabled": 1}, "email")
+    if not email:
+        return 0
+
+    amount = flt(doc.get(amount_field_for(doc.doctype)))
+    frappe.sendmail(
+        recipients=[email],
+        subject=_("Additional approval required: {0} {1}").format(_(doc.doctype), doc.name),
+        template=REQUEST_EMAIL_TEMPLATE,
+        args={
+            "approver_name": frappe.utils.get_fullname(approver),
+            "doctype": _(doc.doctype),
+            "docname": doc.name,
+            "company": doc.get("company"),
+            "department": doc.get("department"),
+            "amount": fmt_money(amount, currency=doc.get("currency")),
+            "workflow_state": _(doc.get("workflow_state")),
+            "tier": _("Additional Approver"),
+            "link_url": issue_link(doc, approver, 0),
+            "validity_hours": link_validity_hours(),
+        },
+        attachments=[{
+            "print_format_attachment": 1,
+            "doctype": doc.doctype,
+            "name": doc.name,
+        }],
+        print_letterhead=True,
+        reference_doctype=doc.doctype,
+        reference_name=doc.name,
+    )
+    return 1
