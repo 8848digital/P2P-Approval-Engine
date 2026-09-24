@@ -81,8 +81,13 @@ approval_engine.build_activity_html = function (steps) {
 				}
 			}
 
+			const label = step.additional
+				? `<div class="wf-activity-additional">${__("Additional Approver")}</div>`
+				: "";
+
 			return `
 				<div class="wf-activity-step">
+					${label}
 					<div>${__("Owner")}: <b>${owners || "&mdash;"}</b></div>
 					${status_line}
 					${acted_line}
@@ -97,6 +102,78 @@ approval_engine.build_activity_html = function (steps) {
 			<div class="sidebar-label">${__("Workflow Activity")}</div>
 			<div class="wf-activity-list">${rows}</div>
 		</div>`;
+};
+
+/**
+ * Show the "Add Additional Approver" toolbar button when the current user may inject an
+ * ad-hoc approver into this document's chain, and open the capture dialog on click.
+ *
+ * @param {object} frm - The target document form.
+ * @returns {void}
+ */
+approval_engine.maybe_add_reviewer_button = function (frm) {
+	if (frm.is_new()) {
+		return;
+	}
+	frappe.call({
+		method: "approval_engine.approval_core.api.v1.additional_approver.can_add",
+		args: { doctype: frm.doctype, name: frm.docname },
+		callback: (r) => {
+			if (!r || !r.data || !r.data.can_add) {
+				return;
+			}
+			frm.add_custom_button(__("Add Additional Approver"), () =>
+				approval_engine.prompt_additional_approver(frm)
+			);
+		},
+	});
+};
+
+/**
+ * Collect the ad-hoc approver's details and insert them into this document's chain.
+ *
+ * @param {object} frm - The target document form.
+ * @returns {void}
+ */
+approval_engine.prompt_additional_approver = function (frm) {
+	const dialog = new frappe.ui.Dialog({
+		title: __("Add Additional Approver"),
+		fields: [
+			{
+				fieldname: "approver",
+				fieldtype: "Link",
+				label: __("Additional Approver"),
+				options: "User",
+				reqd: 1,
+			},
+			{ fieldname: "can_reject", fieldtype: "Check", label: __("Can Reject") },
+			{ fieldname: "can_hold", fieldtype: "Check", label: __("Can Hold") },
+			{ fieldname: "action_via_email", fieldtype: "Check", label: __("Action via Email") },
+		],
+		primary_action_label: __("Add"),
+		primary_action(values) {
+			frappe.call({
+				method: "approval_engine.approval_core.api.v1.additional_approver.add",
+				args: {
+					doctype: frm.doctype,
+					name: frm.docname,
+					approver: values.approver,
+					can_reject: values.can_reject ? 1 : 0,
+					can_hold: values.can_hold ? 1 : 0,
+					action_via_email: values.action_via_email ? 1 : 0,
+				},
+				freeze: true,
+				callback: (r) => {
+					if (r && r.data && r.data.name) {
+						dialog.hide();
+						frappe.show_alert({ message: __("Additional approver added"), indicator: "green" });
+						frm.reload_doc();
+					}
+				},
+			});
+		},
+	});
+	dialog.show();
 };
 
 /**
@@ -174,6 +251,7 @@ $(document).on("app_ready", function () {
 				frappe.ui.form.on(dt, {
 					refresh(frm) {
 						approval_engine.render_workflow_activity(frm);
+						approval_engine.maybe_add_reviewer_button(frm);
 					},
 					before_workflow_action(frm) {
 						return approval_engine.prompt_workflow_remarks(frm);

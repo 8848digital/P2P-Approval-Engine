@@ -7,3 +7,11 @@
 .workflow-activity-section .wf-activity-step + .wf-activity-step {
 	border-top: 1px solid var(--border-color);
 }
+
+.workflow-activity-section .wf-activity-additional {
+	font-weight: 600;
+	color: var(--text-on-yellow, #b45309);
+	text-transform: uppercase;
+	font-size: var(--text-xs);
+	letter-spacing: 0.03em;
+}
