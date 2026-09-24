@@ -152,35 +152,59 @@ def _all_reviewers(doctype, name):
     )
 
 
-def _reviewer_step(reviewer):
+def _reviewer_step(reviewer, current, hold_log=None):
     """
     Render one ad-hoc reviewer as a sidebar step, mirroring a tier step's shape.
 
-    Status: approved once they have approved (`completed`), pending while still their
-    turn (`active`, not completed), rejected once retired without completing.
+    Status: approved once they have approved (`completed`); on_hold while the document
+    sits in the reviewer's hold state and they have not yet resumed; pending while it is
+    still their turn (`active`, not completed); rejected once retired without completing.
+    A held reviewer's actor/time/remarks come from the hold's `Document Workflow Log` row
+    (`hold_log`) because the record's `acted_on` is only stamped on completion, so a tier
+    hold and an ad-hoc hold render identically.
 
     Parameters:
         reviewer (dict, required): An `Additional Approver` record's fields.
+        current (str, required): The document's current workflow state.
+        hold_log (dict, optional): The log row that moved the document into the reviewer
+            hold state, present only while the document is currently held.
 
     Returns:
         dict: A step dict flagged `additional` for the sidebar renderer.
     """
     if reviewer.completed:
         status = "approved"
+    elif reviewer.active and current == ADDITIONAL_HOLD_STATE:
+        status = "on_hold"
     elif reviewer.active:
         status = "pending"
     else:
         status = "rejected"
-    acted = status in ("approved", "rejected")
+
+    # Held -> actor/time/remarks from the hold's log row; approved/rejected -> from the
+    # record; pending -> not yet acted.
+    if status == "on_hold" and hold_log:
+        acted_by, time, remarks, via_email = (
+            _owner(reviewer.approver), str(hold_log.creation),
+            hold_log.remarks, bool(hold_log.via_email_link),
+        )
+    elif status in ("approved", "rejected"):
+        acted_by, time, remarks, via_email = (
+            _owner(reviewer.approver),
+            str(reviewer.acted_on) if reviewer.acted_on else None, None, False,
+        )
+    else:
+        acted_by, time, remarks, via_email = None, None, None, False
+
     return {
         "level": None,
         "additional": True,
         "owner": [_owner(reviewer.approver)],
-        "acted_by": _owner(reviewer.approver) if acted else None,
+        "acted_by": acted_by,
         "status": status,
-        "time": str(reviewer.acted_on) if reviewer.acted_on else None,
-        "remarks": None,
-        "via_email_link": False,
+        "time": time,
+        "remarks": remarks,
+        "via_email_link": via_email,
     }
 
 
@@ -293,9 +317,16 @@ def workflow_activity(doctype, name):
     # Every reviewer (past and present) shows as a step just before the tier it precedes,
     # in the order they were added, so an approved reviewer stays visible after the chain
     # resumes past them.
+    # The log row that placed the document into the reviewer hold, so a currently-held
+    # reviewer step shows who held and when (the record's acted_on is only set on approve).
+    hold_log = None
+    if current == ADDITIONAL_HOLD_STATE:
+        hold_log = next(
+            (log for log in reversed(logs) if log.workflow_state == ADDITIONAL_HOLD_STATE), None)
+
     for reviewer in _all_reviewers(doctype, name):
         tier_before = acting_tier(reviewer.insert_state)
         insert_at = next((i for i, s in enumerate(steps) if s["level"] == tier_before), len(steps))
-        steps.insert(insert_at, _reviewer_step(reviewer))
+        steps.insert(insert_at, _reviewer_step(reviewer, current, hold_log))
 
     return {"managed": True, "current_state": current, "steps": steps}
