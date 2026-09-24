@@ -24,15 +24,15 @@ from approval_engine.approval_core.generator import (
     ADDITIONAL_APPROVAL_STATE, ADDITIONAL_HOLD_STATE,
 )
 from approval_engine.approval_core.doctype.additional_approver.additional_approver_utils import (
-    mark_reviewer_completed, close_reviewer,
+    mark_reviewer_completed, close_reviewer, pending_reviewer, notify_reviewer,
 )
 from approval_engine.approval_core.email_action.action_link import supersede_links
 from approval_engine.approval_core.remarks import (
     add_timeline_comment, pop_transition_remarks, validate_reject_reason,
 )
 
-# States in which no one is emailed on entry: terminal, or the reviewer's own hold.
-NO_EMAIL_STATES = ("Approved", "Rejected", ADDITIONAL_HOLD_STATE)
+# States in which no one is emailed on entry: terminal states only.
+NO_EMAIL_STATES = ("Approved", "Rejected")
 
 
 def _managed(doctype):
@@ -90,8 +90,11 @@ def target_on_update(doc, method=None):
         return
     supersede_links(doc.doctype, doc.name)
     _sync_additional_reviewer(doc)
+    if doc.workflow_state == ADDITIONAL_HOLD_STATE:
+        _renotify_held_reviewer(doc)  # re-email the reviewer so they can resume from email
+        return
     if doc.workflow_state in NO_EMAIL_STATES:
-        return  # nobody to email (terminal, or the reviewer resumes from their own hold)
+        return  # terminal state — nobody to email
     frappe.enqueue(
         "approval_engine.approval_core.tasks.send_action_emails",
         queue="short",
@@ -100,6 +103,29 @@ def target_on_update(doc, method=None):
         name=doc.name,
         workflow_state=doc.workflow_state,
     )
+
+
+def _renotify_held_reviewer(doc):
+    """
+    Re-email the ad-hoc reviewer a fresh action link when they hold the document.
+
+    A reviewer who holds stays active-but-incomplete, but the state change retired their
+    original link — so without this they could only resume from Desk. Mirrors the tier
+    hold behaviour (which re-emails the holding tier), gated on the reviewer's own
+    `action_via_email` flag so a Desk-only reviewer is never emailed.
+
+    Parameters:
+        doc (Document, required): The governed document now in `On Hold by Additional Approver`.
+
+    Returns:
+        None
+    """
+    name = pending_reviewer(doc.doctype, doc.name)
+    if not name:
+        return
+    if not frappe.db.get_value("Additional Approver", name, "action_via_email"):
+        return
+    notify_reviewer(name)
 
 
 def _sync_additional_reviewer(doc):
