@@ -27,6 +27,7 @@ with who acted, when, and why.
 | Approval Amount Field Mapping | Yes (child) | One document type to amount field mapping inside Approval Settings. |
 | Document Workflow Log | Yes | The audit trail: every state change, who made it, their remarks, and whether it came from an email link. |
 | Approval Action Token | Yes | One emailed approval link: who it was issued to, its status, and how it was used. Tokens and codes are stored only as hashes. |
+| Additional Approver | Yes | One ad-hoc approver added to a single document's chain in-flight, before the next pending tier — without changing the matrix or any other document. |
 | Purchase Order, Purchase Invoice, Payment Entry, … | No (ERPNext core, governed) | Any submittable DocType can be placed under an Approval Matrix. The engine adds a `department` field where one is missing. |
 
 ## Features
@@ -39,6 +40,10 @@ with who acted, when, and why.
 - Route each document to the right approvers by its own company, department and
   amount, and escalate tier by tier until the last configured tier approves.
 - Allow a tier to hold or reject, where the matrix permits it.
+- Let an eligible approver insert a one-off **additional approver** into a single
+  document's chain at the current step (before the next pending tier), with
+  optional hold/reject and email action, without touching the shared matrix or
+  affecting any other document.
 - Block documents that no configured band covers, so nothing slips through
   unapproved.
 - Capture approver remarks on every action, with a **mandatory reason for

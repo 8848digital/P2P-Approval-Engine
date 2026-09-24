@@ -146,3 +146,45 @@ the document still a draft **in the exact state the link was issued for**, and t
 enabled. Anything else answers with a visitor-safe reason. Because the action runs as the
 approver, §2's conditions, §5's band gate and the §6 audit trail all apply untouched — the email
 channel adds no new way to approve, only a new way to reach the same one.
+
+## 8. Ad-hoc additional approver (per document)
+
+An eligible approver can inject ONE extra sequential approver into a single document's live chain
+— e.g. `Dhaval → Karan → Atul(extra) → Ritik` for one PO — without touching the shared matrix or
+any other document. Backed by the `Additional Approver` DocType (`reference_doctype/name`,
+`approver`, captured `insert_state`, `can_hold`/`can_reject`/`action_via_email`, `active`/`completed`).
+
+**One resting state, `Additionally Approved`**, plus `On Hold by Additional Approver`, and one coarse
+role `<DocType> - Additional Approver` (granted/revoked **per record**, never by `reconcile_roles`,
+so a matrix rebuild can't strip an ad-hoc reviewer). Insertion is auto-captured at the current
+juncture: the reviewer's `insert_state` is the document's state when they were added, and at most
+one reviewer may be active-and-incomplete per document.
+
+For a document waiting at state `S` with a pending reviewer (all generic, baked at generation time,
+gated by live `get_value` into `Additional Approver`):
+
+```
+# block: every tier transition FROM S gains  ... and not <pending reviewer at S>
+# intercept (role <DocType> - Additional Approver, pinned to the reviewer):
+S                              --Approve--> Additionally Approved          <pending reviewer at S, approver == session.user>
+S                              --Reject-->  Rejected                     <... and can_reject>
+S                              --Hold-->    On Hold by Additional Approver   <... and can_hold>
+On Hold by Additional Approver --Approve--> Additionally Approved          <pending reviewer at S, approver == session.user>
+On Hold by Additional Approver --Reject-->  Rejected                     <... and can_reject>
+# resume: the tier that acts FROM S is mirrored FROM Additionally Approved, gated by the reviewer
+# having completed, so the configured chain continues exactly as it would have:
+Additionally Approved            --Approve--> Approved <tier> / Approved    <base tier cond and <reviewer done at S> [and next]>
+```
+
+Since only one reviewer is active per document, the completed reviewer's `insert_state` unambiguously
+selects which tier resumes even though `Additionally Approved` is a single shared state. Lifecycle is
+driven from `runtime.target_on_update` on the target document: entering `Additionally Approved` marks
+the reviewer `completed`; leaving it (or `Rejected`) retires the reviewer (`active = 0`) and revokes
+the role unless the user still has another active assignment on that DocType. The reviewer's
+Approve/Reject reuses §5's audit log and §6's remarks dialog unchanged. Dashboard pending attribution
+(`dashboard/finance_dashboard.py`) is adjusted additively: a blocked tier is not shown while a
+reviewer is pending, the reviewer is shown instead, and the resuming tier is shown once the document
+sits in `Additionally Approved`.
+
+**Limitation:** you cannot insert after the final approval — once the top tier approves, the document
+is submitted/terminal. The reviewer is always before the next pending tier.
