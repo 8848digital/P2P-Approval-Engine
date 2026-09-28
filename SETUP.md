@@ -70,7 +70,9 @@ bench --site <site> set-config host_name https://erp.example.com
 1. Open **Approval Settings** and add a row mapping a target DocType (e.g.
    `Purchase Order`) to its amount field (e.g. `grand_total`).
 2. Create and submit an **Approval Matrix** for that DocType and a company,
-   with at least one amount band and an Approver 1 user.
+   with at least one amount band and an Approver 1 user. If another workflow
+   is already active on that DocType, submit is refused until you deactivate
+   it — the engine never switches off or rewrites a workflow it did not build.
 3. Open a document of that DocType — the generated `<DocType> Approval`
    workflow should be active and the "Workflow Activity" sidebar should
    render on the form.

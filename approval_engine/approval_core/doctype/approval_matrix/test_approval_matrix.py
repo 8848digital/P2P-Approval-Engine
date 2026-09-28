@@ -10,6 +10,8 @@ from frappe.tests import UnitTestCase
 
 from approval_engine.approval_core.generator import band_condition
 
+MATRIX_MODULE = "approval_engine.approval_core.doctype.approval_matrix.approval_matrix"
+
 
 def _matrix(rows):
     """Build an in-memory (unsaved) Approval Matrix for validation tests."""
@@ -134,3 +136,18 @@ class UnitTestApprovalMatrix(UnitTestCase):
         m = _matrix([_row("IT", 0, 0)])
         with patch.object(frappe.db, "get_value", return_value=None):
             m._validate_departments_company()
+
+    # ---------------- foreign workflow guard ----------------
+
+    def test_active_foreign_workflow_blocks_submit(self):
+        """Another active workflow on the DocType blocks submit instead of being switched off."""
+        m = _matrix([_row("IT", 0, 0)])
+        with patch(f"{MATRIX_MODULE}.foreign_active_workflow", return_value="Test YEXP"):
+            with self.assertRaises(frappe.ValidationError):
+                m._validate_no_foreign_workflow()
+
+    def test_no_foreign_workflow_allows_submit(self):
+        """With no other active workflow on the DocType, submit proceeds."""
+        m = _matrix([_row("IT", 0, 0)])
+        with patch(f"{MATRIX_MODULE}.foreign_active_workflow", return_value=None):
+            m._validate_no_foreign_workflow()

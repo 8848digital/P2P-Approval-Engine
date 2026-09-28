@@ -9,10 +9,11 @@ from decimal import Decimal
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.utils import get_link_to_form
 
 from approval_engine.approval_core.generator import (
     MAX_LEVELS, configured_levels, setup_workflow, on_matrix_cancel,
-    resolve_amount_field,
+    resolve_amount_field, foreign_active_workflow,
 )
 
 
@@ -42,6 +43,7 @@ class ApprovalMatrix(Document):
         # mapping is being sorted out; the client shows a live hint meanwhile. Hard-block at
         # submit, since submit bakes the amount field into the generated conditions.
         self._validate_amount_field()
+        self._validate_no_foreign_workflow()
         setup_workflow(self.document_type)
 
     def on_cancel(self):
@@ -68,6 +70,23 @@ class ApprovalMatrix(Document):
                 "field for {1} in <b>Approval Settings</b> before submitting this matrix — the "
                 "bands compare document amounts against it."
             ).format(info.get("amount_field"), self.document_type))
+
+    def _validate_no_foreign_workflow(self):
+        """
+        Refuse to submit while another, non-engine workflow is active on the DocType.
+
+        Activating the engine's workflow would silently switch that one off, so the user
+        must deactivate it themselves first. Inactive workflows are left alone.
+
+        Returns:
+            None
+        """
+        foreign = foreign_active_workflow(self.document_type)
+        if foreign:
+            frappe.throw(_(
+                "Workflow {0} is active for {1}. Deactivate it before submitting this "
+                "Approval Matrix, so the Approval Engine can run its own workflow."
+            ).format(get_link_to_form("Workflow", foreign), self.document_type))
 
     def _validate_unique_active(self):
         """
