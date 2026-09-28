@@ -155,13 +155,29 @@ class UnitTestAdditionalApprover(UnitTestCase):
         """A minimal `Additional Approver` record stand-in for the sidebar renderer."""
         return SimpleNamespace(
             approver="rev@example.com", active=active, completed=completed,
-            insert_state="Approved 1", acted_on=acted_on)
+            insert_state="Approved 1", acted_on=acted_on, creation="2026-09-24 08:00:00")
+
+    @staticmethod
+    def _log(workflow_state, creation, remarks=None, user="rev@example.com", via_email_link=0):
+        """A minimal `Document Workflow Log` row stand-in."""
+        return SimpleNamespace(
+            workflow_state=workflow_state, creation=creation, remarks=remarks,
+            user=user, via_email_link=via_email_link)
+
+    def _step(self, reviewer, current, logs=()):
+        """Render `reviewer` the way `workflow_activity` does."""
+        status = activity._reviewer_status(reviewer, current)
+        return activity._reviewer_step(
+            reviewer, status, activity._reviewer_log(reviewer, status, list(logs)))
 
     def test_reviewer_step_held_shows_on_hold_from_log(self):
-        """A held reviewer shows on_hold, with actor/time/remarks taken from the hold log."""
-        hold_log = SimpleNamespace(
-            creation="2026-09-24 10:00:00", remarks="parking this", via_email_link=1)
-        step = activity._reviewer_step(self._reviewer(), ADDITIONAL_HOLD_STATE, hold_log)
+        """A held reviewer shows on_hold, with actor/time/remarks from the LATEST hold log."""
+        logs = [
+            self._log(ADDITIONAL_HOLD_STATE, "2026-09-24 09:00:00", "first hold"),
+            self._log(ADDITIONAL_HOLD_STATE, "2026-09-24 10:00:00", "parking this",
+                      via_email_link=1),
+        ]
+        step = self._step(self._reviewer(), ADDITIONAL_HOLD_STATE, logs)
         self.assertEqual(step["status"], "on_hold")
         self.assertEqual(step["acted_by"]["user"], "rev@example.com")
         self.assertEqual(step["time"], "2026-09-24 10:00:00")
@@ -170,22 +186,43 @@ class UnitTestAdditionalApprover(UnitTestCase):
 
     def test_reviewer_step_active_but_not_held_is_pending(self):
         """An active reviewer whose document is NOT in the hold state stays pending."""
-        step = activity._reviewer_step(self._reviewer(), "Approved 1", None)
+        step = self._step(self._reviewer(), "Approved 1")
         self.assertEqual(step["status"], "pending")
         self.assertIsNone(step["acted_by"])
 
-    def test_reviewer_step_completed_is_approved(self):
-        """A completed reviewer shows approved, timed from the record's acted_on."""
-        step = activity._reviewer_step(
-            self._reviewer(completed=1, acted_on="2026-09-24 09:00:00"),
-            ADDITIONAL_APPROVAL_STATE, None)
+    def test_reviewer_step_completed_is_approved_with_remarks(self):
+        """A completed reviewer shows approved, with time/remarks from their approve log."""
+        logs = [self._log(ADDITIONAL_APPROVAL_STATE, "2026-09-24 09:00:00", "looks fine")]
+        step = self._step(
+            self._reviewer(completed=1, acted_on="2026-09-24 09:00:01"),
+            ADDITIONAL_APPROVAL_STATE, logs)
         self.assertEqual(step["status"], "approved")
         self.assertEqual(step["time"], "2026-09-24 09:00:00")
+        self.assertEqual(step["remarks"], "looks fine")
 
-    def test_reviewer_step_retired_is_rejected(self):
-        """A retired-without-completing reviewer shows rejected."""
-        step = activity._reviewer_step(self._reviewer(active=0), "Rejected", None)
+    def test_reviewer_step_completed_without_log_falls_back_to_record(self):
+        """With no log row, an approved reviewer is still timed from the record's acted_on."""
+        step = self._step(
+            self._reviewer(completed=1, acted_on="2026-09-24 09:00:00"),
+            ADDITIONAL_APPROVAL_STATE)
+        self.assertEqual(step["status"], "approved")
+        self.assertEqual(step["time"], "2026-09-24 09:00:00")
+        self.assertIsNone(step["remarks"])
+
+    def test_reviewer_step_retired_is_rejected_with_remarks(self):
+        """A reviewer who rejected shows rejected, with time/remarks from the reject log."""
+        logs = [self._log("Rejected", "2026-09-24 11:00:00", "not needed")]
+        step = self._step(self._reviewer(active=0), "Rejected", logs)
         self.assertEqual(step["status"], "rejected")
+        self.assertEqual(step["acted_by"]["user"], "rev@example.com")
+        self.assertEqual(step["time"], "2026-09-24 11:00:00")
+        self.assertEqual(step["remarks"], "not needed")
+
+    def test_reviewer_log_ignores_actions_before_reviewer_was_added(self):
+        """An earlier reviewer's approve is never credited to a later one."""
+        logs = [self._log(ADDITIONAL_APPROVAL_STATE, "2026-09-24 07:00:00", "earlier reviewer")]
+        step = self._step(self._reviewer(completed=1), ADDITIONAL_APPROVAL_STATE, logs)
+        self.assertIsNone(step["remarks"])
 
     # ---------------- eligibility (mocked) ----------------
 
