@@ -89,7 +89,7 @@ class FinanceDashboard {
 						<div class="logo">FN</div>
 						<div class="header-titles">
 							<h1>Finance Overview</h1>
-							<p>Pending &amp; on-hold value across ${COLUMNS.map((c) => c.label).join(", ")}</p>
+							<p>Pending, on-hold, approved &amp; rejected value across ${COLUMNS.map((c) => c.label).join(", ")}</p>
 						</div>
 					</div>
 					<div class="header-right">
@@ -123,7 +123,7 @@ class FinanceDashboard {
 				<div class="section-head">
 					<div class="section-head-group">
 						<h2>Detailed view</h2>
-						<span class="sub">Approved value by date range</span>
+						<span class="sub">Approved &amp; rejected value by date range</span>
 					</div>
 				</div>
 				<div class="filter-bar" data-el="filterBar">
@@ -152,7 +152,8 @@ class FinanceDashboard {
 						<tbody data-el="detailBody"></tbody>
 					</table>
 					<div class="footnote" style="padding:0 20px 18px;">
-						<div class="legend"><span class="dot" style="background:var(--approved)"></span>Approved — cleared for processing, totals reflect the selected date range</div>
+						<div class="legend"><span class="dot" style="background:var(--approved)"></span>Approved — cleared for processing</div>
+						<div class="legend"><span class="dot" style="background:var(--rejected)"></span>Rejected — declined by you; totals reflect the selected date range</div>
 					</div>
 				</div>
 			</div>
@@ -241,11 +242,9 @@ class FinanceDashboard {
 	open_cell(el) {
 		const doctype = el.getAttribute("data-doctype");
 		const bucket = el.getAttribute("data-bucket");
-		const source = bucket === "approved" ? this.detail_data : this.overview_data;
-		const metric =
-			bucket === "approved"
-				? (source || {})[doctype]
-				: ((source || {})[doctype] || {})[bucket];
+		const is_detail = bucket === "approved" || bucket === "rejected";
+		const source = is_detail ? this.detail_data : this.overview_data;
+		const metric = ((source || {})[doctype] || {})[bucket];
 		const names = (metric && metric.names) || [];
 		if (!names.length) return;
 		frappe.route_options = { name: ["in", names] };
@@ -317,11 +316,15 @@ class FinanceDashboard {
 	cells(get_metric, cls, bucket) {
 		return COLUMNS.map((col) => {
 			const m = get_metric(col.doctype) || { records: 0, amount: 0, names: [] };
-			// Hide the count pill for a zero amount — an empty band adds no information.
-			const pill =
-				Number(m.amount) === 0
-					? ""
-					: `<span class="count-pill">Count <span class="num">${m.records || 0}</span></span>`;
+			// A zero amount reads as a plain dash with no count pill — "₹0.00" repeated across
+			// the grid is noise, and an empty band adds no information.
+			const is_zero = Number(m.amount) === 0;
+			const amt = is_zero
+				? `<span class="amt is-empty">—</span>`
+				: `<span class="amt"><span class="cur">₹</span>${this.fmt_inr(m.amount)}</span>`;
+			const pill = is_zero
+				? ""
+				: `<span class="count-pill">Count <span class="num">${m.records || 0}</span></span>`;
 			// Clickable only when the cell has documents behind it: clicking opens the target
 			// DocType list filtered to exactly those documents (data-bucket/-doctype resolve the
 			// stored name list at click time). A zero-doc cell stays inert.
@@ -332,7 +335,7 @@ class FinanceDashboard {
 				: ` class="cell-metric ${cls}"`;
 			return `<td>
 				<div${link_attrs}>
-					<span class="amt"><span class="cur">₹</span>${this.fmt_inr(m.amount)}</span>
+					${amt}
 					${pill}
 				</div>
 			</td>`;
@@ -374,15 +377,16 @@ class FinanceDashboard {
 		this.$("rangeReadout").html(`Showing <span>${frappe.utils.escape_html(label)}</span>`);
 		const $body = this.$("detailBody").addClass("is-loading");
 		frappe.call({
-			method: "approval_engine.approval_core.api.v1.dashboard.get_approved_summary",
+			method: "approval_engine.approval_core.api.v1.dashboard.get_detail_summary",
 			args: { company: this.company, from_date: from, to_date: to },
 			callback: (r) => {
 				const data = (r && r.data) || {};
 				this.detail_data = data;
-				const approved = this.cells((dt) => data[dt], "is-approved", "approved");
-				$body.removeClass("is-loading").html(
-					`<tr><td><span class="row-tag approved"><span class="dot"></span>Approved</span></td>${approved}</tr>`
-				);
+				const approved = this.cells((dt) => (data[dt] || {}).approved, "is-approved", "approved");
+				const rejected = this.cells((dt) => (data[dt] || {}).rejected, "is-rejected", "rejected");
+				$body.removeClass("is-loading").html(`
+					<tr><td><span class="row-tag approved"><span class="dot"></span>Approved</span></td>${approved}</tr>
+					<tr><td><span class="row-tag rejected"><span class="dot"></span>Rejected</span></td>${rejected}</tr>`);
 			},
 		});
 	}

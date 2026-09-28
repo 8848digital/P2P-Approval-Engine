@@ -35,17 +35,17 @@ module.
 
 ## Pages
 
-- **Finance Overview** (`finance-dashboard`) — per-DocType pending / on-hold / approved value for the logged-in user, scoped to a company.
+- **Finance Overview** (`finance-dashboard`) — per-DocType pending / on-hold value (all-time) and approved / rejected value (by date range) for the logged-in user, scoped to a company.
 
 ## Dashboards
 
-- `dashboard/finance_dashboard.py` — aggregation data provider backing the Finance Overview page (pending, on-hold, and approved summaries per target DocType).
+- `dashboard/finance_dashboard.py` — aggregation data provider backing the Finance Overview page (pending, on-hold, approved, and rejected summaries per target DocType).
 
 ## API
 
 Whitelisted endpoints (versioned under `api/v1/`):
 
-- `api/v1/dashboard.py` — Finance Overview summaries (pending / on-hold / approved / combined).
+- `api/v1/dashboard.py` — Finance Overview summaries (pending / on-hold / approved / rejected, plus the combined overview and detail calls).
 - `api/v1/activity.py` — managed DocTypes + per-document workflow-activity reconstruction for the form sidebar.
 - `api/v1/workflow.py` — amount-field resolution for the Approval Matrix form, and the remarks stash used by the Desk workflow-action dialog.
 - `api/v1/email_action.py` — guest (`allow_guest`) endpoints behind the approval page: request an OTP, submit an action. POST-only and rate limited.
