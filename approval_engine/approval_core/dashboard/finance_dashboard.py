@@ -17,12 +17,16 @@ On hold ("held by me") is attributed from the audit trail: a doc counts if its c
 an `On Hold by Approver N` state AND the most recent `Document Workflow Log` row for it (the row
 that moved it into hold) was written by the user. This needs the full-transition logging added
 in the Document Workflow Log work — approvals-only history could not attribute a hold.
+
+Approved / rejected ("acted on by me", date-ranged) are likewise attributed from the audit trail:
+the user wrote a log row moving the doc into an approval state, or into `Rejected`.
 """
 
 import frappe
 from frappe.utils import add_days, getdate
 
 from approval_engine.approval_core.generator import ADDITIONAL_APPROVAL_STATE
+from approval_engine.approval_core.remarks import REJECTED_STATE
 
 # Current in-flight state -> the approver-pool column prefix that must contain the user.
 STATE_TIER_POOL = {
@@ -275,11 +279,58 @@ def on_hold_for_doctype(document_type, company, user):
 
 
 def approved_for_doctype(document_type, company, user, from_date=None, to_date=None):
-    """Return {records, amount} of docs of `document_type` `user` approved in `company` within
-    the date range. "Approved" = the user has any Document Workflow Log row moving the doc into
-    an approval state (Approved 1/2/3 or final Approved); each doc is counted once even if the
-    user approved it at more than one tier. `from_date`/`to_date` are inclusive dates (on the
-    log row's creation); either may be omitted for an open bound."""
+    """Return {records, amount, names} of docs of `document_type` `user` approved in `company`
+    within the date range. "Approved" = the user moved the doc into an approval state
+    (Approved 1/2/3 or final Approved); each doc is counted once even if the user approved it at
+    more than one tier.
+
+    Parameters:
+        document_type (str, required): Target DocType.
+        company (str, required): Company to scope to.
+        user (str, required): The approver.
+        from_date (str, optional): Inclusive start date; omit for an open bound.
+        to_date (str, optional): Inclusive end date; omit for an open bound.
+
+    Returns:
+        dict: {records, amount, names}.
+    """
+    return _acted_for_doctype(document_type, company, user, APPROVED_STATES, from_date, to_date)
+
+
+def rejected_for_doctype(document_type, company, user, from_date=None, to_date=None):
+    """Return {records, amount, names} of docs of `document_type` `user` rejected in `company`
+    within the date range — the user wrote the log row moving the doc into `Rejected`.
+
+    Parameters:
+        document_type (str, required): Target DocType.
+        company (str, required): Company to scope to.
+        user (str, required): The approver.
+        from_date (str, optional): Inclusive start date; omit for an open bound.
+        to_date (str, optional): Inclusive end date; omit for an open bound.
+
+    Returns:
+        dict: {records, amount, names}.
+    """
+    return _acted_for_doctype(document_type, company, user, (REJECTED_STATE,), from_date, to_date)
+
+
+def _acted_for_doctype(document_type, company, user, states, from_date=None, to_date=None):
+    """Docs of `document_type` in `company` that `user` moved into any of `states` in the range.
+
+    Attributed from the Document Workflow Log: a doc counts if the user has a log row whose
+    destination state is in `states`, dated (on the row's creation) within the range.
+
+    Parameters:
+        document_type (str, required): Target DocType.
+        company (str, required): Company to scope to.
+        user (str, required): The acting user.
+        states (tuple, required): Destination workflow states that count as the action.
+        from_date (str, optional): Inclusive start date; omit for an open bound.
+        to_date (str, optional): Inclusive end date; omit for an open bound.
+
+    Returns:
+        dict: {records, amount, names}.
+    """
     amount_field = amount_field_for(document_type)
     if not amount_field:
         return {"records": 0, "amount": 0.0, "names": []}
@@ -291,7 +342,7 @@ def approved_for_doctype(document_type, company, user, from_date=None, to_date=N
         "l.workflow_state    IN %(states)s",
     ]
     params = {"doctype": document_type, "company": company, "user": user,
-              "states": APPROVED_STATES}
+              "states": tuple(states)}
     if from_date:
         conditions.append("l.creation >= %(from_dt)s")
         params["from_dt"] = getdate(from_date)               # start of that day
@@ -332,6 +383,48 @@ def approved_summary(company, user=None, from_date=None, to_date=None):
     user = user or frappe.session.user
     return {
         dt: approved_for_doctype(dt, company, user, from_date, to_date)
+        for dt in target_doctypes()
+    }
+
+
+def rejected_summary(company, user=None, from_date=None, to_date=None):
+    """Per-DocType rejected-by-`user` summary in `company`, over the given date range.
+
+    Parameters:
+        company (str, required): Company to scope to.
+        user (str, optional): The approver; defaults to the session user.
+        from_date (str, optional): Inclusive start date.
+        to_date (str, optional): Inclusive end date.
+
+    Returns:
+        dict: Target DocType -> {records, amount, names}.
+    """
+    user = user or frappe.session.user
+    return {
+        dt: rejected_for_doctype(dt, company, user, from_date, to_date)
+        for dt in target_doctypes()
+    }
+
+
+def detail_summary(company, user=None, from_date=None, to_date=None):
+    """Per-DocType {approved, rejected} summary for `user` in `company` over a date range —
+    both rows of the dashboard's Detailed view in a single pass over the targets.
+
+    Parameters:
+        company (str, required): Company to scope to.
+        user (str, optional): The approver; defaults to the session user.
+        from_date (str, optional): Inclusive start date.
+        to_date (str, optional): Inclusive end date.
+
+    Returns:
+        dict: Target DocType -> {approved, rejected}, each {records, amount, names}.
+    """
+    user = user or frappe.session.user
+    return {
+        dt: {
+            "approved": approved_for_doctype(dt, company, user, from_date, to_date),
+            "rejected": rejected_for_doctype(dt, company, user, from_date, to_date),
+        }
         for dt in target_doctypes()
     }
 

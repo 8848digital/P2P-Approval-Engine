@@ -102,6 +102,57 @@ def get_approved_summary(company, from_date=None, to_date=None, user=None):
 
 
 @frappe.whitelist()
+def get_rejected_summary(company, from_date=None, to_date=None, user=None):
+    """Per-DocType count + amount of documents a user rejected in a date range.
+
+    Path: approval_engine.approval_core.api.v1.dashboard.get_rejected_summary
+    Method: GET
+
+    Parameters:
+        company (str, required): Company to scope the summary to.
+        from_date (str, optional): Inclusive start date (YYYY-MM-DD).
+        to_date (str, optional): Inclusive end date (YYYY-MM-DD).
+        user (str, optional): User to build the summary for; defaults to the
+            session user. Only a System Manager may request another user.
+
+    Returns:
+        dict: Envelope whose ``data`` maps each target DocType to
+        ``{records, amount, names}``.
+    """
+    return api_response(
+        data=fd.rejected_summary(company, _resolve_user(user), from_date, to_date),
+        message="Rejected summary fetched successfully",
+    )
+
+
+@frappe.whitelist()
+def get_detail_summary(company, from_date=None, to_date=None, user=None):
+    """Per-DocType {approved, rejected} summary for a user over a date range.
+
+    The single call the dashboard's Detailed view needs — both rows per DocType
+    column in one round trip.
+
+    Path: approval_engine.approval_core.api.v1.dashboard.get_detail_summary
+    Method: GET
+
+    Parameters:
+        company (str, required): Company to scope the summary to.
+        from_date (str, optional): Inclusive start date (YYYY-MM-DD).
+        to_date (str, optional): Inclusive end date (YYYY-MM-DD).
+        user (str, optional): User to build the summary for; defaults to the
+            session user. Only a System Manager may request another user.
+
+    Returns:
+        dict: Envelope whose ``data`` maps each target DocType to
+        ``{approved, rejected}``, each ``{records, amount, names}``.
+    """
+    return api_response(
+        data=fd.detail_summary(company, _resolve_user(user), from_date, to_date),
+        message="Detail summary fetched successfully",
+    )
+
+
+@frappe.whitelist()
 def get_dashboard_summary(company, user=None):
     """Per-DocType {pending, on_hold} summary for a user in a company.
 

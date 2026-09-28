@@ -18,6 +18,8 @@
   --approved-tint:#E7F5EC;
   --onhold:#3E5C8A;
   --onhold-tint:#E9EDF6;
+  --rejected:#B42318;
+  --rejected-tint:#FDECEA;
   --radius-lg:14px;
   --radius-md:10px;
   --radius-sm:7px;
@@ -121,6 +123,8 @@
 .fin-dash .row-tag.approved{ color:var(--approved); }
 .fin-dash .row-tag.onhold .dot{ background:var(--onhold); }
 .fin-dash .row-tag.onhold{ color:var(--onhold); }
+.fin-dash .row-tag.rejected .dot{ background:var(--rejected); }
+.fin-dash .row-tag.rejected{ color:var(--rejected); }
 
 .fin-dash .cell-metric{ display:flex; flex-direction:column; align-items:flex-end; gap:5px; }
 .fin-dash .cell-metric.is-link{ cursor:pointer; border-radius:8px; margin:-6px -8px; padding:6px 8px; transition:background .12s ease; }
@@ -129,6 +133,7 @@
 .fin-dash .cell-metric.is-link:focus-visible{ outline:2px solid var(--brand-dark); outline-offset:2px; }
 .fin-dash .cell-metric .amt{ font-size:16px; font-weight:700; color:var(--ink); letter-spacing:-0.01em; }
 .fin-dash .cell-metric .amt .cur{ font-size:12px; font-weight:600; color:var(--ink-faint); margin-right:2px; }
+.fin-dash .cell-metric .amt.is-empty{ color:var(--ink-faint); font-weight:500; }
 .fin-dash .cell-metric .count-pill{
   display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:600;
   color:var(--ink-soft); background:var(--bg); border:1px solid var(--line);
@@ -141,6 +146,8 @@
 .fin-dash .cell-metric.is-approved .count-pill .num{ color:var(--approved); }
 .fin-dash .cell-metric.is-onhold .count-pill{ background:var(--onhold-tint); border-color:transparent; color:var(--onhold); }
 .fin-dash .cell-metric.is-onhold .count-pill .num{ color:var(--onhold); }
+.fin-dash .cell-metric.is-rejected .count-pill{ background:var(--rejected-tint); border-color:transparent; color:var(--rejected); }
+.fin-dash .cell-metric.is-rejected .count-pill .num{ color:var(--rejected); }
 
 /* ---------- FILTER BAR ---------- */
 .fin-dash .filter-bar{ display:flex; align-items:center; flex-wrap:wrap; gap:14px; margin-bottom:12px; }

@@ -56,7 +56,7 @@ with who acted, when, and why.
   document, including remarks and whether the action came from email.
 - Keep a complete audit trail of every transition, plus a record of every
   emailed link and how it was used.
-- Report on pending, on-hold and approved value per document type in the
+- Report on pending, on-hold, approved and rejected value per document type in the
   Finance Overview dashboard.
 
 ## Integrations
