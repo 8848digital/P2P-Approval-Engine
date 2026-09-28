@@ -54,7 +54,7 @@ Whitelisted endpoints (versioned under `api/v1/`):
 ## Runtime
 
 - `runtime.py` — `validate` and `on_update` hooks (registered for all DocTypes via `doc_events["*"]`); blocks saves with no matching matrix band, records every state change into Document Workflow Log with its remarks, retires open email links and queues the next actor's emails, and keeps the active Additional Approver record in step (marks it completed on entering `Additionally Approved`, retires it once the chain moves past the review).
-- `generator.py` — builds/rebuilds the ERPNext Workflow from submitted Approval Matrix records, including the generic `Additionally Approved` states/transitions that route a document through an ad-hoc reviewer when one is inserted.
+- `generator.py` — builds/rebuilds the ERPNext Workflow from submitted Approval Matrix records, including the generic `Additionally Approved` states/transitions that route a document through an ad-hoc reviewer when one is inserted. Only ever touches its own `<DocType> Approval` workflow (looked up by name); a matrix submit is refused while another workflow is active on the DocType.
 - `doctype/additional_approver/` — the ad-hoc reviewer's data model, eligibility/one-at-a-time rules, per-record role grant/revoke, and reviewer notification.
 - `activity.py` — reconstructs the approver chain for a single document (backs `api/v1/activity.py`).
 - `remarks.py` — approver remarks attached to a transition; enforces the mandatory rejection reason for every channel.

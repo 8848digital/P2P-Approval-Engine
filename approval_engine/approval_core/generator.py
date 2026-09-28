@@ -137,6 +137,26 @@ def workflow_name(document_type):
     return f"{document_type} Approval"
 
 
+def foreign_active_workflow(document_type):
+    """
+    The active Workflow on a DocType that this engine did not generate, if any.
+
+    Frappe allows one active workflow per DocType, so activating ours would silently switch
+    off a workflow someone else built (e.g. a customer's own "Test YEXP" on Purchase Order).
+
+    Parameters:
+        document_type (str, required): Target DocType.
+
+    Returns:
+        str | None: Name of that workflow, or None when none is active.
+    """
+    return frappe.db.get_value("Workflow", {
+        "document_type": document_type,
+        "is_active": 1,
+        "name": ("!=", workflow_name(document_type)),
+    }, "name")
+
+
 def acting_tier(state):
     """
     Approver tier that acts FROM `state` (inverse of STATE_FOR_TIER, plus hold states).
@@ -756,8 +776,9 @@ def build_workflow(document_type):
     """
     Create or refresh the single Workflow for a DocType: states + generated transitions.
 
-    An existing workflow is rewritten in place (states and transitions cleared first), so
-    the live workflow always reflects the currently submitted matrices.
+    Our own workflow is rewritten in place (states and transitions cleared first), so the
+    live workflow always reflects the currently submitted matrices. It is looked up by name,
+    never by DocType alone, so a workflow someone else built for the DocType is never touched.
 
     Parameters:
         document_type (str, required): Target DocType.
@@ -765,7 +786,7 @@ def build_workflow(document_type):
     Returns:
         str: Name of the saved Workflow.
     """
-    existing = frappe.db.get_value("Workflow", {"document_type": document_type}, "name")
+    existing = frappe.db.exists("Workflow", workflow_name(document_type))
     if existing:
         wf = frappe.get_doc("Workflow", existing)
         wf.states = []
@@ -912,7 +933,7 @@ def on_matrix_cancel(document_type):
     reconcile_roles(document_type)
     remaining = frappe.db.count(
         "Approval Matrix", {"document_type": document_type, "docstatus": 1})
-    wf = frappe.db.get_value("Workflow", {"document_type": document_type}, "name")
+    wf = frappe.db.exists("Workflow", workflow_name(document_type))
     if wf:
         if remaining:
             build_workflow(document_type)  # rebuild without the cancelled matrix
