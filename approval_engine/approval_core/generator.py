@@ -872,7 +872,11 @@ def _grant_role(user, role):
 
 def _revoke_role(user, role):
     """
-    Remove an approver role from a user, ignoring users that no longer exist.
+    Remove an approver role from a user, skipping Administrator/Guest (as
+    _grant_role does) and users that no longer exist. Only Administrator may
+    edit the Administrator user, so removing a role from it would fail the
+    submit for anyone else with "You need the 'write' permission on User
+    Administrator".
 
     Parameters:
         user (str, required): User ID.
@@ -881,7 +885,7 @@ def _revoke_role(user, role):
     Returns:
         None
     """
-    if not frappe.db.exists("User", user):
+    if user in ("Administrator", "Guest") or not frappe.db.exists("User", user):
         return
     frappe.get_doc("User", user).remove_roles(role)
 
