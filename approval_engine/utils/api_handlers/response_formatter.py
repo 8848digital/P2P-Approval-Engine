@@ -156,7 +156,8 @@ def format_error_response(response_data: Dict, status_code: int) -> Dict:
 		status_code (int, required): HTTP status code of the original response.
 
 	Returns:
-		dict: Standard error response dictionary.
+		dict: Standard error response dictionary, plus Frappe's `_server_messages`
+		for non-5xx errors so desk clients still display the error.
 	"""
 	error_type = response_data.get("exc_type", "Error")
 	raw_message = extract_raw_error_message(response_data)
@@ -205,10 +206,17 @@ def format_error_response(response_data: Dict, status_code: int) -> Dict:
 		errors = {"error_id": error_id}
 		error_message = "Internal server error"
 
-	return get_custom_response_format(
+	envelope = get_custom_response_format(
 		status=False,
 		status_code=final_status_code,
 		message=error_message,
 		data=None,
 		errors=errors,
 	)
+
+	# Desk's frappe.call only shows an error to the user via `_server_messages`
+	# (what frappe.throw sets); dropping it leaves the form silently stuck.
+	if final_status_code < 500 and "_server_messages" in response_data:
+		envelope["_server_messages"] = response_data["_server_messages"]
+
+	return envelope
