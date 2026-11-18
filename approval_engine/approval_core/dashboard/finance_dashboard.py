@@ -14,18 +14,19 @@ holding the shared `<DocType> - Approver N` role alone is not enough. Current st
     Pending -> 1, Approved 1 -> 2, Approved 2 -> 3, Approved 3 -> 4
 
 On hold ("held by me") is attributed from the audit trail: a doc counts if its current state is
-an `On Hold by Approver N` state AND the most recent `Document Workflow Log` row for it (the row
+an `On Hold by Approver N` state (or `On Hold by Additional Approver`) AND the most recent `Document Workflow Log` row for it (the row
 that moved it into hold) was written by the user. This needs the full-transition logging added
 in the Document Workflow Log work — approvals-only history could not attribute a hold.
 
 Approved / rejected ("acted on by me", date-ranged) are likewise attributed from the audit trail:
-the user wrote a log row moving the doc into an approval state, or into `Rejected`.
+the user wrote a log row moving the doc into an approval state, or into `Rejected`. An ad-hoc
+reviewer's Approve lands in `Additionally Approved`, so that counts as an approval too.
 """
 
 import frappe
 from frappe.utils import add_days, getdate
 
-from approval_engine.approval_core.generator import ADDITIONAL_APPROVAL_STATE
+from approval_engine.approval_core.generator import ADDITIONAL_APPROVAL_STATE, ADDITIONAL_HOLD_STATE
 from approval_engine.approval_core.remarks import REJECTED_STATE
 
 # Current in-flight state -> the approver-pool column prefix that must contain the user.
@@ -36,12 +37,14 @@ STATE_TIER_POOL = {
     "Approved 3": "approver_4_user_",
 }
 
-# All hold states share this prefix (On Hold by Approver 1..4).
+# Tier hold states share this prefix (On Hold by Approver 1..4). The ad-hoc reviewer's hold
+# (ADDITIONAL_HOLD_STATE) does not match it and is added to the on-hold query explicitly.
 HOLD_STATE_LIKE = "On Hold by Approver%"
 
 # States an Approve action moves a document INTO — an escalation (Approved 1/2/3) is still an
-# approval by the acting tier, as is the final Approved. "Approved by me" counts any of these.
-APPROVED_STATES = ("Approved 1", "Approved 2", "Approved 3", "Approved")
+# approval by the acting tier, as is the final Approved. An ad-hoc reviewer's Approve moves the
+# doc into `Additionally Approved`. "Approved by me" counts any of these.
+APPROVED_STATES = ("Approved 1", "Approved 2", "Approved 3", "Approved", ADDITIONAL_APPROVAL_STATE)
 
 
 def target_doctypes():
@@ -215,6 +218,9 @@ def _pending_resume_rows(document_type, amount_field, params):
 def _pending_reviewer_rows(document_type, amount_field, params):
     """Docs paused for an ad-hoc reviewer who is the user (their turn, before the tier resumes).
 
+    A reviewer who has held the doc stays active-but-incomplete; that doc is reported under
+    on-hold, not pending — the same as a tier hold, which is never in the pending pool.
+
     Parameters:
         document_type (str, required): Target DocType.
         amount_field (str, required): The DocType's amount fieldname.
@@ -233,6 +239,7 @@ def _pending_reviewer_rows(document_type, amount_field, params):
                AND r.approver = %(user)s
         WHERE p.docstatus = 0
           AND p.company   = %(company)s
+          AND p.workflow_state != {frappe.db.escape(ADDITIONAL_HOLD_STATE)}
         GROUP BY p.name, p.`{amount_field}`
     """
     return frappe.db.sql(query, params, as_dict=True)
@@ -241,7 +248,8 @@ def _pending_reviewer_rows(document_type, amount_field, params):
 def on_hold_for_doctype(document_type, company, user):
     """Return {records, amount} of docs of `document_type` currently on hold by `user` in `company`.
 
-    A doc counts if it is in an `On Hold by Approver N` state and the latest Document Workflow Log
+    A doc counts if it is in an `On Hold by Approver N` / `On Hold by Additional Approver` state
+    and the latest Document Workflow Log
     row for it was written by `user` (i.e. `user` placed the current hold)."""
     amount_field = amount_field_for(document_type)
     if not amount_field:
@@ -265,14 +273,14 @@ def on_hold_for_doctype(document_type, company, user):
                    )
         WHERE p.docstatus     = 0
           AND p.company       = %(company)s
-          AND p.workflow_state LIKE %(hold_like)s
+          AND (p.workflow_state LIKE %(hold_like)s OR p.workflow_state = %(reviewer_hold)s)
         GROUP BY p.name, p.`{amt}`
     """.format(amt=amount_field, dt=document_type)
 
     rows = frappe.db.sql(
         query,
         {"doctype": document_type, "company": company, "user": user,
-         "hold_like": HOLD_STATE_LIKE},
+         "hold_like": HOLD_STATE_LIKE, "reviewer_hold": ADDITIONAL_HOLD_STATE},
         as_dict=True,
     )
     return _aggregate(rows)

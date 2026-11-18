@@ -236,6 +236,7 @@ class UnitTestAdditionalApprover(UnitTestCase):
         row = SimpleNamespace()
         with patch.object(frappe, "get_roles", return_value=["Employee"]), \
              patch.object(frappe, "get_doc", return_value=SimpleNamespace(
+                 doctype="Purchase Order",
                  get=lambda f: "8848Digital" if f == "company" else "Purchase - 8")), \
              patch.object(U, "amount_field_for", return_value="grand_total"), \
              patch.object(U, "find_band_row", return_value=row), \
@@ -243,3 +244,37 @@ class UnitTestAdditionalApprover(UnitTestCase):
              patch.object(U, "pool", side_effect=lambda r, lvl: {1: ["a@x.com"], 2: ["b@x.com"]}[lvl]):
             self.assertTrue(U.is_eligible_approver("Purchase Order", "PO-1", "b@x.com"))
             self.assertFalse(U.is_eligible_approver("Purchase Order", "PO-1", "stranger@x.com"))
+
+    # ---------------- reviewer must be an outsider (mocked) ----------------
+
+    def test_chain_approver_tiers_keeps_first_tier(self):
+        """A user named in several tiers maps to the earliest one."""
+        doc = SimpleNamespace(doctype="Purchase Order", get=lambda key: None)
+        pools = {1: ["a@x.com"], 2: ["b@x.com", "a@x.com"]}
+        with patch.object(U, "find_band_row", return_value=object()), \
+             patch.object(U, "configured_levels", return_value=[1, 2]), \
+             patch.object(U, "pool", side_effect=lambda r, lvl: pools[lvl]):
+            self.assertEqual(U.chain_approver_tiers(doc), {"a@x.com": 1, "b@x.com": 2})
+
+    def test_tier_approver_cannot_be_reviewer(self):
+        """Someone already in the chain is refused, naming their tier."""
+        target = SimpleNamespace(owner="maker@x.com")
+        with patch.object(U, "chain_approver_tiers", return_value={"b@x.com": 2}), \
+             patch.object(frappe.utils, "get_fullname", return_value="B"):
+            with self.assertRaisesRegex(frappe.ValidationError, "Tier 2"):
+                U.validate_reviewer_is_outsider(target, "b@x.com")
+
+    def test_owner_cannot_be_reviewer(self):
+        """The document's creator cannot review their own document."""
+        target = SimpleNamespace(owner="maker@x.com")
+        with patch.object(U, "chain_approver_tiers", return_value={}), \
+             patch.object(frappe.utils, "get_fullname", return_value="Maker"):
+            with self.assertRaisesRegex(frappe.ValidationError, "created this document"):
+                U.validate_reviewer_is_outsider(target, "maker@x.com")
+
+    def test_outsider_may_be_reviewer(self):
+        """A user outside the chain who did not create the document passes."""
+        target = SimpleNamespace(owner="maker@x.com")
+        with patch.object(U, "chain_approver_tiers", return_value={"b@x.com": 2}), \
+             patch.object(frappe.utils, "get_fullname", return_value="C"):
+            U.validate_reviewer_is_outsider(target, "c@x.com")

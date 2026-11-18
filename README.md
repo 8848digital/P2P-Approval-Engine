@@ -43,7 +43,8 @@ with who acted, when, and why.
 - Let an eligible approver insert a one-off **additional approver** into a single
   document's chain at the current step (before the next pending tier), with
   optional hold/reject and email action, without touching the shared matrix or
-  affecting any other document.
+  affecting any other document. The additional approver must be independent of
+  the document: anyone already named in one of its tiers, and its creator, are refused.
 - Block documents that no configured band covers, so nothing slips through
   unapproved.
 - Capture approver remarks on every action, with a **mandatory reason for

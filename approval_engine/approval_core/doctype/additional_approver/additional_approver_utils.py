@@ -11,6 +11,7 @@ through the reviewer are baked into the generated workflow (see
 `generator.build_transitions`); this module owns everything around those transitions:
 
 - who may add a reviewer (an eligible approver of that document),
+- who may be added (an outsider: not already in the document's tiers, not its owner),
 - the "one active reviewer per document" rule,
 - granting/revoking the coarse `<DocType> - Additional Approver` role per record, and
 - flipping the record's `completed` / `active` flags as the document moves through the
@@ -122,12 +123,55 @@ def is_eligible_approver(reference_doctype, reference_name, user):
         return True
 
     doc = frappe.get_doc(reference_doctype, reference_name)
-    amount = frappe.utils.flt(doc.get(amount_field_for(reference_doctype)))
-    row = find_band_row(reference_doctype, doc.get("company"), doc.get("department"), amount)
+    return user in chain_approver_tiers(doc)
+
+
+def chain_approver_tiers(doc):
+    """
+    Map each configured approver of `doc` (its matched band row) to the first tier naming them.
+
+    Parameters:
+        doc (Document, required): The governed target document.
+
+    Returns:
+        dict: User ID -> tier number, e.g. {"a@x.com": 1, "b@x.com": 2}; empty if no band.
+    """
+    amount = frappe.utils.flt(doc.get(amount_field_for(doc.doctype)))
+    row = find_band_row(doc.doctype, doc.get("company"), doc.get("department"), amount)
     if not row:
-        return False
-    eligible = {approver for level in configured_levels(row) for approver in pool(row, level)}
-    return user in eligible
+        return {}
+
+    tiers = {}
+    for level in configured_levels(row):
+        for approver in pool(row, level):
+            tiers.setdefault(approver, level)
+    return tiers
+
+
+def validate_reviewer_is_outsider(target, approver):
+    """
+    Refuse a reviewer who is already part of `target`'s chain or created it.
+
+    An additional approver is an extra, independent check. A tier approver added as one would
+    sign off twice (once as reviewer, again at their tier), and the owner would review their own
+    document — both defeat the independence the review exists for.
+
+    Parameters:
+        target (Document, required): The governed target document.
+        approver (str, required): User proposed as the additional approver.
+
+    Returns:
+        None
+    """
+    name = frappe.utils.get_fullname(approver)
+    if approver == target.owner:
+        frappe.throw(_("{0} created this document and cannot be added as its additional "
+                       "approver.").format(name))
+
+    tier = chain_approver_tiers(target).get(approver)
+    if tier:
+        frappe.throw(_("{0} is already an approver on this document (Tier {1}) and cannot be "
+                       "added as an additional approver.").format(name, tier))
 
 
 # ---------------------------------------------------------------------------
@@ -199,8 +243,8 @@ def validate_reviewer(doc):
     Enforce the invariants of an `Additional Approver` record on save.
 
     Guards direct inserts as well as the API path: the target must be governed, the
-    captured `insert_state` must be a real waiting state, and no other reviewer may be
-    pending on the same document at the same time.
+    captured `insert_state` must be a real waiting state, a new reviewer must be an outsider
+    to the chain, and no other reviewer may be pending on the same document at the same time.
 
     Parameters:
         doc (Document, required): The `Additional Approver` being saved.
@@ -215,6 +259,11 @@ def validate_reviewer(doc):
     if doc.insert_state not in INSERTABLE_STATES:
         frappe.throw(_("Insert State {0} is not a valid approval-chain state.")
                      .format(doc.insert_state))
+
+    # New records only: records created before this rule existed must still save cleanly.
+    if doc.is_new():
+        target = frappe.get_doc(doc.reference_doctype, doc.reference_name)
+        validate_reviewer_is_outsider(target, doc.approver)
 
     other = frappe.db.get_value(DOCTYPE, {
         "reference_doctype": doc.reference_doctype,
