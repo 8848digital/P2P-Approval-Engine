@@ -316,9 +316,10 @@ class FinanceDashboard {
 	cells(get_metric, cls, bucket) {
 		return COLUMNS.map((col) => {
 			const m = get_metric(col.doctype) || { records: 0, amount: 0, names: [] };
-			// A zero amount reads as a plain dash with no count pill — "₹0.00" repeated across
-			// the grid is noise, and an empty band adds no information.
-			const is_zero = Number(m.amount) === 0;
+			// An empty cell reads as a plain dash with no count pill — "₹0.00" repeated across
+			// the grid is noise. Gate on the record count, not the amount: a document whose
+			// amount is 0 (e.g. a rejected BRN) must still show up in the count.
+			const is_zero = (m.records || 0) === 0;
 			const amt = is_zero
 				? `<span class="amt is-empty">—</span>`
 				: `<span class="amt"><span class="cur">₹</span>${this.fmt_inr(m.amount)}</span>`;

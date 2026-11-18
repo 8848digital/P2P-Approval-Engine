@@ -25,7 +25,7 @@ module.
 | Approval Settings | Single DocType holding the DocType → amount-field mappings. See root `SETUP.md`. |
 | Document Workflow Log | Full audit trail of every workflow state transition — who moved which document from which state to which, when, their remarks, and whether the action came from an email link. |
 | Approval Action Token | One emailed approval link: the approver it was issued to, the state it was issued for, its status (Active / Used / Superseded / Expired) and how it was used. Stores only hashes of the link token and OTP. |
-| Additional Approver | One ad-hoc approver injected into a single document's live chain by an eligible approver, at the current juncture, without touching the shared matrix. Carries the target reference, the approver, the captured `insert_state`, per-record `can_hold`/`can_reject`/`action_via_email` flags, and `active`/`completed` lifecycle flags. |
+| Additional Approver | One ad-hoc approver injected into a single document's live chain by an eligible approver, at the current juncture, without touching the shared matrix; the reviewer may not already be a tier approver of that document or its creator. Carries the target reference, the approver, the captured `insert_state`, per-record `can_hold`/`can_reject`/`action_via_email` flags, and `active`/`completed` lifecycle flags. |
 
 ## Portal Pages
 
